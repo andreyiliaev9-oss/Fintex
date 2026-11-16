@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>FinPulse</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #F5F6F8;
+      --card-bg: #FFFFFF;
+      --carbon: #121417;
+      --carbon-elevated: #1C1F24;
+      --emerald: #10B981;
+      --emerald-deep: #059669;
+      --text-primary: #111827;
+      --text-secondary: #6B7280;
+    }
+
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      padding-bottom: calc(92px + env(safe-area-inset-bottom));
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .surface-card {
+      background: #FFFFFF;
+      border-radius: 22px;
+      border: 0.5px solid rgba(17, 24, 39, 0.06);
+      box-shadow: 0 4px 20px -4px rgba(17, 24, 39, 0.04), 0 1px 3px rgba(17, 24, 39, 0.02);
+    }
+
+    .carbon-hero {
+      background: linear-gradient(145deg, #171A1F 0%, #0E1013 100%);
+      border-radius: 26px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 36px -12px rgba(14, 16, 19, 0.32), 0 4px 12px -2px rgba(14, 16, 19, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .carbon-hero::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -50px;
+      width: 210px;
+      height: 210px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.24) 0%, rgba(16, 185, 129, 0) 70%);
+      pointer-events: none;
+    }
+
+    .tap-scale {
+      transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
+    }
+    .tap-scale:active {
+      transform: scale(0.965);
+    }
+
+    .segmented-wrap {
+      background: #EBEEF2;
+      padding: 3px;
+      border-radius: 14px;
+      position: relative;
+      display: grid;
+    }
+    .segmented-btn {
+      position: relative;
+      z-index: 2;
+      transition: color 0.2s ease;
+    }
+    .segmented-pill {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 3px;
+      background: #FFFFFF;
+      border-radius: 11px;
+      box-shadow: 0 2px 6px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
+      transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 1;
+    }
+
+    input[type=range].apple-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range].apple-slider:focus { outline: none; }
+    input[type=range].apple-slider::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 5px;
+      background: #E5E7EB;
+      border-radius: 999px;
+    }
+    input[type=range].apple-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 22px;
+      width: 22px;
+      border-radius: 50%;
+      background: #121417;
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      margin-top: -8.5px;
+      transition: transform 0.12s ease;
+    }
+    input[type=range].apple-slider:active::-webkit-slider-thumb {
+      transform: scale(1.16);
+    }
+
+    .frosted-tabbar {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-top: 0.5px solid rgba(17, 24, 39, 0.08);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .sheet-backdrop {
+      background: rgba(17, 24, 39, 0.42);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    .sheet-card {
+      background: #FFFFFF;
+      border-radius: 28px 28px 0 0;
+      box-shadow: 0 -10px 40px rgba(17, 24, 39, 0.14);
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="max-w-md mx-auto min-h-screen relative select-none">
+
+  <!-- LOADER -->
+  <div id="app-loader" class="fixed inset-0 z-50 bg-[#F5F6F8] flex flex-col items-center justify-center gap-3">
+    <div class="w-11 h-11 rounded-2xl bg-[#121417] text-emerald-400 flex items-center justify-center shadow-lg">
+      <i data-lucide="activity" class="w-5 h-5 animate-pulse"></i>
+    </div>
+    <span class="text-xs font-medium text-gray-500">Синхронизация...</span>
+  </div>
+
+  <!-- CYCLE SETTINGS MODAL -->
+  <div id="onboarding-modal" class="fixed inset-0 z-50 bg-[#F5F6F8] flex flex-col justify-between p-5 hidden">
+    <div class="space-y-4">
+      <div class="flex items-center justify-between pt-1">
+        <span class="font-bold text-lg tracking-tight text-gray-900">Параметры цикла</span>
+        <button onclick="haptic('light'); closeOnboarding()" class="w-8 h-8 rounded-full bg-white border border-gray-200/80 flex items-center justify-center text-gray-500 tap-scale">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="surface-card p-4 space-y-2.5">
+        <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Основной банк</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-bank="Т-Банк" onclick="selectBank(this, 'Т-Банк')" class="bank-btn py-2.5 rounded-xl text-xs font-semibold bg-[#121417] text-white tap-scale">Т-Банк</button>
+          <button type="button" data-bank="Сбер" onclick="selectBank(this, 'Сбер')" class="bank-btn py-2.5 rounded-xl text-xs font-medium bg-gray-100 text-gray-600 tap-scale">Сбер</button>
+          <button type="button" data-bank="Альфа" onclick="selectBank(this, 'Альфа')" class="bank-btn py-2.5 rounded-xl text-xs font-medium bg-gray-100 text-gray-600 tap-scale">Альфа</button>
+        </div>
+      </div>
+
+      <div class="surface-card p-4 space-y-1.5">
+        <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Свободный остаток (₽)</label>
+        <input id="ob-balance" type="number" class="w-full bg-gray-50 border border-gray-200/80 rounded-xl px-3.5 py-3 text-xl font-bold text-gray-900 tabular-nums focus:outline-none focus:border-gray-900" />
+      </div>
+
+      <div class="surface-card p-4 space-y-1.5">
+        <label class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Дней до следующей зарплаты</label>
+        <input id="ob-days" type="number" class="w-full bg-gray-50 border border-gray-200/80 rounded-xl px-3.5 py-3 text-xl font-bold text-gray-900 tabular-nums focus:outline-none focus:border-gray-900" />
+      </div>
+    </div>
+
+    <button onclick="saveOnboarding()" class="w-full py-3.5 rounded-2xl bg-[#121417] text-white font-semibold text-sm shadow-lg tap-scale">
+      Сохранить изменения
+    </button>
+  </div>
+
+  <!-- TOP MINIMAL NAVIGATION HEADER -->
+  <header class="px-5 pt-4 pb-2 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-[#121417] text-white flex items-center justify-center shadow-sm">
+        <i data-lucide="command" class="w-4 h-4 text-emerald-400"></i>
+      </div>
+      <div>
+        <div class="text-sm font-bold tracking-tight text-gray-900 leading-none">FinPulse</div>
+        <div class="flex items-center gap-1.5 mt-1">
+          <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="sync-status-text" class="text-[11px] font-medium text-gray-500">Авто-импорт iOS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="haptic('light'); openOnboarding()" class="h-9 px-3 rounded-full bg-white border border-gray-200/80 text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-xs tap-scale">
+        <i data-lucide="calendar" class="w-3.5 h-3.5 text-gray-400"></i>
+        <span id="header-days-pill">12 дн.</span>
+      </button>
+      <button onclick="haptic('medium'); openAddSheet()" class="w-9 h-9 rounded-full bg-[#121417] text-white flex items-center justify-center shadow-sm tap-scale">
+        <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="px-4 pt-2">
+    <!-- TAB 1: PULSE -->
+    <section id="tab-pulse" class="space-y-4">
+      <div class="carbon-hero p-5 text-white">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-gray-400">Безопасно потратить сегодня</span>
+          <span id="used-pct-badge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-emerald-400 tabular-nums">
+            26% лимита
+          </span>
+        </div>
+
+        <div class="mt-2 mb-4 flex items-baseline justify-between">
+          <div class="text-[34px] font-extrabold tracking-tight tabular-nums leading-none" id="daily-limit-value">1 850 ₽</div>
+          <div class="text-xs text-gray-400 tabular-nums">из <span id="daily-total-label" class="text-gray-200 font-semibold">2 500 ₽</span></div>
+        </div>
+
+        <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-4">
+          <div id="hero-progress-bar" class="h-full bg-emerald-400 rounded-full transition-all duration-500" style="width: 26%;"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 pt-3 border-t border-white/10">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Остаток цикла</div>
+            <div id="period-balance-value" class="text-sm font-bold tabular-nums text-white mt-0.5">22 200 ₽</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-medium">Потрачено сегодня</div>
+            <div id="today-spent-label" class="text-sm font-bold tabular-nums text-emerald-400 mt-0.5">650 ₽</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Scrubbable SVG Spending Chart Card -->
+      <div class="surface-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs font-medium text-gray-400">Динамика расходов</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="scrub-amount" class="text-lg font-extrabold text-gray-900 tabular-nums">2 150 ₽</span>
+              <span id="scrub-day-label" class="text-xs font-medium text-emerald-600">Пятница</span>
+            </div>
+          </div>
+
+          <div class="segmented-wrap grid-cols-3 w-44 text-[11px] font-semibold" id="chart-segmented">
+            <div id="chart-seg-pill" class="segmented-pill w-[calc(33.333%-2px)]" style="transform: translateX(0%);"></div>
+            <button onclick="selectChartPeriod(0, 'week')" class="segmented-btn py-1.5 text-gray-900">7 дн.</button>
+            <button onclick="selectChartPeriod(1, 'cycle')" class="segmented-btn py-1.5 text-gray-500">Цикл</button>
+            <button onclick="selectChartPeriod(2, 'month')" class="segmented-btn py-1.5 text-gray-500">Месяц</button>
+          </div>
+        </div>
+
+        <div id="chart-touch-area" class="relative h-32 w-full touch-none cursor-crosshair pt-2">
+          <svg id="sparkline-svg" class="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="emeraldAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10B981" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#10B981" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path id="chart-area-path" fill="url(#emeraldAreaGrad)" />
+            <path id="chart-line-path" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line id="chart-cursor-line" x1="200" y1="0" x2="200" y2="100" stroke="#121417" stroke-width="1" stroke-dasharray="3 3" opacity="0.4" />
+            <circle id="chart-cursor-dot" cx="200" cy="30" r="5" fill="#121417" stroke="#FFFFFF" stroke-width="2.5" />
+          </svg>
+        </div>
+
+        <div id="chart-x-labels" class="flex justify-between text-[10px] font-semibold text-gray-400 px-1">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span class="text-gray-900">Пт</span><span>Сб</span><span>Вс</span>
+        </div>
+      </div>
+
+      <!-- Transactions List -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between px-1">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Операции</h3>
+          <span class="text-[11px] text-gray-400">Нажмите для смены категории</span>
+        </div>
+        <div id="transactions-list" class="surface-card divide-y divide-gray-100 overflow-hidden"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CATEGORIES & GOALS -->
+    <section id="tab-analytics" class="space-y-4 hidden">
+      <div class="pt-1 px-1 flex items-end justify-between">
+        <div>
+          <span id="analytics-subtitle" class="text-xs font-medium text-gray-400">Всего расходов</span>
+          <h2 id="analytics-total-sum" class="text-2xl font-extrabold text-gray-900 tabular-nums tracking-tight">0 ₽</h2>
+        </div>
+        <button id="reset-filter-btn" onclick="filterByCategory(null)" class="hidden text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full tap-scale">
+          Все категории
+        </button>
+      </div>
+
+      <div class="surface-card p-5 space-y-4">
+        <div id="multi-bar" class="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex gap-0.5"></div>
+        <div id="analytics-categories" class="divide-y divide-gray-100 -mx-2"></div>
+      </div>
+
+      <div class="surface-card p-5 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-gray-900">Авто-округление трат</h3>
+            <p class="text-[11px] text-gray-400">Копилка с каждой покупки</p>
+          </div>
+          <span id="roundup-val-badge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#121417] text-white tabular-nums">1 500 ₽</span>
+        </div>
+        <input type="range" min="0" max="5000" step="100" value="1500" oninput="updateRoundupSlider(this.value)" class="apple-slider" />
+        <div class="flex justify-between text-[10px] font-semibold text-gray-400 tabular-nums">
+          <span>0 ₽</span>
+          <span>Цель: 5 000 ₽</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: AI ADVISOR -->
+    <section id="tab-advisor" class="space-y-4 hidden">
+      <div class="pt-1 px-1">
+        <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">ИИ-Советник</h2>
+        <p class="text-xs text-gray-400">Персональная аналитика на основе ваших транзакций</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div class="surface-card p-4">
+          <div class="text-[11px] font-medium text-gray-400">Средний чек</div>
+          <div id="stat-avg-check" class="text-lg font-extrabold text-gray-900 tabular-nums mt-1">562 ₽</div>
+        </div>
+        <div class="surface-card p-4">
+          <div class="text-[11px] font-medium text-gray-400">Запас к зарплате</div>
+          <div class="text-lg font-extrabold text-emerald-600 tabular-nums mt-1">+4 800 ₽</div>
+        </div>
+      </div>
+
+      <div class="segmented-wrap grid-cols-3 text-xs font-semibold">
+        <div id="tone-seg-pill" class="segmented-pill w-[calc(33.333%-2px)]" style="transform: translateX(0%);"></div>
+        <button onclick="setAdvisorTone(0, 'facts')" class="segmented-btn py-2 text-gray-900">Сухие факты</button>
+        <button onclick="setAdvisorTone(1, 'coach')" class="segmented-btn py-2 text-gray-500">Коуч</button>
+        <button onclick="setAdvisorTone(2, 'strict')" class="segmented-btn py-2 text-gray-500">Критик</button>
+      </div>
+
+      <div id="advisor-cards" class="space-y-2.5"></div>
+    </section>
+
+    <!-- TAB 4: PROFILE & SETTINGS -->
+    <section id="tab-settings" class="space-y-4 hidden">
+      <div class="pt-1 px-1">
+        <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">Профиль и iOS</h2>
+        <p class="text-xs text-gray-400">Подключение автоматического перехвата пушей</p>
+      </div>
+
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-gray-900">Сервер базы данных</h3>
+          <span id="api-badge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-600">Авто</span>
+        </div>
+        <p class="text-xs text-gray-500">При запуске из бота адрес подставляется автоматически. При необходимости укажите URL <code>.../exec</code> вручную:</p>
+        <div class="flex gap-2">
+          <input id="backend-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-gray-900" />
+          <button onclick="haptic('medium'); saveBackendUrl()" class="px-4 py-2 rounded-xl bg-[#121417] text-white text-xs font-semibold tap-scale">OK</button>
+        </div>
+      </div>
+
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-gray-900">Webhook для iPhone</h3>
+          <span class="text-[11px] font-semibold text-emerald-600">iOS Shortcuts</span>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3 flex items-center justify-between gap-2 border border-gray-200/70">
+          <code id="user-webhook-url" class="text-xs text-gray-700 truncate">Откройте через /start в боте</code>
+          <button onclick="copyWebhook()" class="shrink-0 px-3 py-1.5 rounded-lg bg-[#121417] text-white text-xs font-semibold tap-scale">Копировать</button>
+        </div>
+        <details class="text-xs text-gray-500 pt-1">
+          <summary class="font-semibold text-gray-700 cursor-pointer">Как настроить за 30 секунд на iPhone</summary>
+          <ol class="list-decimal list-inside space-y-1.5 mt-2 text-[11px] leading-relaxed">
+            <li>Откройте приложение <b>Команды</b> → вкладка <b>Автоматизация</b> → <b>+</b>.</li>
+            <li>Выберите <b>Уведомление</b> → приложение вашего банка (Т-Банк, Сбер и др.).</li>
+            <li>Добавьте действие <b>Получить содержимое URL</b>, вставьте ссылку выше, метод <b>POST</b>, тело JSON: ключ <code>text</code> → значение <code>Входные данные</code>.</li>
+          </ol>
+        </details>
+      </div>
+
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-gray-900">Запомненные правила ИИ</h3>
+          <span id="rules-count" class="text-xs font-semibold text-gray-400">0</span>
+        </div>
+        <div id="rules-list" class="space-y-2"></div>
+      </div>
+
+      <!-- ADMIN PANEL (Visible ONLY to 8141670312) -->
+      <div id="admin-section" class="surface-card p-4 space-y-3 border border-emerald-500/30 hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold text-gray-900">Панель администратора</span>
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">ID: 8141670312</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5 text-center">
+          <div class="bg-gray-50 rounded-xl p-3">
+            <div id="admin-users-count" class="text-lg font-extrabold text-gray-900 tabular-nums">0</div>
+            <div class="text-[11px] text-gray-500">Тестеров</div>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <div id="admin-tx-count" class="text-lg font-extrabold text-emerald-600 tabular-nums">0</div>
+            <div class="text-[11px] text-gray-500">Операций</div>
+          </div>
+        </div>
+        <div id="admin-testers-list" class="space-y-1.5"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FROSTED BOTTOM TAB BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto frosted-tabbar px-4 pt-2 pb-1.5 flex items-center justify-around z-30">
+    <button onclick="switchTab('pulse', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-gray-900 tap-scale">
+      <i data-lucide="activity" class="w-5 h-5 stroke-[2.2]"></i>
+      <span class="text-[10px] font-bold">Пульс</span>
+    </button>
+    <button onclick="switchTab('analytics', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-gray-400 tap-scale">
+      <i data-lucide="pie-chart" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Категории</span>
+    </button>
+    <button onclick="switchTab('advisor', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-gray-400 tap-scale">
+      <i data-lucide="sparkles" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Советник</span>
+    </button>
+    <button onclick="switchTab('settings', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-gray-400 tap-scale">
+      <i data-lucide="sliders-horizontal" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Профиль</span>
+    </button>
+  </nav>
+
+  <!-- CATEGORY CHANGE SHEET -->
+  <div id="category-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeCategorySheet()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="sheet-tx-merchant" class="text-base font-bold text-gray-900">Магазин</h3>
+          <p id="sheet-tx-meta" class="text-xs text-gray-400"></p>
+        </div>
+        <button onclick="haptic('light'); closeCategorySheet()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="category-grid" class="grid grid-cols-3 gap-2"></div>
+    </div>
+  </div>
+
+  <!-- SMART ADD SHEET -->
+  <div id="add-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAddSheet()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-gray-900">Добавить трату через ИИ</h3>
+        <button onclick="haptic('light'); closeAddSheet()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-gray-500">Вставьте пуш от банка или надиктуйте голосом через микрофон клавиатуры iPhone (например: <em>«Кофе 350 и такси 600»</em>).</p>
+      <textarea id="ai-smart-input" rows="3" placeholder="Вставьте уведомление или продиктуйте траты..." class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3.5 text-sm text-gray-900 focus:outline-none focus:border-gray-900"></textarea>
+      <button id="smart-submit-btn" onclick="processSmartInput()" class="w-full py-3.5 rounded-2xl bg-[#121417] text-white font-semibold text-sm shadow-lg flex items-center justify-center gap-2 tap-scale">
+        <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+        <span>Распознать и записать</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- FLOATING TOAST -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#121417] text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 flex items-center gap-2">
+    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+    <span id="toast-text">Готово</span>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor('#F5F6F8');
+      tg.setBackgroundColor('#F5F6F8');
+    }
+
+    function haptic(style = 'light') {
+      try {
+        if (tg?.HapticFeedback) {
+          if (style === 'selection') tg.HapticFeedback.selectionChanged();
+          else if (['success', 'warning', 'error'].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+          else tg.HapticFeedback.impactOccurred(style);
+        } else if (navigator.vibrate) {
+          navigator.vibrate(style === 'heavy' ? 22 : style === 'medium' ? 14 : 7);
+        }
+      } catch (e) {}
+    }
+
+    const ADMIN_ID = '8141670312';
+    const CURRENT_USER_ID = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : ADMIN_ID;
+    const CURRENT_USER_NAME = tg?.initDataUnsafe?.user?.first_name || 'Админ';
+
+    // Автоматический захват ?api=... при открытии из обновленного Telegram-бота
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('api')) {
+      localStorage.setItem('finpulse_backend_url', urlParams.get('api'));
+    }
+
+    // При необходимости сюда можно вшить резервный URL вашего Apps Script (заканчивается на /exec)
+    const DEFAULT_BACKEND_URL = '';
+
+    function getApiUrl() {
+      return localStorage.getItem('finpulse_backend_url') || DEFAULT_BACKEND_URL;
+    }
+
+    const CATEGORIES = {
+      food: { id: 'food', name: 'Продукты', icon: 'shopping-bag', color: '#10B981', bg: '#ECFDF5' },
+      cafe: { id: 'cafe', name: 'Кафе и кофе', icon: 'coffee', color: '#F59E0B', bg: '#FFFBEB' },
+      taxi: { id: 'taxi', name: 'Такси и авто', icon: 'car', color: '#3B82F6', bg: '#EFF6FF' },
+      subs: { id: 'subs', name: 'Подписки', icon: 'repeat', color: '#8B5CF6', bg: '#F5F3FF' },
+      health: { id: 'health', name: 'Здоровье', icon: 'heart-pulse', color: '#EF4444', bg: '#FEF2F2' },
+      other: { id: 'other', name: 'Разное', icon: 'layers', color: '#6B7280', bg: '#F3F4F6' }
+    };
+
+    const DEMO_TRANSACTIONS = [
+      { id: 'd1', merchant: 'Пятёрочка', raw: 'PYATEROCHKA 4120', amount: 450, category: 'food', source: 'Авто • Т-Банк', isToday: true },
+      { id: 'd2', merchant: 'Surf Coffee', raw: 'SURF COFFEE', amount: 200, category: 'cafe', source: 'Авто • Т-Банк', isToday: true },
+      { id: 'd3', merchant: 'Яндекс Go', raw: 'YANDEX.GO', amount: 640, category: 'taxi', source: 'Авто • Т-Банк', isToday: false },
+      { id: 'd4', merchant: 'Яндекс Плюс', raw: 'YANDEX PLUS', amount: 399, category: 'subs', source: 'Подписка', isToday: false }
+    ];
+
+    const DEMO_INSIGHTS = [
+      { tag: 'Темп бюджета', title: 'Сегодня потрачено 26% дневного лимита', text: 'Свободный остаток на сегодня — 1 850 ₽. При сохранении темпа завтра лимит вырастет до 1 970 ₽.' },
+      { tag: 'Паттерн недели', title: 'Пик трат приходится на вечер пятницы', text: 'Расходы на кафе и такси в пятницу после 19:00 в 1.8 раза выше среднего буднего дня.' }
+    ];
+
+    const CHART_DATASETS = {
+      week: [
+        { day: 'Понедельник', short: 'Пн', val: 1200 },
+        { day: 'Вторник', short: 'Вт', val: 850 },
+        { day: 'Среда', short: 'Ср', val: 1640 },
+        { day: 'Чт', short: 'Чт', val: 920 },
+        { day: 'Пятница', short: 'Пт', val: 2150 },
+        { day: 'Суббота', short: 'Сб', val: 1480 },
+        { day: 'Воскресенье', short: 'Вс', val: 650 }
+      ],
+      cycle: [
+        { day: 'День 1-2', short: '1-2', val: 3400 },
+        { day: 'День 3-4', short: '3-4', val: 2100 },
+        { day: 'День 5-6', short: '5-6', val: 1850 },
+        { day: 'День 7-8', short: '7-8', val: 2900 },
+        { day: 'День 9-10', short: '9-10', val: 1400 },
+        { day: 'День 11-12', short: '11-12', val: 1950 },
+        { day: 'Сегодня', short: 'Сег', val: 650 }
+      ],
+      month: [
+        { day: '1 неделя', short: '1 нед', val: 8400 },
+        { day: '2 неделя', short: '2 нед', val: 6900 },
+        { day: '3 неделя', short: '3 нед', val: 9100 },
+        { day: '4 неделя', short: '4 нед', val: 5800 }
+      ]
+    };
+
+    let state = {
+      user: { balance: 22200, days_left: 12, bank: 'Т-Банк' },
+      transactions: [...DEMO_TRANSACTIONS],
+      rules: [
+        { raw: 'PYATEROCHKA 4120', clean: 'Пятёрочка', category: 'food' },
+        { raw: 'YANDEX.GO', clean: 'Яндекс Go', category: 'taxi' }
+      ],
+      insights: [...DEMO_INSIGHTS],
+      webhookUrl: '',
+      selectedTxId: null,
+      analyticsFilter: null,
+      selectedBank: 'Т-Банк',
+      chartPeriod: 'week',
+      scrubIdx: 4
+    };
+
+    function fmtNum(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+    function fmt(n) { return fmtNum(n) + ' ₽'; }
+
+    function saveBackendUrl() {
+      const val = document.getElementById('backend-url-input').value.trim();
+      if (!val.startsWith('http')) {
+        haptic('error');
+        showToast('Введите корректный URL');
+        return;
+      }
+      haptic('success');
+      localStorage.setItem('finpulse_backend_url', val);
+      showToast('Сервер подключён');
+      initApp();
+    }
+
+    async function apiCall(payload) {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) return { ok: false, no_api: true };
+      payload.user_id = CURRENT_USER_ID;
+      payload.user_name = CURRENT_USER_NAME;
+      const res = await fetch(apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+      return await res.json();
+    }
+
+    async function initApp() {
+      const apiUrl = getApiUrl();
+      document.getElementById('backend-url-input').value = apiUrl;
+
+      if (!apiUrl) {
+        document.getElementById('api-badge').textContent = 'Демо-режим';
+        document.getElementById('sync-status-text').textContent = 'Демо • Нажмите /start в боте';
+        document.getElementById('ob-balance').value = state.user.balance;
+        document.getElementById('ob-days').value = state.user.days_left;
+        renderAll();
+        document.getElementById('app-loader').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('api-badge').textContent = 'Онлайн';
+      document.getElementById('api-badge').className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700';
+
+      try {
+        const res = await apiCall({ action: 'init' });
+        if (res.ok) {
+          state.user = res.user;
+          state.transactions = res.transactions || [];
+          state.rules = res.rules || [];
+          state.insights = res.insights || [];
+          state.webhookUrl = res.webhook_url || `${apiUrl}?uid=${CURRENT_USER_ID}`;
+          state.selectedBank = res.user.bank || 'Т-Банк';
+
+          document.getElementById('sync-status-text').textContent = `Авто-импорт • ${state.selectedBank}`;
+          document.getElementById('user-webhook-url').textContent = state.webhookUrl;
+          document.getElementById('ob-balance').value = state.user.balance;
+          document.getElementById('ob-days').value = state.user.days_left;
+
+          if (res.admin) {
+            document.getElementById('admin-section').classList.remove('hidden');
+            document.getElementById('admin-users-count').textContent = res.admin.total_users;
+            document.getElementById('admin-tx-count').textContent = res.admin.total_tx;
+            document.getElementById('admin-testers-list').innerHTML = res.admin.testers.map(t => `
+              <div class="bg-gray-50 rounded-xl p-2.5 flex justify-between text-xs font-medium">
+                <span class="text-gray-800">${t.name} (${t.bank})</span>
+                <span class="text-gray-400">ID: ${t.uid}</span>
+              </div>
+            `).join('');
+          }
+          renderAll();
+        }
+      } catch (e) {
+        showToast('Ошибка связи с сервером');
+        renderAll();
+      } finally {
+        document.getElementById('app-loader').classList.add('hidden');
+      }
+    }
+
+    function renderAll() {
+      renderPulse();
+      renderSparkline();
+      renderAnalytics();
+      renderAdvisor();
+      renderRules();
+      lucide.createIcons();
+    }
+
+    function renderPulse() {
+      const todaySpent = state.transactions.filter(t => t.isToday).reduce((s, t) => s + t.amount, 0);
+      const days = Math.max(1, state.user.days_left || 12);
+      const dailyTotal = Math.max(1, Math.round((state.user.balance + todaySpent) / days));
+      const remainToday = Math.max(0, dailyTotal - todaySpent);
+      const usedPct = Math.min(100, Math.round((todaySpent / dailyTotal) * 100));
+
+      document.getElementById('daily-limit-value').textContent = fmt(remainToday);
+      document.getElementById('daily-total-label').textContent = fmt(dailyTotal);
+      document.getElementById('period-balance-value').textContent = fmt(state.user.balance);
+      document.getElementById('today-spent-label').textContent = fmt(todaySpent);
+      document.getElementById('header-days-pill').textContent = `${days} дн.`;
+      document.getElementById('used-pct-badge').textContent = `${usedPct}% лимита`;
+
+      const bar = document.getElementById('hero-progress-bar');
+      bar.style.width = `${usedPct}%`;
+      bar.className = `h-full rounded-full transition-all duration-500 ${usedPct > 85 ? 'bg-red-400' : usedPct > 65 ? 'bg-amber-400' : 'bg-emerald-400'}`;
+
+      const list = document.getElementById('transactions-list');
+      if (state.transactions.length === 0) {
+        list.innerHTML = `<div class="p-6 text-center text-xs text-gray-400">Операций пока нет. Нажмите «+» вверху, чтобы добавить первую трату.</div>`;
+        return;
+      }
+
+      list.innerHTML = state.transactions.map(tx => {
+        const cat = CATEGORIES[tx.category] || CATEGORIES.other;
+        return `
+          <div onclick="openCategorySheet('${tx.id}')" class="p-3.5 flex items-center justify-between hover:bg-gray-50/80 active:bg-gray-100/80 transition cursor-pointer">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style="background:${cat.bg}; color:${cat.color}">
+                <i data-lucide="${cat.icon}" class="w-4.5 h-4.5"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-gray-900 truncate">${tx.merchant}</div>
+                <div class="text-[11px] text-gray-400">${cat.name} • <span class="text-emerald-600 font-medium">${tx.source}</span></div>
+              </div>
+            </div>
+            <div class="text-right shrink-0 ml-2 flex items-center gap-1.5">
+              <span class="text-sm font-bold text-gray-900 tabular-nums">-${fmt(tx.amount)}</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-300"></i>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSparkline() {
+      const data = CHART_DATASETS[state.chartPeriod] || CHART_DATASETS.week;
+      if (state.scrubIdx >= data.length) state.scrubIdx = data.length - 1;
+
+      const maxVal = Math.max(...data.map(d => d.val)) * 1.15;
+      const minVal = 0;
+      const w = 300, h = 100;
+
+      const pts = data.map((d, i) => {
+        const x = (i / Math.max(1, data.length - 1)) * w;
+        const y = h - ((d.val - minVal) / (maxVal - minVal)) * (h - 14) - 6;
+        return { x, y, ...d };
+      });
+
+      let lineD = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const cp1x = pts[i].x + (pts[i + 1].x - pts[i].x) * 0.45;
+        const cp1y = pts[i].y;
+        const cp2x = pts[i + 1].x - (pts[i + 1].x - pts[i].x) * 0.45;
+        const cp2y = pts[i + 1].y;
+        lineD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${pts[i + 1].x} ${pts[i + 1].y}`;
+      }
+
+      const areaD = `${lineD} L ${pts[pts.length - 1].x} ${h} L ${pts[0].x} ${h} Z`;
+      document.getElementById('chart-line-path').setAttribute('d', lineD);
+      document.getElementById('chart-area-path').setAttribute('d', areaD);
+
+      const activePt = pts[state.scrubIdx];
+      document.getElementById('chart-cursor-line').setAttribute('x1', activePt.x);
+      document.getElementById('chart-cursor-line').setAttribute('x2', activePt.x);
+      document.getElementById('chart-cursor-dot').setAttribute('cx', activePt.x);
+      document.getElementById('chart-cursor-dot').setAttribute('cy', activePt.y);
+
+      document.getElementById('scrub-amount').textContent = fmt(activePt.val);
+      document.getElementById('scrub-day-label').textContent = activePt.day;
+
+      document.getElementById('chart-x-labels').innerHTML = data.map((d, idx) =>
+        `<span class="${idx === state.scrubIdx ? 'text-gray-900 font-bold' : ''}">${d.short}</span>`
+      ).join('');
+    }
+
+    const chartArea = document.getElementById('chart-touch-area');
+    function handleChartScrub(clientX) {
+      const rect = chartArea.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const data = CHART_DATASETS[state.chartPeriod] || CHART_DATASETS.week;
+      const newIdx = Math.round(relX * (data.length - 1));
+      if (newIdx !== state.scrubIdx) {
+        state.scrubIdx = newIdx;
+        haptic('selection');
+        renderSparkline();
+      }
+    }
+    chartArea.addEventListener('pointerdown', e => handleChartScrub(e.clientX));
+    chartArea.addEventListener('pointermove', e => { if (e.buttons > 0 || e.pointerType === 'touch') handleChartScrub(e.clientX); });
+
+    function selectChartPeriod(idx, period) {
+      haptic('light');
+      state.chartPeriod = period;
+      state.scrubIdx = CHART_DATASETS[period].length - 1;
+      document.getElementById('chart-seg-pill').style.transform = `translateX(${idx * 100}%)`;
+      const btns = document.querySelectorAll('#chart-segmented .segmented-btn');
+      btns.forEach((b, i) => b.className = `segmented-btn py-1.5 ${i === idx ? 'text-gray-900' : 'text-gray-500'}`);
+      renderSparkline();
+    }
+
+    function renderAnalytics() {
+      const totals = {};
+      let grand = 0;
+      state.transactions.forEach(t => { totals[t.category] = (totals[t.category] || 0) + t.amount; grand += t.amount; });
+      const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+      const activeCat = state.analyticsFilter ? CATEGORIES[state.analyticsFilter] : null;
+      document.getElementById('analytics-subtitle').textContent = activeCat ? `Категория: ${activeCat.name}` : 'Всего расходов';
+      document.getElementById('analytics-total-sum').textContent = fmt(state.analyticsFilter ? (totals[state.analyticsFilter] || 0) : grand);
+      document.getElementById('reset-filter-btn').classList.toggle('hidden', !state.analyticsFilter);
+
+      const multiBar = document.getElementById('multi-bar');
+      multiBar.innerHTML = entries.map(([k, sum]) => {
+        const cat = CATEGORIES[k] || CATEGORIES.other;
+        const pct = grand > 0 ? Math.max(4, (sum / grand) * 100) : 0;
+        const dimmed = state.analyticsFilter && state.analyticsFilter !== k;
+        return `<div onclick="filterByCategory('${k}')" style="width:${pct}%; background:${cat.color}; opacity:${dimmed ? 0.25 : 1}" class="h-full first:rounded-l-full last:rounded-r-full transition-all duration-300 cursor-pointer"></div>`;
+      }).join('');
+
+      const list = document.getElementById('analytics-categories');
+      if (entries.length === 0) {
+        list.innerHTML = `<div class="py-4 text-center text-xs text-gray-400">Нет данных по категориям</div>`;
+        return;
+      }
+
+      list.innerHTML = entries.map(([k, sum]) => {
+        const cat = CATEGORIES[k] || CATEGORIES.other;
+        const pct = grand > 0 ? Math.round((sum / grand) * 100) : 0;
+        const isSelected = state.analyticsFilter === k;
+        return `
+          <div onclick="filterByCategory('${k}')" class="py-3 px-2 flex items-center justify-between cursor-pointer rounded-xl transition ${isSelected ? 'bg-gray-50' : ''}">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:${cat.bg}; color:${cat.color}">
+                <i data-lucide="${cat.icon}" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">${cat.name}</div>
+                <div class="text-[11px] text-gray-400">${pct}% бюджета</div>
+              </div>
+            </div>
+            <div class="text-sm font-bold text-gray-900 tabular-nums">${fmt(sum)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterByCategory(k) {
+      haptic('light');
+      state.analyticsFilter = state.analyticsFilter === k ? null : k;
+      renderAnalytics();
+      lucide.createIcons();
+    }
+
+    function updateRoundupSlider(val) {
+      haptic('selection');
+      document.getElementById('roundup-val-badge').textContent = fmt(Number(val));
+    }
+
+    function renderAdvisor() {
+      const avg = state.transactions.length > 0
+        ? Math.round(state.transactions.reduce((s, t) => s + t.amount, 0) / state.transactions.length)
+        : 0;
+      document.getElementById('stat-avg-check').textContent = fmt(avg);
+
+      const items = state.insights.length > 0 ? state.insights : DEMO_INSIGHTS;
+      document.getElementById('advisor-cards').innerHTML = items.map(i => `
+        <div class="surface-card p-4 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">${i.tag}</span>
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-500"></i>
+          </div>
+          <h4 class="text-sm font-bold text-gray-900">${i.title}</h4>
+          <p class="text-xs text-gray-500 leading-relaxed">${i.text}</p>
+        </div>
+      `).join('');
+    }
+
+    async function setAdvisorTone(idx, tone) {
+      haptic('medium');
+      document.getElementById('tone-seg-pill').style.transform = `translateX(${idx * 100}%)`;
+      const btns = document.querySelectorAll('#tab-advisor .segmented-btn');
+      btns.forEach((b, i) => b.className = `segmented-btn py-2 ${i === idx ? 'text-gray-900' : 'text-gray-500'}`);
+
+      if (getApiUrl()) {
+        showToast('Обновляю аналитику ИИ...');
+        await apiCall({ action: 'update_profile', tone });
+        await initApp();
+      } else {
+        showToast('Стиль советника обновлён');
+      }
+    }
+
+    function renderRules() {
+      document.getElementById('rules-count').textContent = state.rules.length;
+      document.getElementById('rules-list').innerHTML = state.rules.map(r => `
+        <div class="bg-gray-50 rounded-xl p-2.5 flex justify-between items-center text-xs">
+          <div>
+            <div class="font-semibold text-gray-900">${r.clean}</div>
+            <div class="text-[10px] text-gray-400">${r.raw} → ${CATEGORIES[r.category]?.name || r.category}</div>
+          </div>
+          <button onclick="deleteRule('${r.raw}')" class="p-1.5 text-gray-400 hover:text-red-500 tap-scale"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteRule(raw) {
+      haptic('medium');
+      if (getApiUrl()) await apiCall({ action: 'delete_rule', raw_pattern: raw });
+      state.rules = state.rules.filter(r => r.raw !== raw);
+      renderAll();
+      showToast('Правило удалено');
+    }
+
+    function openCategorySheet(txId) {
+      haptic('light');
+      state.selectedTxId = txId;
+      const tx = state.transactions.find(t => t.id === txId);
+      if (!tx) return;
+      document.getElementById('sheet-tx-merchant').textContent = tx.merchant;
+      document.getElementById('sheet-tx-meta').textContent = `${fmt(tx.amount)} • ${tx.source}`;
+      document.getElementById('category-grid').innerHTML = Object.values(CATEGORIES).map(cat => `
+        <button onclick="applyCategory('${cat.id}')" class="p-3 rounded-2xl border ${tx.category === cat.id ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-100 bg-gray-50 text-gray-800'} flex flex-col items-center gap-1.5 tap-scale">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:${cat.bg}; color:${cat.color}"><i data-lucide="${cat.icon}" class="w-4 h-4"></i></div>
+          <span class="text-[11px] font-semibold">${cat.name}</span>
+        </button>
+      `).join('');
+      document.getElementById('category-sheet').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeCategorySheet() { document.getElementById('category-sheet').classList.add('hidden'); }
+
+    async function applyCategory(catId) {
+      haptic('success');
+      closeCategorySheet();
+      const tx = state.transactions.find(t => t.id === state.selectedTxId);
+      if (tx) {
+        tx.category = catId;
+        state.rules.unshift({ raw: tx.raw, clean: tx.merchant, category: catId });
+      }
+      renderAll();
+      showToast('Категория сохранена');
+      if (getApiUrl()) await apiCall({ action: 'update_category', tx_id: state.selectedTxId, category: catId });
+    }
+
+    function openAddSheet() { haptic('medium'); document.getElementById('add-sheet').classList.remove('hidden'); }
+    function closeAddSheet() { document.getElementById('add-sheet').classList.add('hidden'); }
+
+    async function processSmartInput() {
+      const text = document.getElementById('ai-smart-input').value.trim();
+      if (!text) return;
+      haptic('medium');
+      const btn = document.getElementById('smart-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>ИИ распознаёт...</span>';
+
+      if (getApiUrl()) {
+        const res = await apiCall({ action: 'smart_add', text, source: 'ИИ-строка' });
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i><span>Распознать и записать</span>';
+        document.getElementById('ai-smart-input').value = '';
+        closeAddSheet();
+        if (res.added && res.added.length > 0) {
+          haptic('success');
+          showToast(`Добавлено операций: ${res.added.length}`);
+          await initApp();
+        } else {
+          haptic('error');
+          showToast('Не удалось распознать сумму');
+        }
+      } else {
+        const parts = text.split(/,|\s+и\s+/i);
+        let added = 0;
+        parts.forEach(p => {
+          const m = p.match(/(\d+)/);
+          if (m) {
+            const amount = parseInt(m[1], 10);
+            const title = p.replace(m[0], '').replace(/₽|руб\.?/gi, '').trim() || 'Покупка';
+            const cat = /кофе|обед|кафе/i.test(title) ? 'cafe' : /такси|бензин/i.test(title) ? 'taxi' : 'food';
+            state.transactions.unshift({
+              id: 'loc_' + Date.now() + Math.random(),
+              merchant: title.charAt(0).toUpperCase() + title.slice(1),
+              raw: title.toUpperCase(),
+              amount,
+              category: cat,
+              source: 'ИИ-строка',
+              isToday: true
+            });
+            state.user.balance = Math.max(0, state.user.balance - amount);
+            added++;
+          }
+        });
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i><span>Распознать и записать</span>';
+        document.getElementById('ai-smart-input').value = '';
+        closeAddSheet();
+        if (added > 0) {
+          haptic('success');
+          renderAll();
+          showToast(`Распознано операций: ${added}`);
+        }
+      }
+    }
+
+    function switchTab(tab, btn) {
+      haptic('selection');
+      ['pulse', 'analytics', 'advisor', 'settings'].forEach(t => document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab));
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('text-gray-900');
+        b.classList.add('text-gray-400');
+        b.querySelector('span').classList.replace('font-bold', 'font-medium');
+      });
+      btn.classList.remove('text-gray-400');
+      btn.classList.add('text-gray-900');
+      btn.querySelector('span').classList.replace('font-medium', 'font-bold');
+    }
+
+    function openOnboarding() {
+      document.querySelectorAll('.bank-btn').forEach(b => {
+        const isCurrent = b.dataset.bank === state.selectedBank;
+        b.className = isCurrent
+          ? 'bank-btn py-2.5 rounded-xl text-xs font-semibold bg-[#121417] text-white tap-scale'
+          : 'bank-btn py-2.5 rounded-xl text-xs font-medium bg-gray-100 text-gray-600 tap-scale';
+      });
+      document.getElementById('onboarding-modal').classList.remove('hidden');
+    }
+    function closeOnboarding() { document.getElementById('onboarding-modal').classList.add('hidden'); }
+
+    function selectBank(btn, bank) {
+      haptic('light');
+      state.selectedBank = bank;
+      document.querySelectorAll('.bank-btn').forEach(b => b.className = 'bank-btn py-2.5 rounded-xl text-xs font-medium bg-gray-100 text-gray-600 tap-scale');
+      btn.className = 'bank-btn py-2.5 rounded-xl text-xs font-semibold bg-[#121417] text-white tap-scale';
+    }
+
+    async function saveOnboarding() {
+      haptic('success');
+      const balance = Number(document.getElementById('ob-balance').value) || 20000;
+      const days_left = Number(document.getElementById('ob-days').value) || 12;
+      state.user.balance = balance;
+      state.user.days_left = days_left;
+      state.user.bank = state.selectedBank;
+      closeOnboarding();
+      renderAll();
+      showToast('Цикл обновлён');
+      if (getApiUrl()) await apiCall({ action: 'update_profile', bank: state.selectedBank, balance, days_left });
+    }
+
+    function copyWebhook() {
+      haptic('medium');
+      if (!state.webhookUrl) { showToast('Сначала откройте через /start в боте'); return; }
+      navigator.clipboard?.writeText(state.webhookUrl);
+      showToast('Webhook скопирован');
+    }
+
+    function showToast(txt) {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-text').textContent = txt;
+      el.classList.remove('opacity-0');
+      setTimeout(() => el.classList.add('opacity-0'), 2200);
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
