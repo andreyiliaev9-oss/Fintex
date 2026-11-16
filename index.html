@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>FinPulse — Умный бюджет</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #F1F5F3;
+      --card-bg: #FFFFFF;
+      --card-border: rgba(15, 23, 42, 0.06);
+      --card-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+      --text-primary: #0F172A;
+      --text-secondary: #64748B;
+      --surface-muted: #F4F7F6;
+      --surface-muted-border: rgba(15, 23, 42, 0.08);
+      --seg-bg: #E6ECE9;
+      --seg-pill: #FFFFFF;
+      --tabbar-bg: rgba(255, 255, 255, 0.90);
+      --divider: rgba(15, 23, 42, 0.06);
+      --accent-malachite: #0C4A38;
+      --accent-emerald: #10B981;
+    }
+
+    html.dark {
+      --bg-canvas: #0B0F0E;
+      --card-bg: #131A18;
+      --card-border: rgba(52, 211, 153, 0.12);
+      --card-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.45);
+      --text-primary: #F1F5F9;
+      --text-secondary: #94A3B8;
+      --surface-muted: #1A2421;
+      --surface-muted-border: rgba(52, 211, 153, 0.14);
+      --seg-bg: #1A2421;
+      --seg-pill: #24332E;
+      --tabbar-bg: rgba(15, 21, 19, 0.92);
+      --divider: rgba(255, 255, 255, 0.06);
+      --accent-malachite: #34D399;
+      --accent-emerald: #34D399;
+    }
+
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      padding-bottom: calc(94px + env(safe-area-inset-bottom));
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Текстура полированного камня малахит с лёгким минеральным переливом */
+    .malachite-stone {
+      background-color: #072D22;
+      background-image:
+        radial-gradient(ellipse 130% 90% at 15% 10%, rgba(28, 145, 108, 0.48) 0%, transparent 55%),
+        radial-gradient(ellipse 110% 100% at 88% 85%, rgba(4, 26, 20, 0.95) 0%, transparent 60%),
+        repeating-radial-gradient(circle at 82% 18%,
+          rgba(16, 185, 129, 0.16) 0px,
+          rgba(16, 185, 129, 0.16) 6px,
+          rgba(5, 34, 25, 0.38) 7px,
+          rgba(13, 94, 70, 0.28) 16px,
+          rgba(4, 24, 18, 0.55) 22px
+        ),
+        linear-gradient(135deg, #05241B 0%, #0D4B39 48%, #06251C 100%);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 38px -12px rgba(4, 28, 21, 0.52), 0 4px 14px -2px rgba(4, 28, 21, 0.25);
+      border: 1px solid rgba(52, 211, 153, 0.26);
+    }
+
+    .malachite-stone::after {
+      content: '';
+      position: absolute;
+      inset: -40%;
+      background: linear-gradient(
+        115deg,
+        transparent 32%,
+        rgba(167, 243, 208, 0.06) 44%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(167, 243, 208, 0.06) 56%,
+        transparent 68%
+      );
+      transform: translateX(-55%) rotate(8deg);
+      animation: malachiteShimmer 7.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .malachite-btn {
+      background: linear-gradient(135deg, #09382A 0%, #115E47 50%, #0A3D2E 100%);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(52, 211, 153, 0.28);
+      box-shadow: 0 8px 20px -6px rgba(9, 56, 42, 0.45);
+    }
+    .malachite-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%);
+      animation: malachiteShimmer 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes malachiteShimmer {
+      0%, 100% { transform: translateX(-65%) rotate(6deg); }
+      50% { transform: translateX(65%) rotate(6deg); }
+    }
+
+    @keyframes shakePin {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shakePin 0.36s ease-in-out;
+    }
+
+    .surface-card {
+      background-color: var(--card-bg);
+      border-radius: 22px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .muted-box {
+      background-color: var(--surface-muted);
+      border: 1px solid var(--surface-muted-border);
+      color: var(--text-primary);
+    }
+
+    .text-main { color: var(--text-primary); }
+    .text-sub { color: var(--text-secondary); }
+    .text-accent { color: var(--accent-malachite); }
+
+    .divide-theme > :not([hidden]) ~ :not([hidden]) {
+      border-color: var(--divider);
+    }
+
+    .tap-scale {
+      transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.14s ease, background-color 0.15s ease;
+    }
+    .tap-scale:active {
+      transform: scale(0.95);
+    }
+
+    .segmented-wrap {
+      background: var(--seg-bg);
+      padding: 3px;
+      border-radius: 14px;
+      position: relative;
+      display: grid;
+    }
+    .segmented-btn {
+      position: relative;
+      z-index: 2;
+      transition: color 0.2s ease;
+    }
+    .segmented-pill {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 3px;
+      background: var(--seg-pill);
+      border-radius: 11px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 1;
+    }
+
+    .frosted-tabbar {
+      background: var(--tabbar-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-top: 0.5px solid var(--card-border);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .sheet-backdrop {
+      background: rgba(3, 18, 14, 0.62);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .sheet-card {
+      background-color: var(--card-bg);
+      color: var(--text-primary);
+      border-top: 1px solid var(--card-border);
+      border-radius: 28px 28px 0 0;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+
+    /* Скелетон-загрузка */
+    .skeleton-pulse {
+      background: linear-gradient(90deg, rgba(16,185,129,0.08) 25%, rgba(16,185,129,0.18) 50%, rgba(16,185,129,0.08) 75%);
+      background-size: 200% 100%;
+      animation: skeletonWave 1.4s infinite linear;
+    }
+    @keyframes skeletonWave {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Клавиатура PIN-кода */
+    .pin-key {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(167, 243, 208, 0.15);
+      backdrop-filter: blur(8px);
+      transition: transform 0.1s ease, background-color 0.12s ease;
+    }
+    .pin-key:active {
+      transform: scale(0.92);
+      background: rgba(52, 211, 153, 0.28);
+    }
+
+    .splash-transition {
+      transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1), transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="max-w-md mx-auto min-h-screen relative select-none">
+
+  <!-- ==================== 1. ГЛАВНЫЙ ЭКРАН ВХОДА С ПРИВЕТСТВИЕМ И PIN-КОДОМ ==================== -->
+  <div id="welcome-splash" class="fixed inset-0 z-50 malachite-stone flex flex-col justify-between px-6 py-5 text-white splash-transition">
+    <!-- Верхняя панель логотипа -->
+    <div class="flex items-center justify-between relative z-10">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-white/10 border border-emerald-300/25 flex items-center justify-center text-emerald-300">
+          <i data-lucide="gem" class="w-4 h-4"></i>
+        </div>
+        <span class="font-extrabold text-sm tracking-tight text-white">FinPulse</span>
+      </div>
+      <span id="splash-bank-pill" class="text-[11px] font-semibold px-3 py-1 rounded-full bg-black/25 text-emerald-300 border border-emerald-400/20">
+        Защита бюджета
+      </span>
+    </div>
+
+    <!-- Персональное приветствие -->
+    <div class="text-center space-y-1.5 my-auto relative z-10 pt-2">
+      <div id="splash-time-badge" class="text-[11px] font-bold uppercase tracking-widest text-emerald-300/90">
+        Добро пожаловать
+      </div>
+      <h1 id="splash-greeting-title" class="text-2xl font-extrabold tracking-tight text-white">
+        Рады видеть вас!
+      </h1>
+      <p id="splash-subtitle" class="text-xs text-emerald-100/75 max-w-[270px] mx-auto leading-relaxed">
+        Введите ваш 4-значный PIN-код для входа в бюджет
+      </p>
+
+      <!-- Индикатор 4 точек PIN-кода -->
+      <div id="pin-dots-wrap" class="flex items-center justify-center gap-4 pt-4 pb-1">
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-emerald-300/50 transition-all duration-150"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-emerald-300/50 transition-all duration-150"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-emerald-300/50 transition-all duration-150"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-emerald-300/50 transition-all duration-150"></span>
+      </div>
+      <div id="pin-error-hint" class="text-[11px] font-semibold text-amber-300 h-4"></div>
+    </div>
+
+    <!-- Блок 1: Цифровая клавиатура ввода/создания PIN -->
+    <div id="pin-keypad-section" class="space-y-4 relative z-10 pb-1">
+      <div class="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
+        <button type="button" onclick="pressPinDigit('1')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">1</button>
+        <button type="button" onclick="pressPinDigit('2')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">2</button>
+        <button type="button" onclick="pressPinDigit('3')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">3</button>
+        <button type="button" onclick="pressPinDigit('4')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">4</button>
+        <button type="button" onclick="pressPinDigit('5')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">5</button>
+        <button type="button" onclick="pressPinDigit('6')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">6</button>
+        <button type="button" onclick="pressPinDigit('7')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">7</button>
+        <button type="button" onclick="pressPinDigit('8')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">8</button>
+        <button type="button" onclick="pressPinDigit('9')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">9</button>
+        <div class="h-14"></div>
+        <button type="button" onclick="pressPinDigit('0')" class="pin-key h-14 rounded-2xl text-xl font-bold text-white tabular-nums">0</button>
+        <button type="button" onclick="backspacePin()" class="pin-key h-14 rounded-2xl flex items-center justify-center text-emerald-200">
+          <i data-lucide="delete" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="text-center">
+        <button id="forgot-pin-btn" type="button" onclick="openPinResetFlow()" class="text-xs font-semibold text-emerald-200/80 hover:text-white underline underline-offset-4 py-1">
+          Забыли PIN-код?
+        </button>
+      </div>
+    </div>
+
+    <!-- Блок 2: Восстановление PIN через код из Telegram -->
+    <div id="pin-reset-section" class="space-y-3 relative z-10 pb-2 hidden">
+      <div class="rounded-2xl bg-black/30 border border-emerald-300/20 p-4 space-y-3 text-left">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold text-emerald-300">Сброс PIN-кода через Telegram</span>
+          <button type="button" onclick="cancelPinReset()" class="text-[11px] text-emerald-100/70 underline">Назад</button>
+        </div>
+        <p id="pin-reset-desc" class="text-xs text-emerald-100/85 leading-relaxed">
+          Отправляем 6-значный код подтверждения в ваш чат с ботом в Telegram...
+        </p>
+        <input id="tg-reset-code-input" type="number" inputmode="numeric" placeholder="Введите 6-значный код из ТГ" class="w-full bg-white/10 border border-emerald-300/30 rounded-xl px-3.5 py-3 text-center text-lg font-extrabold tracking-widest text-white placeholder-emerald-200/40 tabular-nums focus:outline-none focus:border-emerald-300" />
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="requestTelegramResetCode()" class="py-2.5 rounded-xl bg-white/10 text-emerald-200 text-xs font-bold tap-scale">
+            Отправить ещё раз
+          </button>
+          <button type="button" onclick="verifyTelegramResetCode()" class="py-2.5 rounded-xl bg-white text-[#072D22] text-xs font-extrabold tap-scale">
+            Подтвердить
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Блок 3: Кнопка старта для нового пользователя (если профиль ещё не создан) -->
+    <div id="splash-first-run-section" class="space-y-3 pb-2 relative z-10 hidden">
+      <button type="button" onclick="startFirstOnboarding()" class="w-full py-4 rounded-2xl bg-white text-[#072D22] font-extrabold text-sm shadow-xl flex items-center justify-center gap-2 tap-scale">
+        <span>Создать профиль и PIN-код</span>
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+      <div class="text-center text-[11px] text-emerald-200/65">
+        Настройка займёт 20 секунд
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. ЭКРАН НАСТРОЙКИ ПРОФИЛЯ И СОЗДАНИЯ PIN ==================== -->
+  <div id="onboarding-modal" class="fixed inset-0 z-40 overflow-y-auto p-5 flex flex-col justify-between hidden" style="background-color: var(--bg-canvas);">
+    <div class="space-y-4 pb-6">
+      <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl malachite-stone flex items-center justify-center text-emerald-300">
+            <i data-lucide="gem" class="w-4 h-4"></i>
+          </div>
+          <span class="font-extrabold text-base tracking-tight text-main">Настройка профиля</span>
+        </div>
+        <button id="ob-close-btn" onclick="haptic('light'); closeOnboarding()" class="hidden w-8 h-8 rounded-full surface-card flex items-center justify-center text-sub tap-scale">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="malachite-stone rounded-3xl p-5 text-white space-y-1">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
+          Персональный профиль
+        </div>
+        <h2 class="text-xl font-extrabold tracking-tight">Добро пожаловать в FinPulse</h2>
+        <p class="text-xs text-emerald-100/80 leading-relaxed">Укажите имя, банк, остаток на карте и задайте 4-значный PIN-код для защиты ваших финансов.</p>
+      </div>
+
+      <div class="surface-card p-4 space-y-2">
+        <label class="text-[11px] font-bold text-sub uppercase tracking-wider">Как к вам обращаться?</label>
+        <input id="ob-name" type="text" placeholder="Например: Андрей" class="w-full muted-box rounded-xl px-3.5 py-3 text-base font-bold focus:outline-none focus:border-emerald-500" />
+      </div>
+
+      <div class="surface-card p-4 space-y-2.5">
+        <label class="text-[11px] font-bold text-sub uppercase tracking-wider">Основной банк</label>
+        <div class="grid grid-cols-2 gap-2" id="bank-grid">
+          <button type="button" data-bank="Т-Банк" onclick="selectBank(this, 'Т-Банк')" class="bank-btn p-3 rounded-2xl border-2 border-emerald-600 bg-emerald-500/10 flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-[#FFDD2D] text-[#111827] font-black text-sm flex items-center justify-center shrink-0">Т</span>
+            <span class="text-xs font-bold text-main">Т-Банк</span>
+          </button>
+
+          <button type="button" data-bank="Сбер" onclick="selectBank(this, 'Сбер')" class="bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-[#21A038] text-white font-black text-sm flex items-center justify-center shrink-0">С</span>
+            <span class="text-xs font-semibold text-main">Сбербанк</span>
+          </button>
+
+          <button type="button" data-bank="Альфа-Банк" onclick="selectBank(this, 'Альфа-Банк')" class="bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-[#EF3124] text-white font-black text-sm flex items-center justify-center shrink-0">А</span>
+            <span class="text-xs font-semibold text-main">Альфа-Банк</span>
+          </button>
+
+          <button type="button" data-bank="ВТБ" onclick="selectBank(this, 'ВТБ')" class="bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-[#002882] text-white font-black text-xs flex items-center justify-center shrink-0">ВТБ</span>
+            <span class="text-xs font-semibold text-main">ВТБ</span>
+          </button>
+
+          <button type="button" data-bank="Ozon Банк" onclick="selectBank(this, 'Ozon Банк')" class="bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-[#005BFF] text-white font-black text-sm flex items-center justify-center shrink-0">O</span>
+            <span class="text-xs font-semibold text-main">Ozon Банк</span>
+          </button>
+
+          <button type="button" data-bank="Другой" onclick="selectBank(this, 'Другой')" class="bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale">
+            <span class="w-8 h-8 rounded-xl bg-gray-500/20 text-main flex items-center justify-center shrink-0">
+              <i data-lucide="landmark" class="w-4 h-4"></i>
+            </span>
+            <span class="text-xs font-semibold text-main">Другой</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="surface-card p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-sub uppercase tracking-wider">На карте сейчас (₽)</label>
+            <input id="ob-balance" type="number" placeholder="25000" class="w-full muted-box rounded-xl px-3 py-2.5 text-base font-extrabold tabular-nums focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-[10px] font-bold text-sub uppercase tracking-wider">Дата зарплаты</label>
+            <input id="ob-payday" type="date" class="w-full muted-box rounded-xl px-3 py-2.5 text-xs font-bold focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div id="ob-pin-row" class="space-y-1.5 pt-1 border-t" style="border-color: var(--divider);">
+          <label class="text-[10px] font-bold text-sub uppercase tracking-wider">Придумайте PIN-код для входа (4 цифры)</label>
+          <input id="ob-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" class="w-full muted-box rounded-xl px-3.5 py-2.5 text-center text-xl font-extrabold tracking-[0.5em] tabular-nums focus:outline-none focus:border-emerald-500" />
+        </div>
+      </div>
+    </div>
+
+    <button onclick="saveOnboarding()" class="w-full py-4 rounded-2xl malachite-btn text-white font-bold text-sm tap-scale shrink-0">
+      Сохранить и войти
+    </button>
+  </div>
+
+  <!-- ==================== 3. ВЕРХНЯЯ ШАПКА ==================== -->
+  <header class="px-5 pt-4 pb-2 flex items-center justify-between">
+    <div class="min-w-0 cursor-pointer" onclick="haptic('light'); switchTabByName('settings')">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="header-bank-status" class="text-[11px] font-semibold text-sub truncate">Т-Банк • Автопилот</span>
+      </div>
+      <h2 id="personal-greeting" class="text-lg font-extrabold tracking-tight text-main truncate mt-0.5">
+        Привет!
+      </h2>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <button onclick="haptic('light'); switchTabByName('calendar')" class="h-9 px-3 rounded-full surface-card text-xs font-bold text-main flex items-center gap-1.5 tap-scale">
+        <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-accent"></i>
+        <span id="header-days-pill">12 дн.</span>
+      </button>
+      <button onclick="haptic('medium'); openAddSheet()" class="w-9 h-9 rounded-full malachite-btn text-white flex items-center justify-center tap-scale">
+        <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 4. ОСНОВНОЙ КОНТЕНТ ==================== -->
+  <main class="px-4 pt-2">
+    <!-- ВКЛАДКА 1: ПУЛЬС -->
+    <section id="tab-pulse" class="space-y-4">
+      <!-- Малахитовая карточка дневного лимита с индикатором темпа и сверкой -->
+      <div class="malachite-stone rounded-[26px] p-5 text-white">
+        <div class="flex items-center justify-between gap-2 relative z-10">
+          <span class="text-xs font-medium text-emerald-100/80">Безопасно сегодня</span>
+          <div class="flex items-center gap-1.5">
+            <span id="pace-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/25 tabular-nums">
+              В графике
+            </span>
+            <span id="used-pct-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/30 text-emerald-300 tabular-nums">
+              0%
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-2.5 mb-4 flex items-baseline justify-between relative z-10">
+          <div class="text-[34px] font-extrabold tracking-tight tabular-nums leading-none" id="daily-limit-value">0 ₽</div>
+          <div class="text-xs text-emerald-100/70 tabular-nums">из <span id="daily-total-label" class="text-white font-bold">0 ₽</span></div>
+        </div>
+
+        <div class="w-full h-2 bg-black/30 rounded-full overflow-hidden mb-4 p-0.5 relative z-10">
+          <div id="hero-progress-bar" class="h-full bg-emerald-400 rounded-full transition-all duration-500" style="width: 0%;"></div>
+        </div>
+
+        <!-- Три колонки: На карте (кликабельна для быстрой сверки!), Резерв, Сегодня -->
+        <div class="grid grid-cols-3 gap-2 pt-3 border-t border-white/15 relative z-10">
+          <button type="button" onclick="openBalanceSheet()" class="text-left group tap-scale">
+            <div class="text-[10px] uppercase tracking-wider text-emerald-100/65 font-semibold flex items-center gap-1">
+              <span>На карте</span>
+              <i data-lucide="pencil" class="w-2.5 h-2.5 text-emerald-300 opacity-80"></i>
+            </div>
+            <div id="period-balance-value" class="text-xs font-extrabold tabular-nums text-white mt-0.5">0 ₽</div>
+          </button>
+
+          <button type="button" onclick="switchTabByName('settings')" class="text-center tap-scale">
+            <div class="text-[10px] uppercase tracking-wider text-emerald-100/65 font-semibold flex items-center justify-center gap-1">
+              <i data-lucide="shield-check" class="w-3 h-3 text-emerald-300"></i>
+              <span>Резерв</span>
+            </div>
+            <div id="reserved-balance-value" class="text-xs font-extrabold tabular-nums text-amber-300 mt-0.5">0 ₽</div>
+          </button>
+
+          <div class="text-right">
+            <div class="text-[10px] uppercase tracking-wider text-emerald-100/65 font-semibold">Сегодня</div>
+            <div id="today-spent-label" class="text-xs font-extrabold tabular-nums text-emerald-300 mt-0.5">0 ₽</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Баннер «Пришла зарплата» (появляется в день ЗП или если до ЗП 1 день) -->
+      <div id="payday-ready-banner" class="surface-card p-4 flex items-center justify-between border border-emerald-500/30 hidden">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl malachite-stone text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-xs font-extrabold text-main">День зарплаты наступил</div>
+            <div class="text-[11px] text-sub">Обновите баланс и запустите новый цикл</div>
+          </div>
+        </div>
+        <button onclick="openPaydaySheet()" class="px-3.5 py-2 rounded-xl malachite-btn text-white text-xs font-bold shrink-0 tap-scale">
+          Новый цикл
+        </button>
+      </div>
+
+      <!-- Блок обязательных платежей -->
+      <div id="upcoming-bills-banner" class="surface-card p-4 space-y-2.5 hidden">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            </div>
+            <span class="text-xs font-extrabold text-main">Отложено на обязательные платежи</span>
+          </div>
+          <button onclick="openScheduledSheet()" class="text-[11px] font-bold text-accent tap-scale">+ Добавить</button>
+        </div>
+        <div id="upcoming-bills-list" class="space-y-1.5"></div>
+      </div>
+
+      <!-- ЖИВОЙ ГРАФИК РЕАЛЬНЫХ РАСХОДОВ -->
+      <div class="surface-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs font-medium text-sub">Реальные расходы</div>
+            <div class="flex items-baseline gap-2 mt-0.5">
+              <span id="scrub-amount" class="text-lg font-extrabold text-main tabular-nums">0 ₽</span>
+              <span id="scrub-day-label" class="text-xs font-semibold text-accent">Сегодня</span>
+            </div>
+          </div>
+
+          <div class="segmented-wrap grid-cols-3 w-44 text-[11px] font-semibold" id="chart-segmented">
+            <div id="chart-seg-pill" class="segmented-pill w-[calc(33.333%-2px)]" style="transform: translateX(0%);"></div>
+            <button onclick="selectChartPeriod(0, 'week')" class="segmented-btn py-1.5 text-main">7 дн.</button>
+            <button onclick="selectChartPeriod(1, 'cycle')" class="segmented-btn py-1.5 text-sub">Цикл</button>
+            <button onclick="selectChartPeriod(2, 'month')" class="segmented-btn py-1.5 text-sub">Месяц</button>
+          </div>
+        </div>
+
+        <div id="chart-touch-area" class="relative h-28 w-full touch-none cursor-crosshair pt-2">
+          <svg id="sparkline-svg" class="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="malachiteAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10B981" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#10B981" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path id="chart-area-path" fill="url(#malachiteAreaGrad)" />
+            <path id="chart-line-path" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line id="chart-cursor-line" x1="300" y1="0" x2="300" y2="100" stroke="#10B981" stroke-width="1" stroke-dasharray="3 3" opacity="0.45" />
+            <circle id="chart-cursor-dot" cx="300" cy="90" r="5" fill="#10B981" stroke="#FFFFFF" stroke-width="2.5" />
+          </svg>
+        </div>
+
+        <div id="chart-x-labels" class="flex justify-between text-[10px] font-semibold text-sub px-1"></div>
+      </div>
+
+      <!-- ЛЕНТА ОПЕРАЦИЙ С ПОИСКОМ И ФИЛЬТРАМИ -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-sub">Операции</h3>
+          <button onclick="toggleSearchBox()" class="flex items-center gap-1 text-[11px] font-bold text-accent tap-scale">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+            <span>Поиск</span>
+          </button>
+        </div>
+
+        <!-- Строка поиска (скрыта по умолчанию) -->
+        <div id="tx-search-wrap" class="hidden">
+          <div class="relative">
+            <input id="tx-search-input" type="text" oninput="renderPulse()" placeholder="Найти магазин или сумму..." class="w-full surface-card px-4 py-2.5 text-xs font-semibold text-main focus:outline-none focus:border-emerald-500" />
+            <button onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-sub">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Горизонтальные фильтры категорий -->
+        <div id="category-filter-pills" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
+
+        <!-- Скелетон при синхронизации -->
+        <div id="tx-skeleton" class="surface-card p-4 space-y-3 hidden">
+          <div class="h-10 rounded-xl skeleton-pulse"></div>
+          <div class="h-10 rounded-xl skeleton-pulse"></div>
+        </div>
+
+        <!-- Список операций -->
+        <div id="transactions-list" class="surface-card divide-y divide-theme overflow-hidden"></div>
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА 2: КАЛЕНДАРЬ -->
+    <section id="tab-calendar" class="space-y-4 hidden">
+      <div class="pt-1 px-1 flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-extrabold text-main tracking-tight">Календарь бюджета</h2>
+          <p id="cal-payday-hint" class="text-xs text-sub font-medium">Зарплата и списания отмечены на сетке</p>
+        </div>
+        <div class="flex items-center gap-1 surface-card rounded-full p-1">
+          <button onclick="changeCalendarMonth(-1)" class="w-7 h-7 rounded-full flex items-center justify-center text-sub tap-scale">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <span id="cal-month-title" class="text-xs font-bold text-main px-1.5 min-w-[96px] text-center">Ноябрь 2026</span>
+          <button onclick="changeCalendarMonth(1)" class="w-7 h-7 rounded-full flex items-center justify-center text-sub tap-scale">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="surface-card p-4 space-y-3">
+        <div class="grid grid-cols-7 text-center text-[10px] font-bold uppercase text-sub">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+        </div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5"></div>
+
+        <div class="pt-2 border-t flex items-center justify-between text-[10px] font-medium text-sub px-1" style="border-color: var(--divider);">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Траты</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span>Платёж</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#0C4A38] ring-2 ring-emerald-400/50"></span>
+            <span>День ЗП</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between px-1">
+          <h3 id="cal-selected-date-title" class="text-xs font-bold uppercase tracking-wider text-sub">Сегодня</h3>
+          <span id="cal-selected-day-sum" class="text-xs font-extrabold text-main tabular-nums">0 ₽</span>
+        </div>
+        <div id="cal-day-scheduled" class="space-y-2"></div>
+        <div id="cal-day-transactions" class="surface-card divide-y divide-theme overflow-hidden"></div>
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА 3: СОВЕТНИК -->
+    <section id="tab-advisor" class="space-y-4 hidden">
+      <div class="pt-1 px-1">
+        <h2 class="text-xl font-extrabold text-main tracking-tight">Умный советник</h2>
+        <p class="text-xs text-sub">Автоматический анализ ваших привычек</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div class="surface-card p-4">
+          <div class="text-[11px] font-medium text-sub">Средний чек</div>
+          <div id="stat-avg-check" class="text-lg font-extrabold text-main tabular-nums mt-1">0 ₽</div>
+        </div>
+        <div class="surface-card p-4">
+          <div class="text-[11px] font-medium text-sub">Резерв платежей</div>
+          <div id="stat-reserved-check" class="text-lg font-extrabold text-accent tabular-nums mt-1">0 ₽</div>
+        </div>
+      </div>
+
+      <div class="segmented-wrap grid-cols-3 text-xs font-semibold">
+        <div id="tone-seg-pill" class="segmented-pill w-[calc(33.333%-2px)]" style="transform: translateX(0%);"></div>
+        <button onclick="setAdvisorTone(0, 'facts')" class="segmented-btn py-2 text-main">Сухие факты</button>
+        <button onclick="setAdvisorTone(1, 'coach')" class="segmented-btn py-2 text-sub">Коуч</button>
+        <button onclick="setAdvisorTone(2, 'strict')" class="segmented-btn py-2 text-sub">Критик</button>
+      </div>
+
+      <div id="advisor-cards" class="space-y-2.5"></div>
+    </section>
+
+    <!-- ВКЛАДКА 4: ПРОФИЛЬ, ТЕМА И БЕЗОПАСНОСТЬ -->
+    <section id="tab-settings" class="space-y-4 hidden">
+      <div class="pt-1 px-1">
+        <h2 class="text-xl font-extrabold text-main tracking-tight">Профиль и защита</h2>
+        <p class="text-xs text-sub">Личные параметры, тема и PIN-код</p>
+      </div>
+
+      <!-- Карточка пользователя -->
+      <div class="surface-card p-4 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl malachite-stone text-white font-extrabold text-base flex items-center justify-center" id="profile-avatar-letter">
+              А
+            </div>
+            <div>
+              <div id="profile-name-display" class="text-base font-extrabold text-main">Андрей</div>
+              <div id="profile-bank-display" class="text-xs font-medium text-sub">Банк: Т-Банк</div>
+            </div>
+          </div>
+          <button onclick="haptic('light'); openOnboarding(true)" class="px-3 py-1.5 rounded-xl muted-box text-xs font-bold tap-scale">
+            Изменить
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t text-xs" style="border-color: var(--divider);">
+          <button onclick="openBalanceSheet()" class="muted-box rounded-xl p-2.5 text-left tap-scale">
+            <div class="text-[10px] text-sub font-semibold uppercase flex items-center justify-between">
+              <span>На карте</span>
+              <i data-lucide="pencil" class="w-3 h-3 text-accent"></i>
+            </div>
+            <div id="profile-balance-display" class="text-sm font-extrabold text-main tabular-nums mt-0.5">0 ₽</div>
+          </button>
+          <button onclick="openPaydaySheet()" class="muted-box rounded-xl p-2.5 text-left tap-scale">
+            <div class="text-[10px] text-sub font-semibold uppercase flex items-center justify-between">
+              <span>Зарплата</span>
+              <i data-lucide="refresh-cw" class="w-3 h-3 text-accent"></i>
+            </div>
+            <div id="profile-payday-display" class="text-sm font-extrabold text-accent mt-0.5">28 ноя</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ОФОРМЛЕНИЕ: ОБСИДИАН И МАЛАХИТ -->
+      <div class="surface-card p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold text-main">Оформление интерфейса</span>
+          <span class="text-[11px] text-sub">Малахит</span>
+        </div>
+        <div class="segmented-wrap grid-cols-3 text-xs font-semibold" id="theme-segmented">
+          <div id="theme-seg-pill" class="segmented-pill w-[calc(33.333%-2px)]" style="transform: translateX(0%);"></div>
+          <button onclick="setThemeMode('auto')" class="segmented-btn py-2 text-main">Авто</button>
+          <button onclick="setThemeMode('dark')" class="segmented-btn py-2 text-sub">Обсидиан</button>
+          <button onclick="setThemeMode('light')" class="segmented-btn py-2 text-sub">Светлая</button>
+        </div>
+      </div>
+
+      <!-- БЕЗОПАСНОСТЬ И PIN-КОД -->
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-accent flex items-center justify-center">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-main">Вход по PIN-коду</h3>
+              <p id="pin-status-label" class="text-[11px] text-sub">Включён (4 цифры)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="triggerChangePin()" class="px-3 py-1.5 rounded-xl muted-box text-xs font-bold tap-scale">
+              Сменить
+            </button>
+            <button onclick="lockAppNow()" class="p-2 rounded-xl malachite-btn text-white tap-scale" title="Заблокировать экран">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-300"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ (ПОВТОРЯЮЩИЕСЯ И РАЗОВЫЕ) -->
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-extrabold text-main">Обязательные платежи</h3>
+            <p class="text-[11px] text-sub">Резервируются из дневного лимита</p>
+          </div>
+          <button onclick="haptic('light'); openScheduledSheet()" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-accent text-xs font-bold tap-scale">
+            + Добавить
+          </button>
+        </div>
+        <div id="settings-scheduled-list" class="space-y-2"></div>
+      </div>
+
+      <!-- Запомненные магазины -->
+      <div class="surface-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-main">Запомненные магазины</h3>
+          <span id="rules-count" class="text-xs font-bold text-sub">0</span>
+        </div>
+        <div id="rules-list" class="space-y-2"></div>
+      </div>
+
+      <!-- ПАНЕЛЬ АДМИНИСТРАТОРА (Видна только для ID 8141670312) -->
+      <div id="admin-section" class="surface-card p-4 space-y-3 border border-emerald-500/30 hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-main">Панель владельца</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-accent">ID: 8141670312</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5 text-center">
+          <div class="muted-box rounded-xl p-3">
+            <div id="admin-users-count" class="text-lg font-extrabold text-main tabular-nums">0</div>
+            <div class="text-[11px] text-sub">Пользователей</div>
+          </div>
+          <div class="muted-box rounded-xl p-3">
+            <div id="admin-tx-count" class="text-lg font-extrabold text-accent tabular-nums">0</div>
+            <div class="text-[11px] text-sub">Операций</div>
+          </div>
+        </div>
+        <div id="admin-testers-list" class="space-y-1.5"></div>
+        <div class="pt-2 border-t space-y-1.5" style="border-color: var(--divider);">
+          <label class="text-[10px] font-bold text-sub uppercase">Адрес сервера Google Таблицы</label>
+          <div class="flex gap-2">
+            <input id="backend-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 muted-box rounded-xl px-3 py-2 text-xs" />
+            <button onclick="haptic('medium'); saveBackendUrl()" class="px-3.5 py-2 rounded-xl malachite-btn text-white text-xs font-bold tap-scale">OK</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto frosted-tabbar px-4 pt-2 pb-1.5 flex items-center justify-around z-30">
+    <button data-tab="pulse" onclick="switchTab('pulse', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-accent tap-scale">
+      <i data-lucide="gem" class="w-5 h-5 stroke-[2.2]"></i>
+      <span class="text-[10px] font-bold">Пульс</span>
+    </button>
+    <button data-tab="calendar" onclick="switchTab('calendar', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-sub tap-scale">
+      <i data-lucide="calendar-days" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Календарь</span>
+    </button>
+    <button data-tab="advisor" onclick="switchTab('advisor', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-sub tap-scale">
+      <i data-lucide="sparkles" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Советник</span>
+    </button>
+    <button data-tab="settings" onclick="switchTab('settings', this)" class="nav-btn flex flex-col items-center gap-1 py-1 px-3 text-sub tap-scale">
+      <i data-lucide="user" class="w-5 h-5 stroke-[2]"></i>
+      <span class="text-[10px] font-medium">Профиль</span>
+    </button>
+  </nav>
+
+  <!-- ==================== ШТОРКИ И МОДАЛЬНЫЕ ОКНА ==================== -->
+
+  <!-- Шторка редактирования / удаления операции -->
+  <div id="category-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAllSheets()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-400/30 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="sheet-tx-icon-wrap"></div>
+          <div>
+            <h3 id="sheet-tx-merchant" class="text-base font-bold text-main">Магазин</h3>
+            <p id="sheet-tx-meta" class="text-xs text-sub"></p>
+          </div>
+        </div>
+        <button onclick="haptic('light'); closeAllSheets()" class="w-8 h-8 rounded-full muted-box flex items-center justify-center text-sub tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="category-grid" class="grid grid-cols-3 gap-2"></div>
+      <button onclick="deleteSelectedTransaction()" class="w-full py-3 rounded-2xl bg-red-500/15 text-red-500 text-xs font-bold flex items-center justify-center gap-1.5 tap-scale">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        <span>Удалить операцию и скорректировать остаток</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Шторка сверки остатка на карте -->
+  <div id="balance-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAllSheets()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-400/30 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-main">Сверка остатка с картой</h3>
+        <button onclick="haptic('light'); closeAllSheets()" class="w-8 h-8 rounded-full muted-box flex items-center justify-center text-sub tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-sub">Укажите точную сумму, которая сейчас отображается в приложении вашего банка — дневной лимит пересчитается мгновенно.</p>
+      <input id="reconcile-balance-input" type="number" placeholder="22500" class="w-full muted-box rounded-2xl px-4 py-3.5 text-2xl font-extrabold text-main tabular-nums focus:outline-none focus:border-emerald-500" />
+      <button onclick="submitReconcileBalance()" class="w-full py-3.5 rounded-2xl malachite-btn text-white font-bold text-sm tap-scale">
+        Обновить остаток
+      </button>
+    </div>
+  </div>
+
+  <!-- Шторка «Пришла зарплата / Новый цикл» -->
+  <div id="payday-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAllSheets()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-400/30 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-main">Пришла зарплата • Новый цикл</h3>
+        <button onclick="haptic('light'); closeAllSheets()" class="w-8 h-8 rounded-full muted-box flex items-center justify-center text-sub tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-sub">Введите сумму поступления и дату следующей выплаты — деньги прибавятся к остатку, а график лимита обновится.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-bold text-sub uppercase">Сумма поступления (₽)</label>
+          <input id="payday-salary-input" type="number" placeholder="45000" class="w-full muted-box rounded-2xl px-4 py-3 text-xl font-extrabold text-main tabular-nums mt-1 focus:outline-none focus:border-emerald-500" />
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-sub uppercase">Следующая зарплата / аванс</label>
+          <input id="payday-next-date-input" type="date" class="w-full muted-box rounded-2xl px-4 py-3 text-sm font-bold text-main mt-1 focus:outline-none focus:border-emerald-500" />
+        </div>
+      </div>
+      <button onclick="submitNewCycle()" class="w-full py-3.5 rounded-2xl malachite-btn text-white font-bold text-sm tap-scale">
+        Зачислить и начать цикл
+      </button>
+    </div>
+  </div>
+
+  <!-- Шторка добавления обязательного платежа (с повтором) -->
+  <div id="scheduled-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAllSheets()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-400/30 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-main">Новый обязательный платёж</h3>
+        <button onclick="haptic('light'); closeAllSheets()" class="w-8 h-8 rounded-full muted-box flex items-center justify-center text-sub tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3">
+        <input id="sched-title" type="text" placeholder="Название (Аренда, Кредит, Яндекс Плюс)" class="w-full muted-box rounded-2xl px-3.5 py-3 text-sm font-semibold text-main focus:outline-none focus:border-emerald-500" />
+        <div class="grid grid-cols-2 gap-2">
+          <input id="sched-amount" type="number" placeholder="Сумма ₽" class="w-full muted-box rounded-2xl px-3.5 py-3 text-sm font-extrabold text-main tabular-nums focus:outline-none focus:border-emerald-500" />
+          <input id="sched-date" type="date" class="w-full muted-box rounded-2xl px-3.5 py-3 text-xs font-bold text-main focus:outline-none focus:border-emerald-500" />
+        </div>
+        <label class="flex items-center justify-between muted-box rounded-2xl px-4 py-3 cursor-pointer">
+          <div>
+            <div class="text-xs font-bold text-main">Повторять ежемесячно</div>
+            <div class="text-[10px] text-sub">После оплаты автоматически перенесётся на следующий месяц</div>
+          </div>
+          <input id="sched-recurring" type="checkbox" checked class="w-5 h-5 accent-emerald-600 rounded" />
+        </label>
+      </div>
+      <button onclick="saveScheduledPayment()" class="w-full py-3.5 rounded-2xl malachite-btn text-white font-bold text-sm tap-scale">
+        Зарезервировать сумму
+      </button>
+    </div>
+  </div>
+
+  <!-- Шторка добавления Расхода или Пополнения -->
+  <div id="add-sheet" class="fixed inset-0 z-40 hidden">
+    <div onclick="closeAllSheets()" class="sheet-backdrop absolute inset-0"></div>
+    <div class="sheet-card absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
+      <div class="w-10 h-1 bg-gray-400/30 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-main">Новая запись</h3>
+        <button onclick="haptic('light'); closeAllSheets()" class="w-8 h-8 rounded-full muted-box flex items-center justify-center text-sub tap-scale"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <!-- Переключатель Расход / Пополнение -->
+      <div class="segmented-wrap grid-cols-2 text-xs font-bold" id="tx-type-segmented">
+        <div id="tx-type-pill" class="segmented-pill w-[calc(50%-3px)]" style="transform: translateX(0%);"></div>
+        <button type="button" onclick="setAddTxType('expense')" class="segmented-btn py-2 text-main">Расход</button>
+        <button type="button" onclick="setAddTxType('income')" class="segmented-btn py-2 text-sub">Пополнение</button>
+      </div>
+
+      <!-- Форма расхода -->
+      <div id="add-expense-pane" class="space-y-3">
+        <p class="text-xs text-sub">Вставьте уведомление от банка или надиктуйте голосом (например: <em>«Пятёрочка 650 и такси 420»</em>).</p>
+        <textarea id="ai-smart-input" rows="3" placeholder="Вставьте пуш или продиктуйте траты..." class="w-full muted-box rounded-2xl p-3.5 text-sm text-main focus:outline-none focus:border-emerald-500"></textarea>
+        <button id="smart-submit-btn" onclick="processSmartInput()" class="w-full py-3.5 rounded-2xl malachite-btn text-white font-bold text-sm flex items-center justify-center gap-2 tap-scale">
+          <i data-lucide="sparkles" class="w-4 h-4 text-emerald-300"></i>
+          <span>Распознать и записать</span>
+        </button>
+      </div>
+
+      <!-- Форма пополнения -->
+      <div id="add-income-pane" class="space-y-3 hidden">
+        <input id="income-title-input" type="text" placeholder="Откуда (например: Аванс, Возврат долга, Кэшбэк)" class="w-full muted-box rounded-2xl px-3.5 py-3 text-sm font-semibold text-main focus:outline-none focus:border-emerald-500" />
+        <input id="income-amount-input" type="number" placeholder="Сумма пополнения ₽" class="w-full muted-box rounded-2xl px-3.5 py-3 text-xl font-extrabold text-emerald-500 tabular-nums focus:outline-none focus:border-emerald-500" />
+        <button onclick="submitIncome()" class="w-full py-3.5 rounded-2xl malachite-btn text-white font-bold text-sm flex items-center justify-center gap-2 tap-scale">
+          <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-300"></i>
+          <span>Зачислить на карту</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 malachite-stone text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 flex items-center gap-2">
+    <span class="w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+    <span id="toast-text">Готово</span>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    function haptic(style = 'light') {
+      try {
+        if (tg?.HapticFeedback) {
+          if (style === 'selection') tg.HapticFeedback.selectionChanged();
+          else if (['success', 'warning', 'error'].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+          else tg.HapticFeedback.impactOccurred(style);
+        } else if (navigator.vibrate) {
+          navigator.vibrate(style === 'heavy' ? 22 : style === 'medium' ? 14 : 7);
+        }
+      } catch (e) {}
+    }
+
+    const ADMIN_ID = '8141670312';
+    const CURRENT_USER_ID = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : ADMIN_ID;
+    const TG_FIRST_NAME = tg?.initDataUnsafe?.user?.first_name || '';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('api')) {
+      localStorage.setItem('finpulse_backend_url', urlParams.get('api'));
+    }
+
+    const DEFAULT_BACKEND_URL = '';
+    function getApiUrl() {
+      return localStorage.getItem('finpulse_backend_url') || DEFAULT_BACKEND_URL;
+    }
+
+    // ==================== ТЕМА «ОБСИДИАН И МАЛАХИТ» ====================
+    function applyTheme(mode) {
+      const savedMode = mode || localStorage.getItem('finpulse_theme') || 'auto';
+      localStorage.setItem('finpulse_theme', savedMode);
+
+      let isDark = false;
+      if (savedMode === 'dark') isDark = true;
+      else if (savedMode === 'light') isDark = false;
+      else isDark = tg?.colorScheme === 'dark';
+
+      document.documentElement.classList.toggle('dark', isDark);
+
+      const idx = savedMode === 'auto' ? 0 : savedMode === 'dark' ? 1 : 2;
+      const pill = document.getElementById('theme-seg-pill');
+      if (pill) pill.style.transform = `translateX(${idx * 100}%)`;
+      document.querySelectorAll('#theme-segmented .segmented-btn').forEach((b, i) => {
+        b.className = `segmented-btn py-2 ${i === idx ? 'text-main' : 'text-sub'}`;
+      });
+
+      if (tg) {
+        const bg = isDark ? '#0B0F0E' : '#F1F5F3';
+        tg.setBackgroundColor(bg);
+        if (document.getElementById('welcome-splash').classList.contains('hidden')) {
+          tg.setHeaderColor(bg);
+        } else {
+          tg.setHeaderColor('#072D22');
+        }
+      }
+    }
+
+    function setThemeMode(mode) {
+      haptic('selection');
+      applyTheme(mode);
+    }
+
+    if (tg) {
+      tg.onEvent('themeChanged', () => applyTheme());
+    }
+
+    // ==================== СИСТЕМНАЯ КНОПКА «НАЗАД» TELEGRAM ====================
+    function syncTelegramBackButton() {
+      if (!tg?.BackButton) return;
+      const anySheetOpen = [
+        'category-sheet',
+        'balance-sheet',
+        'payday-sheet',
+        'scheduled-sheet',
+        'add-sheet'
+      ].some(id => !document.getElementById(id).classList.contains('hidden'));
+
+      const obOpen = !document.getElementById('onboarding-modal').classList.contains('hidden') &&
+                     !document.getElementById('ob-close-btn').classList.contains('hidden');
+
+      if (anySheetOpen || obOpen) {
+        tg.BackButton.show();
+      } else {
+        tg.BackButton.hide();
+      }
+    }
+
+    if (tg?.BackButton) {
+      tg.BackButton.onClick(() => {
+        haptic('light');
+        closeAllSheets();
+        if (!document.getElementById('ob-close-btn').classList.contains('hidden')) {
+          closeOnboarding();
+        }
+      });
+    }
+
+    function closeAllSheets() {
+      ['category-sheet', 'balance-sheet', 'payday-sheet', 'scheduled-sheet', 'add-sheet'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      syncTelegramBackButton();
+    }
+
+    // ==================== ДАТЫ И ФОРМАТИРОВАНИЕ ====================
+    function toLocalDateStr(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function shiftDateStr(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return toLocalDateStr(d);
+    }
+
+    function addOneMonthStr(dateStr) {
+      const parts = (dateStr || TODAY_STR).split('-');
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      d.setMonth(d.getMonth() + 1);
+      return toLocalDateStr(d);
+    }
+
+    const TODAY_STR = shiftDateStr(0);
+    const YESTERDAY_STR = shiftDateStr(-1);
+
+    function fmtNum(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+    function fmt(n) { return fmtNum(n) + ' ₽'; }
+
+    // Плавная анимация набегания цифр
+    function animateNumber(el, targetValue, prefix = '', suffix = ' ₽', duration = 550) {
+      if (!el) return;
+      const startVal = Number(el.dataset.curVal || 0);
+      el.dataset.curVal = targetValue;
+      if (startVal === targetValue) {
+        el.textContent = `${prefix}${fmtNum(targetValue)}${suffix}`;
+        return;
+      }
+      const startTime = performance.now();
+      function step(now) {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(startVal + (targetValue - startVal) * eased);
+        el.textContent = `${prefix}${fmtNum(current)}${suffix}`;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ==================== ЛОГОТИПЫ МАГАЗИНОВ И БАНКОВ ====================
+    function getStoreLogoHTML(merchant, category, txType = 'expense') {
+      if (txType === 'income') {
+        return `<div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0"><i data-lucide="arrow-down-left" class="w-5 h-5"></i></div>`;
+      }
+
+      const m = (merchant || '').toLowerCase();
+      if (m.includes('пятёроч') || m.includes('пятероч') || m.includes('pyaterochka')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#E52322] text-white flex items-center justify-center shrink-0 font-black text-base">5</div>`;
+      }
+      if (m.includes('магнит') || m.includes('magnit')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#E60012] text-white flex items-center justify-center shrink-0 font-black text-base">М</div>`;
+      }
+      if (m.includes('вкусвилл') || m.includes('vkusvill')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#1E8E3E] text-white flex items-center justify-center shrink-0 font-extrabold text-xs tracking-tighter">ВВ</div>`;
+      }
+      if (m.includes('перекрёст') || m.includes('перекрест') || m.includes('perekrestok')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#007A33] text-white flex items-center justify-center shrink-0"><i data-lucide="clover" class="w-5 h-5"></i></div>`;
+      }
+      if (m.includes('яндекс go') || m.includes('яндекс такс') || m.includes('yandex.go') || m.includes('такси') || m.includes('uber')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#FFCC00] text-[#111827] flex items-center justify-center shrink-0 font-black text-xs">GO</div>`;
+      }
+      if (m.includes('яндекс') || m.includes('yandex')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#FC3F1D] text-white flex items-center justify-center shrink-0 font-black text-base">Я</div>`;
+      }
+      if (m.includes('surf') || m.includes('кофе') || m.includes('coffee') || m.includes('stars')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#1F2937] text-amber-300 flex items-center justify-center shrink-0"><i data-lucide="coffee" class="w-5 h-5"></i></div>`;
+      }
+      if (m.includes('вкусно') || m.includes('бургер') || m.includes('burger') || m.includes('kfc') || m.includes('rostic')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#EA580C] text-white flex items-center justify-center shrink-0"><i data-lucide="utensils" class="w-5 h-5"></i></div>`;
+      }
+      if (m.includes('wildberries') || m.includes('вайлдберриз') || m.includes('вб')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#9B1892] text-white flex items-center justify-center shrink-0 font-extrabold text-xs">WB</div>`;
+      }
+      if (m.includes('ozon') || m.includes('озон')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#005BFF] text-white flex items-center justify-center shrink-0 font-black text-sm">O</div>`;
+      }
+      if (m.includes('аптек') || m.includes('вита') || m.includes('ригла') || m.includes('apteka')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#059669] text-white flex items-center justify-center shrink-0 font-black text-lg">+</div>`;
+      }
+      if (m.includes('аренд') || m.includes('квартир') || m.includes('жкх')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#0C4A38] text-emerald-300 flex items-center justify-center shrink-0"><i data-lucide="home" class="w-5 h-5"></i></div>`;
+      }
+      if (m.includes('сбер') || m.includes('sber')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#21A038] text-white flex items-center justify-center shrink-0 font-black text-base">С</div>`;
+      }
+      if (m.includes('т-банк') || m.includes('тинькофф') || m.includes('tinkoff')) {
+        return `<div class="w-10 h-10 rounded-2xl bg-[#FFDD2D] text-[#111827] flex items-center justify-center shrink-0 font-black text-base">Т</div>`;
+      }
+
+      const cat = CATEGORIES[category] || CATEGORIES.other;
+      return `
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style="background:${cat.bg}; color:${cat.color}">
+          <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+        </div>
+      `;
+    }
+
+    const CATEGORIES = {
+      food: { id: 'food', name: 'Продукты', icon: 'shopping-bag', color: '#10B981', bg: 'rgba(16,185,129,0.14)' },
+      cafe: { id: 'cafe', name: 'Кафе и кофе', icon: 'coffee', color: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
+      taxi: { id: 'taxi', name: 'Такси и авто', icon: 'car', color: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
+      subs: { id: 'subs', name: 'Подписки', icon: 'repeat', color: '#8B5CF6', bg: 'rgba(139,92,246,0.14)' },
+      health: { id: 'health', name: 'Здоровье', icon: 'heart-pulse', color: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
+      other: { id: 'other', name: 'Разное', icon: 'layers', color: '#64748B', bg: 'rgba(100,116,139,0.14)' }
+    };
+
+    function getDefaultPaydayStr() {
+      return shiftDateStr(12);
+    }
+
+    function calcDaysUntil(dateStr) {
+      if (!dateStr) return 12;
+      const target = new Date(dateStr + 'T00:00:00');
+      const now = new Date(TODAY_STR + 'T00:00:00');
+      const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+      return Math.max(1, diff);
+    }
+
+    const DEMO_TRANSACTIONS = [
+      { id: 'd1', merchant: 'Пятёрочка', raw: 'PYATEROCHKA 4120', amount: 450, category: 'food', type: 'expense', source: 'Т-Банк', dateStr: TODAY_STR, isToday: true },
+      { id: 'd2', merchant: 'Surf Coffee', raw: 'SURF COFFEE', amount: 200, category: 'cafe', type: 'expense', source: 'Т-Банк', dateStr: TODAY_STR, isToday: true },
+      { id: 'd3', merchant: 'Яндекс Go', raw: 'YANDEX.GO', amount: 640, category: 'taxi', type: 'expense', source: 'Т-Банк', dateStr: YESTERDAY_STR, isToday: false },
+      { id: 'd4', merchant: 'Ozon', raw: 'OZON.RU', amount: 1190, category: 'other', type: 'expense', source: 'Т-Банк', dateStr: shiftDateStr(-2), isToday: false },
+      { id: 'd5', merchant: 'Кэшбэк банка', raw: 'CASHBACK', amount: 850, category: 'other', type: 'income', source: 'Пополнение', dateStr: shiftDateStr(-3), isToday: false }
+    ];
+
+    const DEMO_SCHEDULED = [
+      { id: 's1', title: 'Яндекс Плюс', amount: 399, due_date: shiftDateStr(3), category: 'subs', is_paid: false, is_recurring: true }
+    ];
+
+    const DEMO_INSIGHTS = [
+      { tag: 'Темп бюджета', title: 'Вы расходуете деньги спокойнее плана', text: 'Обязательные платежи уже зарезервированы, а дневной запас позволяет спокойно совершать повседневные покупки.' },
+      { tag: 'Рекомендация', title: 'Сверяйте баланс в одно нажатие', text: 'Нажмите прямо на цифру «На карте» в малахитовой карточке, если нужно быстро подравнять остаток с банковским приложением.' }
+    ];
+
+    function loadSavedScheduled() {
+      try {
+        const raw = localStorage.getItem('finpulse_scheduled');
+        return raw ? JSON.parse(raw) : [...DEMO_SCHEDULED];
+      } catch (e) {
+        return [...DEMO_SCHEDULED];
+      }
+    }
+
+    function persistScheduled(list) {
+      localStorage.setItem('finpulse_scheduled', JSON.stringify(list));
+    }
+
+    let state = {
+      userName: localStorage.getItem('finpulse_user_name') || TG_FIRST_NAME || 'Андрей',
+      paydayDate: localStorage.getItem('finpulse_payday') || getDefaultPaydayStr(),
+      user: {
+        balance: Number(localStorage.getItem('finpulse_balance')) || 22200,
+        days_left: calcDaysUntil(localStorage.getItem('finpulse_payday') || getDefaultPaydayStr()),
+        bank: localStorage.getItem('finpulse_bank') || 'Т-Банк'
+      },
+      transactions: [...DEMO_TRANSACTIONS],
+      scheduled: loadSavedScheduled(),
+      rules: [
+        { raw: 'PYATEROCHKA 4120', clean: 'Пятёрочка', category: 'food' },
+        { raw: 'YANDEX.GO', clean: 'Яндекс Go', category: 'taxi' }
+      ],
+      insights: [...DEMO_INSIGHTS],
+      selectedTxId: null,
+      selectedBank: localStorage.getItem('finpulse_bank') || 'Т-Банк',
+      chartPeriod: 'week',
+      scrubIdx: 6,
+      calYear: new Date().getFullYear(),
+      calMonth: new Date().getMonth(),
+      calSelectedDate: TODAY_STR,
+      categoryFilter: 'all',
+      addTxType: 'expense',
+      // PIN-код
+      savedPin: localStorage.getItem('finpulse_pin') || '',
+      pinBuffer: '',
+      pinMode: 'login', // 'login' | 'create_new' | 'confirm_new'
+      tempNewPin: '',
+      localDemoResetCode: ''
+    };
+
+    function getTimeGreeting() {
+      const h = new Date().getHours();
+      if (h >= 5 && h < 12) return 'Доброе утро';
+      if (h >= 12 && h < 18) return 'Добрый день';
+      if (h >= 18 && h < 23) return 'Добрый вечер';
+      return 'Доброй ночи';
+    }
+
+    function formatHumanDate(dateStr) {
+      if (!dateStr) return '';
+      if (dateStr === TODAY_STR) return 'Сегодня';
+      if (dateStr === YESTERDAY_STR) return 'Вчера';
+      const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+      const parts = dateStr.split('-');
+      return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1]}`;
+    }
+
+    function formatShortDayMonth(dateStr) {
+      if (dateStr === TODAY_STR) return 'Сег';
+      const parts = dateStr.split('-');
+      return `${parts[2]}.${parts[1]}`;
+    }
+
+    // ==================== СИСТЕМА PIN-КОДА И ВОССТАНОВЛЕНИЯ ИЗ TELEGRAM ====================
+    function configureLockScreen() {
+      const isOnboarded = localStorage.getItem('finpulse_onboarded') === '1';
+      const greeting = getTimeGreeting();
+      document.getElementById('splash-time-badge').textContent = greeting;
+      document.getElementById('splash-bank-pill').textContent = `${state.selectedBank} • Малахит`;
+
+      if (!isOnboarded) {
+        document.getElementById('splash-greeting-title').textContent = 'Добро пожаловать в FinPulse';
+        document.getElementById('splash-subtitle').textContent = 'Умный контроль бюджета с защитой обязательных платежей';
+        document.getElementById('pin-dots-wrap').classList.add('hidden');
+        document.getElementById('pin-keypad-section').classList.add('hidden');
+        document.getElementById('pin-reset-section').classList.add('hidden');
+        document.getElementById('splash-first-run-section').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('splash-first-run-section').classList.add('hidden');
+      document.getElementById('pin-reset-section').classList.add('hidden');
+      document.getElementById('pin-dots-wrap').classList.remove('hidden');
+      document.getElementById('pin-keypad-section').classList.remove('hidden');
+
+      state.pinBuffer = '';
+      updatePinDotsUI();
+
+      if (!state.savedPin) {
+        state.pinMode = 'create_new';
+        document.getElementById('splash-greeting-title').textContent = `${greeting}, ${state.userName}!`;
+        document.getElementById('splash-subtitle').textContent = 'Придумайте новый 4-значный PIN-код для входа';
+        document.getElementById('forgot-pin-btn').classList.add('hidden');
+      } else {
+        state.pinMode = 'login';
+        document.getElementById('splash-greeting-title').textContent = `${greeting}, ${state.userName}!`;
+        document.getElementById('splash-subtitle').textContent = 'Введите ваш 4-значный PIN-код';
+        document.getElementById('forgot-pin-btn').classList.remove('hidden');
+      }
+    }
+
+    function startFirstOnboarding() {
+      haptic('medium');
+      document.getElementById('welcome-splash').classList.add('hidden');
+      openOnboarding(false);
+    }
+
+    function updatePinDotsUI(isError = false) {
+      const dots = document.querySelectorAll('#pin-dots-wrap .pin-dot');
+      dots.forEach((dot, idx) => {
+        if (isError) {
+          dot.className = 'pin-dot w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-amber-300 scale-110 transition-all';
+        } else if (idx < state.pinBuffer.length) {
+          dot.className = 'pin-dot w-3.5 h-3.5 rounded-full bg-emerald-300 border-2 border-emerald-200 scale-110 transition-all';
+        } else {
+          dot.className = 'pin-dot w-3.5 h-3.5 rounded-full border-2 border-emerald-300/45 transition-all';
+        }
+      });
+    }
+
+    function pressPinDigit(digit) {
+      if (state.pinBuffer.length >= 4) return;
+      haptic('light');
+      document.getElementById('pin-error-hint').textContent = '';
+      state.pinBuffer += digit;
+      updatePinDotsUI();
+
+      if (state.pinBuffer.length === 4) {
+        setTimeout(() => handlePinComplete(), 140);
+      }
+    }
+
+    function backspacePin() {
+      if (state.pinBuffer.length === 0) return;
+      haptic('light');
+      state.pinBuffer = state.pinBuffer.slice(0, -1);
+      updatePinDotsUI();
+    }
+
+    async function handlePinComplete() {
+      const code = state.pinBuffer;
+
+      if (state.pinMode === 'login') {
+        if (code === state.savedPin) {
+          haptic('success');
+          unlockSplashScreen();
+        } else {
+          haptic('error');
+          updatePinDotsUI(true);
+          const wrap = document.getElementById('pin-dots-wrap');
+          wrap.classList.add('animate-shake');
+          document.getElementById('pin-error-hint').textContent = 'Неверный PIN-код';
+          setTimeout(() => {
+            wrap.classList.remove('animate-shake');
+            state.pinBuffer = '';
+            updatePinDotsUI();
+          }, 450);
+        }
+        return;
+      }
+
+      if (state.pinMode === 'create_new') {
+        state.tempNewPin = code;
+        state.pinBuffer = '';
+        state.pinMode = 'confirm_new';
+        updatePinDotsUI();
+        document.getElementById('splash-subtitle').textContent = 'Повторите новый PIN-код для подтверждения';
+        return;
+      }
+
+      if (state.pinMode === 'confirm_new') {
+        if (code === state.tempNewPin) {
+          haptic('success');
+          state.savedPin = code;
+          localStorage.setItem('finpulse_pin', code);
+          if (getApiUrl()) {
+            apiCall({ action: 'set_pin', pin: code }).catch(() => {});
+          }
+          showToast('Новый PIN-код установлен');
+          unlockSplashScreen();
+        } else {
+          haptic('error');
+          updatePinDotsUI(true);
+          document.getElementById('pin-error-hint').textContent = 'Коды не совпали, попробуйте снова';
+          setTimeout(() => {
+            state.pinBuffer = '';
+            state.tempNewPin = '';
+            state.pinMode = 'create_new';
+            document.getElementById('splash-subtitle').textContent = 'Придумайте новый 4-значный PIN-код';
+            updatePinDotsUI();
+          }, 500);
+        }
+      }
+    }
+
+    function unlockSplashScreen() {
+      const splash = document.getElementById('welcome-splash');
+      splash.classList.add('opacity-0', 'scale-105', 'pointer-events-none');
+      applyTheme();
+      setTimeout(() => {
+        splash.classList.add('hidden');
+        renderAll(true);
+      }, 380);
+    }
+
+    function lockAppNow() {
+      haptic('medium');
+      const splash = document.getElementById('welcome-splash');
+      splash.classList.remove('hidden', 'opacity-0', 'scale-105', 'pointer-events-none');
+      if (tg) tg.setHeaderColor('#072D22');
+      configureLockScreen();
+    }
+
+    function triggerChangePin() {
+      haptic('medium');
+      state.savedPin = '';
+      localStorage.removeItem('finpulse_pin');
+      lockAppNow();
+    }
+
+    // Восстановление PIN через сообщение в Telegram
+    async function openPinResetFlow() {
+      haptic('medium');
+      document.getElementById('pin-dots-wrap').classList.add('hidden');
+      document.getElementById('pin-keypad-section').classList.add('hidden');
+      document.getElementById('pin-reset-section').classList.remove('hidden');
+      document.getElementById('tg-reset-code-input').value = '';
+      await requestTelegramResetCode();
+    }
+
+    function cancelPinReset() {
+      haptic('light');
+      configureLockScreen();
+    }
+
+    async function requestTelegramResetCode() {
+      const desc = document.getElementById('pin-reset-desc');
+      if (getApiUrl()) {
+        desc.textContent = 'Отправляем 6-значный код в ваш чат с ботом в Telegram...';
+        try {
+          const res = await apiCall({ action: 'send_pin_reset' });
+          if (res.ok) {
+            desc.innerHTML = 'Код отправлен в чат с ботом в Telegram. Откройте сообщение от бота и введите <b>6 цифр</b> ниже:';
+            showToast('Код отправлен в Telegram');
+          } else {
+            desc.textContent = 'Не удалось отправить сообщение. Убедитесь, что вы запускали бота командой /start.';
+          }
+        } catch (e) {
+          desc.textContent = 'Ошибка соединения с сервером Telegram.';
+        }
+      } else {
+        // Локальный fallback, если сервер Google Таблиц ещё не привязан
+        const demoCode = String(Math.floor(100000 + Math.random() * 900000));
+        state.localDemoResetCode = demoCode;
+        desc.innerHTML = `Сервер ещё не привязан. Тестовый код для сброса: <b>${demoCode}</b>`;
+      }
+    }
+
+    async function verifyTelegramResetCode() {
+      const entered = document.getElementById('tg-reset-code-input').value.trim();
+      if (entered.length < 4) {
+        haptic('error');
+        showToast('Введите 6-значный код из Telegram');
+        return;
+      }
+
+      if (getApiUrl()) {
+        const res = await apiCall({ action: 'verify_pin_reset', code: entered });
+        if (res.ok) {
+          haptic('success');
+          state.savedPin = '';
+          localStorage.removeItem('finpulse_pin');
+          showToast('Код принят! Задайте новый PIN');
+          configureLockScreen();
+        } else {
+          haptic('error');
+          showToast('Неверный код из сообщения');
+        }
+      } else {
+        if (entered === state.localDemoResetCode) {
+          haptic('success');
+          state.savedPin = '';
+          localStorage.removeItem('finpulse_pin');
+          configureLockScreen();
+        } else {
+          haptic('error');
+          showToast('Неверный код');
+        }
+      }
+    }
+
+    // ==================== РАСЧЁТ БЮДЖЕТА И ИНДИКАТОР ТЕМПА ====================
+    function getBudgetMetrics() {
+      const todaySpent = state.transactions
+        .filter(t => t.dateStr === TODAY_STR && (t.type || 'expense') === 'expense')
+        .reduce((s, t) => s + t.amount, 0);
+
+      const reservedTotal = state.scheduled
+        .filter(s => !s.is_paid)
+        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+      const days = Math.max(1, calcDaysUntil(state.paydayDate));
+      const freeForCycle = Math.max(0, state.user.balance - reservedTotal);
+      const dailyTotal = Math.max(1, Math.round((freeForCycle + todaySpent) / days));
+      const remainToday = Math.max(0, dailyTotal - todaySpent);
+      const usedPct = Math.min(100, Math.round((todaySpent / dailyTotal) * 100));
+
+      // Расчёт темпа: сколько экономим (или перерасходуем) относительно дневной нормы
+      const deltaToday = dailyTotal - todaySpent;
+      return { todaySpent, reservedTotal, days, freeForCycle, dailyTotal, remainToday, usedPct, deltaToday };
+    }
+
+    // ==================== СВЯЗЬ С СЕРВЕРОМ ====================
+    function saveBackendUrl() {
+      const val = document.getElementById('backend-url-input').value.trim();
+      if (!val.startsWith('http')) {
+        haptic('error');
+        showToast('Введите корректный адрес сервера');
+        return;
+      }
+      haptic('success');
+      localStorage.setItem('finpulse_backend_url', val);
+      showToast('Сервер подключён');
+      initApp();
+    }
+
+    async function apiCall(payload) {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) return { ok: false, no_api: true };
+      payload.user_id = CURRENT_USER_ID;
+      payload.user_name = state.userName;
+      const res = await fetch(apiUrl, { method: 'POST', body: JSON.stringify(payload) });
+      return await res.json();
+    }
+
+    async function initApp() {
+      applyTheme();
+      const apiUrl = getApiUrl();
+      const urlInput = document.getElementById('backend-url-input');
+      if (urlInput) urlInput.value = apiUrl;
+
+      if (CURRENT_USER_ID === ADMIN_ID) {
+        document.getElementById('admin-section').classList.remove('hidden');
+      }
+
+      configureLockScreen();
+      renderAll(false);
+
+      if (!apiUrl) return;
+
+      document.getElementById('tx-skeleton').classList.remove('hidden');
+      try {
+        const res = await apiCall({ action: 'init' });
+        if (res.ok) {
+          state.user = res.user;
+          if (!localStorage.getItem('finpulse_bank') && res.user.bank) {
+            state.selectedBank = res.user.bank;
+          } else {
+            state.user.bank = state.selectedBank;
+          }
+          if (res.user.payday_date && !localStorage.getItem('finpulse_payday')) {
+            state.paydayDate = res.user.payday_date;
+          }
+          if (res.user.pin_code && !state.savedPin) {
+            state.savedPin = String(res.user.pin_code);
+            localStorage.setItem('finpulse_pin', state.savedPin);
+            localStorage.setItem('finpulse_onboarded', '1');
+            configureLockScreen();
+          }
+
+          state.transactions = (res.transactions || []).map(t => ({
+            ...t,
+            type: t.type || 'expense',
+            dateStr: t.timestamp ? String(t.timestamp).slice(0, 10) : TODAY_STR,
+            isToday: t.timestamp ? String(t.timestamp).startsWith(TODAY_STR) : false
+          }));
+
+          if (Array.isArray(res.scheduled)) {
+            state.scheduled = res.scheduled;
+            persistScheduled(state.scheduled);
+          }
+
+          state.rules = res.rules || [];
+          state.insights = res.insights || [];
+
+          if (res.admin && CURRENT_USER_ID === ADMIN_ID) {
+            document.getElementById('admin-users-count').textContent = res.admin.total_users;
+            document.getElementById('admin-tx-count').textContent = res.admin.total_tx;
+            document.getElementById('admin-testers-list').innerHTML = res.admin.testers.map(t => `
+              <div class="muted-box rounded-xl p-2.5 flex justify-between text-xs font-medium">
+                <span class="text-main">${t.name} (${t.bank})</span>
+                <span class="text-sub">ID: ${t.uid}</span>
+              </div>
+            `).join('');
+          }
+          renderAll(false);
+        }
+      } catch (e) {
+        renderAll(false);
+      } finally {
+        document.getElementById('tx-skeleton').classList.add('hidden');
+      }
+    }
+
+    function renderAll(withCounterAnim = false) {
+      renderHeaderAndProfile();
+      renderPulse(withCounterAnim);
+      renderSparkline();
+      renderCalendar();
+      renderAdvisor();
+      renderScheduledSettings();
+      renderRules();
+      lucide.createIcons();
+    }
+
+    function renderHeaderAndProfile() {
+      document.getElementById('personal-greeting').textContent = `${getTimeGreeting()}, ${state.userName}!`;
+      document.getElementById('header-bank-status').textContent = `${state.selectedBank} • Малахит`;
+
+      const days = calcDaysUntil(state.paydayDate);
+      state.user.days_left = days;
+      document.getElementById('header-days-pill').textContent = `${days} дн.`;
+
+      document.getElementById('profile-name-display').textContent = state.userName;
+      document.getElementById('profile-avatar-letter').textContent = (state.userName || 'П').charAt(0).toUpperCase();
+      document.getElementById('profile-bank-display').textContent = `Банк: ${state.selectedBank}`;
+      document.getElementById('profile-balance-display').textContent = fmt(state.user.balance);
+      document.getElementById('profile-payday-display').textContent = formatHumanDate(state.paydayDate);
+      document.getElementById('pin-status-label').textContent = state.savedPin ? 'Включён (4 цифры)' : 'Не задан';
+    }
+
+    function renderPulse(withCounterAnim = false) {
+      const m = getBudgetMetrics();
+
+      const dailyEl = document.getElementById('daily-limit-value');
+      const balEl = document.getElementById('period-balance-value');
+      if (withCounterAnim) {
+        animateNumber(dailyEl, m.remainToday);
+        animateNumber(balEl, state.user.balance);
+      } else {
+        dailyEl.textContent = fmt(m.remainToday);
+        dailyEl.dataset.curVal = m.remainToday;
+        balEl.textContent = fmt(state.user.balance);
+        balEl.dataset.curVal = state.user.balance;
+      }
+
+      document.getElementById('daily-total-label').textContent = fmt(m.dailyTotal);
+      document.getElementById('reserved-balance-value').textContent = fmt(m.reservedTotal);
+      document.getElementById('today-spent-label').textContent = fmt(m.todaySpent);
+      document.getElementById('used-pct-badge').textContent = `${m.usedPct}%`;
+
+      // Индикатор темпа бюджета
+      const paceBadge = document.getElementById('pace-badge');
+      if (m.todaySpent <= m.dailyTotal) {
+        paceBadge.textContent = `Запас +${fmtNum(m.deltaToday)} ₽`;
+        paceBadge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/25 tabular-nums';
+      } else {
+        paceBadge.textContent = `Темп выше на ${fmtNum(Math.abs(m.deltaToday))} ₽`;
+        paceBadge.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-300/30 tabular-nums';
+      }
+
+      const bar = document.getElementById('hero-progress-bar');
+      bar.style.width = `${m.usedPct}%`;
+      bar.className = `h-full rounded-full transition-all duration-500 ${m.usedPct > 90 ? 'bg-red-400' : m.usedPct > 70 ? 'bg-amber-400' : 'bg-emerald-400'}`;
+
+      // Баннер «День зарплаты»
+      const paydayBanner = document.getElementById('payday-ready-banner');
+      if (state.paydayDate <= TODAY_STR) {
+        paydayBanner.classList.remove('hidden');
+      } else {
+        paydayBanner.classList.add('hidden');
+      }
+
+      // Баннер обязательных платежей
+      const unpaid = state.scheduled.filter(s => !s.is_paid).sort((a, b) => a.due_date.localeCompare(b.due_date));
+      const banner = document.getElementById('upcoming-bills-banner');
+      if (unpaid.length > 0) {
+        banner.classList.remove('hidden');
+        document.getElementById('upcoming-bills-list').innerHTML = unpaid.slice(0, 2).map(s => `
+          <div class="flex items-center justify-between muted-box rounded-xl px-3 py-2 text-xs">
+            <div class="min-w-0 flex items-center gap-1.5">
+              <span class="font-bold text-main truncate">${s.title}</span>
+              ${s.is_recurring ? '<i data-lucide="repeat" class="w-3 h-3 text-accent shrink-0"></i>' : ''}
+              <span class="text-sub shrink-0">• ${formatHumanDate(s.due_date)}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-extrabold text-main tabular-nums">${fmt(s.amount)}</span>
+              <button onclick="markScheduledPaid('${s.id}')" class="px-2.5 py-1 rounded-lg malachite-btn text-white text-[10px] font-bold tap-scale">Оплачено</button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // Фильтры категорий
+      const filters = [
+        { id: 'all', label: 'Все' },
+        { id: 'income', label: 'Пополнения' },
+        ...Object.values(CATEGORIES).map(c => ({ id: c.id, label: c.name }))
+      ];
+      document.getElementById('category-filter-pills').innerHTML = filters.map(f => {
+        const active = state.categoryFilter === f.id;
+        return `
+          <button onclick="setCategoryFilter('${f.id}')" class="px-3 py-1.5 rounded-full text-[11px] font-bold shrink-0 tap-scale ${active ? 'malachite-btn text-white' : 'surface-card text-sub'}">
+            ${f.label}
+          </button>
+        `;
+      }).join('');
+
+      // Фильтрация и поиск операций
+      const query = (document.getElementById('tx-search-input')?.value || '').trim().toLowerCase();
+      const filteredTx = state.transactions.filter(tx => {
+        const type = tx.type || 'expense';
+        if (state.categoryFilter === 'income' && type !== 'income') return false;
+        if (state.categoryFilter !== 'all' && state.categoryFilter !== 'income' && (tx.category !== state.categoryFilter || type === 'income')) return false;
+        if (query && !tx.merchant.toLowerCase().includes(query) && !String(tx.amount).includes(query)) return false;
+        return true;
+      });
+
+      const list = document.getElementById('transactions-list');
+      if (filteredTx.length === 0) {
+        list.innerHTML = `<div class="p-6 text-center text-xs text-sub">Операций по выбранному фильтру нет.</div>`;
+        return;
+      }
+
+      list.innerHTML = filteredTx.map(tx => {
+        const isInc = (tx.type || 'expense') === 'income';
+        const cat = CATEGORIES[tx.category] || CATEGORIES.other;
+        return `
+          <div onclick="openCategorySheet('${tx.id}')" class="p-3.5 flex items-center justify-between transition cursor-pointer tap-scale">
+            <div class="flex items-center gap-3 min-w-0">
+              ${getStoreLogoHTML(tx.merchant, tx.category, tx.type)}
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-main truncate">${tx.merchant}</div>
+                <div class="text-[11px] text-sub">${isInc ? 'Пополнение' : cat.name} • <span class="text-accent font-medium">${formatHumanDate(tx.dateStr)}</span></div>
+              </div>
+            </div>
+            <div class="text-right shrink-0 ml-2 flex items-center gap-1.5">
+              <span class="text-sm font-extrabold tabular-nums ${isInc ? 'text-emerald-400' : 'text-main'}">${isInc ? '+' : '-'}${fmt(tx.amount)}</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-sub opacity-50"></i>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setCategoryFilter(filterId) {
+      haptic('selection');
+      state.categoryFilter = filterId;
+      renderPulse(false);
+      lucide.createIcons();
+    }
+
+    function toggleSearchBox() {
+      haptic('light');
+      const wrap = document.getElementById('tx-search-wrap');
+      wrap.classList.toggle('hidden');
+      if (!wrap.classList.contains('hidden')) {
+        document.getElementById('tx-search-input').focus();
+      }
+    }
+
+    function clearSearch() {
+      document.getElementById('tx-search-input').value = '';
+      document.getElementById('tx-search-wrap').classList.add('hidden');
+      renderPulse(false);
+      lucide.createIcons();
+    }
+
+    // ==================== ЖИВОЙ ГРАФИК РЕАЛЬНЫХ РАСХОДОВ ====================
+    function getRealChartData(period) {
+      const spendByDate = {};
+      state.transactions
+        .filter(t => (t.type || 'expense') === 'expense')
+        .forEach(t => {
+          const d = t.dateStr || TODAY_STR;
+          spendByDate[d] = (spendByDate[d] || 0) + (Number(t.amount) || 0);
+        });
+
+      const weekDaysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+      const fullDaysRu = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+      if (period === 'week') {
+        const points = [];
+        for (let i = 6; i >= 0; i--) {
+          const dStr = shiftDateStr(-i);
+          const dObj = new Date(dStr + 'T00:00:00');
+          const label = i === 0 ? 'Сегодня' : `${fullDaysRu[dObj.getDay()]}, ${formatHumanDate(dStr)}`;
+          const short = i === 0 ? 'Сег' : weekDaysRu[dObj.getDay()];
+          points.push({ day: label, short, val: spendByDate[dStr] || 0 });
+        }
+        return points;
+      }
+
+      if (period === 'cycle') {
+        const points = [];
+        for (let i = 13; i >= 0; i--) {
+          const dStr = shiftDateStr(-i);
+          points.push({
+            day: formatHumanDate(dStr),
+            short: i % 2 === 0 ? formatShortDayMonth(dStr) : '',
+            val: spendByDate[dStr] || 0
+          });
+        }
+        return points;
+      }
+
+      const weeks = [];
+      for (let w = 3; w >= 0; w--) {
+        let sum = 0;
+        const startOffset = -(w * 7 + 6);
+        const endOffset = -(w * 7);
+        for (let d = startOffset; d <= endOffset; d++) {
+          sum += spendByDate[shiftDateStr(d)] || 0;
+        }
+        const rangeLabel = `${formatShortDayMonth(shiftDateStr(startOffset))} – ${formatShortDayMonth(shiftDateStr(endOffset))}`;
+        weeks.push({ day: `Неделя (${rangeLabel})`, short: `${4 - w} нед.`, val: sum });
+      }
+      return weeks;
+    }
+
+    function renderSparkline() {
+      const data = getRealChartData(state.chartPeriod);
+      if (state.scrubIdx >= data.length || state.scrubIdx < 0) state.scrubIdx = data.length - 1;
+
+      const rawMax = Math.max(...data.map(d => d.val));
+      const maxVal = rawMax > 0 ? rawMax * 1.18 : 1000;
+      const w = 300, h = 100;
+
+      const pts = data.map((d, i) => {
+        const x = (i / Math.max(1, data.length - 1)) * w;
+        const y = h - (d.val / maxVal) * (h - 16) - 6;
+        return { x, y, ...d };
+      });
+
+      let lineD = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const cp1x = pts[i].x + (pts[i + 1].x - pts[i].x) * 0.45;
+        const cp1y = pts[i].y;
+        const cp2x = pts[i + 1].x - (pts[i + 1].x - pts[i].x) * 0.45;
+        const cp2y = pts[i + 1].y;
+        lineD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${pts[i + 1].x} ${pts[i + 1].y}`;
+      }
+
+      const areaD = `${lineD} L ${pts[pts.length - 1].x} ${h} L ${pts[0].x} ${h} Z`;
+      document.getElementById('chart-line-path').setAttribute('d', lineD);
+      document.getElementById('chart-area-path').setAttribute('d', areaD);
+
+      const activePt = pts[state.scrubIdx];
+      document.getElementById('chart-cursor-line').setAttribute('x1', activePt.x);
+      document.getElementById('chart-cursor-line').setAttribute('x2', activePt.x);
+      document.getElementById('chart-cursor-dot').setAttribute('cx', activePt.x);
+      document.getElementById('chart-cursor-dot').setAttribute('cy', activePt.y);
+
+      document.getElementById('scrub-amount').textContent = fmt(activePt.val);
+      document.getElementById('scrub-day-label').textContent = activePt.day;
+
+      document.getElementById('chart-x-labels').innerHTML = data.map((d, idx) =>
+        `<span class="${idx === state.scrubIdx ? 'text-main font-bold' : ''}">${d.short}</span>`
+      ).join('');
+    }
+
+    const chartArea = document.getElementById('chart-touch-area');
+    function handleChartScrub(clientX) {
+      const rect = chartArea.getBoundingClientRect();
+      const relX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const data = getRealChartData(state.chartPeriod);
+      const newIdx = Math.round(relX * (data.length - 1));
+      if (newIdx !== state.scrubIdx) {
+        state.scrubIdx = newIdx;
+        haptic('selection');
+        renderSparkline();
+      }
+    }
+    chartArea.addEventListener('pointerdown', e => handleChartScrub(e.clientX));
+    chartArea.addEventListener('pointermove', e => { if (e.buttons > 0 || e.pointerType === 'touch') handleChartScrub(e.clientX); });
+
+    function selectChartPeriod(idx, period) {
+      haptic('light');
+      state.chartPeriod = period;
+      const data = getRealChartData(period);
+      state.scrubIdx = data.length - 1;
+      document.getElementById('chart-seg-pill').style.transform = `translateX(${idx * 100}%)`;
+      const btns = document.querySelectorAll('#chart-segmented .segmented-btn');
+      btns.forEach((b, i) => b.className = `segmented-btn py-1.5 ${i === idx ? 'text-main' : 'text-sub'}`);
+      renderSparkline();
+    }
+
+    // ==================== КАЛЕНДАРЬ ====================
+    function changeCalendarMonth(delta) {
+      haptic('light');
+      state.calMonth += delta;
+      if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; }
+      else if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; }
+      renderCalendar();
+      lucide.createIcons();
+    }
+
+    function selectCalendarDay(dateStr) {
+      haptic('selection');
+      state.calSelectedDate = dateStr;
+      renderCalendar();
+      lucide.createIcons();
+    }
+
+    function renderCalendar() {
+      const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+      document.getElementById('cal-month-title').textContent = `${monthNames[state.calMonth]} ${state.calYear}`;
+      document.getElementById('cal-payday-hint').textContent = `Зарплата: ${formatHumanDate(state.paydayDate)}`;
+
+      const spendByDate = {};
+      state.transactions.filter(t => (t.type || 'expense') === 'expense').forEach(t => {
+        const d = t.dateStr || TODAY_STR;
+        spendByDate[d] = (spendByDate[d] || 0) + t.amount;
+      });
+
+      const schedByDate = {};
+      state.scheduled.filter(s => !s.is_paid).forEach(s => {
+        schedByDate[s.due_date] = (schedByDate[s.due_date] || 0) + 1;
+      });
+
+      const metrics = getBudgetMetrics();
+      const firstDay = new Date(state.calYear, state.calMonth, 1);
+      let startOffset = firstDay.getDay() - 1;
+      if (startOffset < 0) startOffset = 6;
+
+      const daysInMonth = new Date(state.calYear, state.calMonth + 1, 0).getDate();
+      const grid = document.getElementById('calendar-grid');
+      let cellsHTML = '';
+
+      for (let i = 0; i < startOffset; i++) cellsHTML += `<div class="h-11"></div>`;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const mStr = String(state.calMonth + 1).padStart(2, '0');
+        const dStr = String(day).padStart(2, '0');
+        const fullDate = `${state.calYear}-${mStr}-${dStr}`;
+
+        const isSelected = fullDate === state.calSelectedDate;
+        const isToday = fullDate === TODAY_STR;
+        const isPayday = fullDate === state.paydayDate;
+        const spent = spendByDate[fullDate] || 0;
+        const hasSched = (schedByDate[fullDate] || 0) > 0;
+
+        let cellClasses = 'h-11 rounded-2xl flex flex-col items-center justify-center relative cursor-pointer tap-scale transition ';
+        if (isSelected) cellClasses += 'malachite-stone text-white font-extrabold shadow-sm';
+        else if (isPayday) cellClasses += 'bg-emerald-500/15 border-2 border-emerald-500 text-accent font-extrabold';
+        else if (isToday) cellClasses += 'muted-box text-main font-extrabold';
+        else cellClasses += 'text-main font-semibold';
+
+        let dotHTML = '';
+        if (hasSched) dotHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-0.5"></span>`;
+        else if (spent > 0) {
+          const dotColor = isSelected ? 'bg-emerald-300' : (spent > metrics.dailyTotal ? 'bg-amber-400' : 'bg-emerald-500');
+          dotHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} mt-0.5"></span>`;
+        } else if (isPayday) dotHTML = `<span class="text-[8px] font-black uppercase leading-none mt-0.5">ЗП</span>`;
+        else dotHTML = `<span class="h-1.5 mt-0.5"></span>`;
+
+        cellsHTML += `
+          <div onclick="selectCalendarDay('${fullDate}')" class="${cellClasses}">
+            <span class="text-xs tabular-nums leading-none">${day}</span>
+            ${dotHTML}
+          </div>
+        `;
+      }
+
+      grid.innerHTML = cellsHTML;
+
+      const daySched = state.scheduled.filter(s => s.due_date === state.calSelectedDate && !s.is_paid);
+      document.getElementById('cal-day-scheduled').innerHTML = daySched.map(s => `
+        <div class="surface-card p-3.5 flex items-center justify-between border border-amber-400/40">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs font-extrabold text-main flex items-center gap-1.5">
+                <span>${s.title}</span>
+                ${s.is_recurring ? '<i data-lucide="repeat" class="w-3 h-3 text-accent"></i>' : ''}
+              </div>
+              <div class="text-[11px] text-amber-400 font-medium">Зарезервировано • ${fmt(s.amount)}</div>
+            </div>
+          </div>
+          <button onclick="markScheduledPaid('${s.id}')" class="px-3 py-1.5 rounded-xl malachite-btn text-white text-xs font-bold tap-scale">
+            Оплачено
+          </button>
+        </div>
+      `).join('');
+
+      const dayTxs = state.transactions.filter(t => (t.dateStr || TODAY_STR) === state.calSelectedDate);
+      const dayTotal = dayTxs.filter(t => (t.type || 'expense') === 'expense').reduce((s, t) => s + t.amount, 0);
+
+      document.getElementById('cal-selected-date-title').textContent =
+        state.calSelectedDate === state.paydayDate
+          ? `${formatHumanDate(state.calSelectedDate)} • День зарплаты`
+          : formatHumanDate(state.calSelectedDate);
+      document.getElementById('cal-selected-day-sum').textContent = dayTotal > 0 ? `-${fmt(dayTotal)}` : '0 ₽';
+
+      const dayList = document.getElementById('cal-day-transactions');
+      if (dayTxs.length === 0) {
+        dayList.innerHTML = `
+          <div class="p-5 text-center space-y-2.5">
+            <div class="text-xs text-sub">Операций в этот день нет</div>
+            <div class="flex justify-center gap-2 flex-wrap">
+              ${state.calSelectedDate === state.paydayDate ? `<button onclick="openPaydaySheet()" class="px-3 py-2 rounded-xl malachite-btn text-white text-xs font-bold tap-scale">Зачислить зарплату</button>` : ''}
+              <button onclick="openScheduledSheet('${state.calSelectedDate}')" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 text-amber-400 text-xs font-bold tap-scale">
+                <i data-lucide="shield-plus" class="w-3.5 h-3.5"></i>
+                <span>Платёж</span>
+              </button>
+              <button onclick="openAddSheet()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 text-accent text-xs font-bold tap-scale">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Запись</span>
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        dayList.innerHTML = dayTxs.map(tx => {
+          const isInc = (tx.type || 'expense') === 'income';
+          const cat = CATEGORIES[tx.category] || CATEGORIES.other;
+          return `
+            <div onclick="openCategorySheet('${tx.id}')" class="p-3.5 flex items-center justify-between cursor-pointer">
+              <div class="flex items-center gap-3 min-w-0">
+                ${getStoreLogoHTML(tx.merchant, tx.category, tx.type)}
+                <div class="min-w-0">
+                  <div class="text-sm font-bold text-main truncate">${tx.merchant}</div>
+                  <div class="text-[11px] text-sub">${isInc ? 'Пополнение' : cat.name} • ${tx.source}</div>
+                </div>
+              </div>
+              <span class="text-sm font-extrabold tabular-nums ${isInc ? 'text-emerald-400' : 'text-main'}">${isInc ? '+' : '-'}${fmt(tx.amount)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // ==================== ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ (С ПОВТОРОМ) ====================
+    function openScheduledSheet(prefillDate = null) {
+      haptic('light');
+      document.getElementById('sched-title').value = '';
+      document.getElementById('sched-amount').value = '';
+      document.getElementById('sched-date').value = prefillDate || shiftDateStr(3);
+      document.getElementById('sched-recurring').checked = true;
+      document.getElementById('scheduled-sheet').classList.remove('hidden');
+      syncTelegramBackButton();
+    }
+
+    async function saveScheduledPayment() {
+      const title = document.getElementById('sched-title').value.trim();
+      const amount = Math.abs(Number(document.getElementById('sched-amount').value)) || 0;
+      const due_date = document.getElementById('sched-date').value || shiftDateStr(3);
+      const is_recurring = document.getElementById('sched-recurring').checked;
+
+      if (!title || amount <= 0) {
+        haptic('error');
+        showToast('Укажите название и сумму');
+        return;
+      }
+      haptic('success');
+
+      const newItem = {
+        id: 'sch_' + Date.now(),
+        title,
+        amount,
+        due_date,
+        category: 'subs',
+        is_paid: false,
+        is_recurring
+      };
+
+      state.scheduled.push(newItem);
+      persistScheduled(state.scheduled);
+      closeAllSheets();
+      renderAll(false);
+      showToast(`Зарезервировано: ${fmt(amount)}`);
+
+      if (getApiUrl()) {
+        await apiCall({ action: 'add_scheduled', item: newItem });
+      }
+    }
+
+    async function markScheduledPaid(id) {
+      haptic('success');
+      const idx = state.scheduled.findIndex(s => s.id === id);
+      if (idx === -1) return;
+
+      const item = state.scheduled[idx];
+      const nextDate = addOneMonthStr(item.due_date);
+
+      if (item.is_recurring) {
+        item.due_date = nextDate;
+        item.is_paid = false;
+      } else {
+        item.is_paid = true;
+      }
+      persistScheduled(state.scheduled);
+
+      state.user.balance = Math.max(0, state.user.balance - item.amount);
+      localStorage.setItem('finpulse_balance', String(state.user.balance));
+
+      state.transactions.unshift({
+        id: 'tx_sch_' + Date.now(),
+        merchant: item.title,
+        raw: item.title.toUpperCase(),
+        amount: item.amount,
+        category: item.category || 'subs',
+        type: 'expense',
+        source: item.is_recurring ? 'Ежемесячный платёж' : 'Плановый платёж',
+        dateStr: TODAY_STR,
+        isToday: true
+      });
+
+      renderAll(false);
+      showToast(item.is_recurring ? `Оплачено • Следующий: ${formatHumanDate(nextDate)}` : `Оплачено: ${item.title}`);
+
+      if (getApiUrl()) {
+        await apiCall({ action: 'pay_scheduled', id, next_date: nextDate });
+      }
+    }
+
+    async function deleteScheduledPayment(id) {
+      haptic('medium');
+      state.scheduled = state.scheduled.filter(s => s.id !== id);
+      persistScheduled(state.scheduled);
+      renderAll(false);
+      showToast('Платёж удалён из резерва');
+      if (getApiUrl()) {
+        await apiCall({ action: 'delete_scheduled', id });
+      }
+    }
+
+    function renderScheduledSettings() {
+      const list = document.getElementById('settings-scheduled-list');
+      const active = state.scheduled.filter(s => !s.is_paid);
+      if (active.length === 0) {
+        list.innerHTML = `<div class="text-xs text-sub py-2">Пока нет запланированных списаний (аренда, кредиты, подписки).</div>`;
+        return;
+      }
+      list.innerHTML = active.map(s => `
+        <div class="muted-box rounded-xl p-3 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${getStoreLogoHTML(s.title, s.category)}
+            <div class="min-w-0">
+              <div class="font-bold text-main truncate flex items-center gap-1.5">
+                <span>${s.title}</span>
+                ${s.is_recurring ? '<i data-lucide="repeat" class="w-3 h-3 text-accent shrink-0"></i>' : ''}
+              </div>
+              <div class="text-[10px] text-sub">${formatHumanDate(s.due_date)} • <span class="text-main font-bold">${fmt(s.amount)}</span></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="markScheduledPaid('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-accent font-bold text-[11px] tap-scale">Оплатить</button>
+            <button onclick="deleteScheduledPayment('${s.id}')" class="p-1.5 text-sub hover:text-red-400 tap-scale"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==================== СВЕРКА БАЛАНСА И НОВЫЙ ЦИКЛ ЗАРПЛАТЫ ====================
+    function openBalanceSheet() {
+      haptic('light');
+      document.getElementById('reconcile-balance-input').value = state.user.balance;
+      document.getElementById('balance-sheet').classList.remove('hidden');
+      syncTelegramBackButton();
+    }
+
+    async function submitReconcileBalance() {
+      const newBal = Math.max(0, Number(document.getElementById('reconcile-balance-input').value) || 0);
+      haptic('success');
+      state.user.balance = newBal;
+      localStorage.setItem('finpulse_balance', String(newBal));
+      closeAllSheets();
+      renderAll(true);
+      showToast(`Остаток обновлён: ${fmt(newBal)}`);
+      if (getApiUrl()) {
+        await apiCall({ action: 'reconcile_balance', balance: newBal });
+      }
+    }
+
+    function openPaydaySheet() {
+      haptic('light');
+      document.getElementById('payday-salary-input').value = '';
+      document.getElementById('payday-next-date-input').value = addOneMonthStr(state.paydayDate >= TODAY_STR ? state.paydayDate : TODAY_STR);
+      document.getElementById('payday-sheet').classList.remove('hidden');
+      syncTelegramBackButton();
+    }
+
+    async function submitNewCycle() {
+      const salary = Math.max(0, Number(document.getElementById('payday-salary-input').value) || 0);
+      const nextDate = document.getElementById('payday-next-date-input').value || addOneMonthStr(TODAY_STR);
+      haptic('success');
+
+      state.user.balance = Number(state.user.balance) + salary;
+      state.paydayDate = nextDate;
+      state.user.days_left = calcDaysUntil(nextDate);
+
+      localStorage.setItem('finpulse_balance', String(state.user.balance));
+      localStorage.setItem('finpulse_payday', nextDate);
+
+      if (salary > 0) {
+        state.transactions.unshift({
+          id: 'inc_sal_' + Date.now(),
+          merchant: 'Зарплата',
+          raw: 'SALARY',
+          amount: salary,
+          category: 'other',
+          type: 'income',
+          source: 'Новый цикл',
+          dateStr: TODAY_STR,
+          isToday: true
+        });
+      }
+
+      closeAllSheets();
+      renderAll(true);
+      showToast('Новый бюджетный цикл запущен');
+
+      if (getApiUrl()) {
+        await apiCall({ action: 'new_cycle', salary, payday_date: nextDate, days_left: state.user.days_left });
+      }
+    }
+
+    // ==================== ДОБАВЛЕНИЕ РАСХОДА ИЛИ ПОПОЛНЕНИЯ ====================
+    function openAddSheet() {
+      haptic('medium');
+      setAddTxType('expense');
+      document.getElementById('add-sheet').classList.remove('hidden');
+      syncTelegramBackButton();
+    }
+
+    function setAddTxType(type) {
+      haptic('selection');
+      state.addTxType = type;
+      const idx = type === 'expense' ? 0 : 1;
+      document.getElementById('tx-type-pill').style.transform = `translateX(${idx * 100}%)`;
+      const btns = document.querySelectorAll('#tx-type-segmented .segmented-btn');
+      btns.forEach((b, i) => b.className = `segmented-btn py-2 ${i === idx ? 'text-main' : 'text-sub'}`);
+
+      document.getElementById('add-expense-pane').classList.toggle('hidden', type !== 'expense');
+      document.getElementById('add-income-pane').classList.toggle('hidden', type !== 'income');
+    }
+
+    async function submitIncome() {
+      const title = document.getElementById('income-title-input').value.trim() || 'Пополнение';
+      const amount = Math.abs(Number(document.getElementById('income-amount-input').value)) || 0;
+      if (amount <= 0) {
+        haptic('error');
+        showToast('Укажите сумму пополнения');
+        return;
+      }
+      haptic('success');
+
+      state.user.balance = Number(state.user.balance) + amount;
+      localStorage.setItem('finpulse_balance', String(state.user.balance));
+
+      state.transactions.unshift({
+        id: 'inc_' + Date.now(),
+        merchant: title,
+        raw: title.toUpperCase(),
+        amount,
+        category: 'other',
+        type: 'income',
+        source: 'Пополнение',
+        dateStr: state.calSelectedDate || TODAY_STR,
+        isToday: (state.calSelectedDate || TODAY_STR) === TODAY_STR
+      });
+
+      document.getElementById('income-title-input').value = '';
+      document.getElementById('income-amount-input').value = '';
+      closeAllSheets();
+      renderAll(true);
+      showToast(`Зачислено +${fmt(amount)}`);
+
+      if (getApiUrl()) {
+        await apiCall({ action: 'add_income', title, amount });
+      }
+    }
+
+    async function processSmartInput() {
+      const text = document.getElementById('ai-smart-input').value.trim();
+      if (!text) return;
+      haptic('medium');
+      const btn = document.getElementById('smart-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Распознаём...</span>';
+
+      if (getApiUrl()) {
+        const res = await apiCall({ action: 'smart_add', text, source: 'Ручной ввод' });
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 text-emerald-300"></i><span>Распознать и записать</span>';
+        document.getElementById('ai-smart-input').value = '';
+        closeAllSheets();
+        if (res.added && res.added.length > 0) {
+          haptic('success');
+          showToast(`Добавлено покупок: ${res.added.length}`);
+          await initApp();
+        } else {
+          haptic('error');
+          showToast('Не удалось распознать сумму');
+        }
+      } else {
+        const parts = text.split(/,|\s+и\s+/i);
+        let added = 0;
+        parts.forEach(p => {
+          const m = p.match(/(\d+)/);
+          if (m) {
+            const amount = parseInt(m[1], 10);
+            const title = p.replace(m[0], '').replace(/₽|руб\.?/gi, '').trim() || 'Покупка';
+            const cat = /кофе|обед|кафе/i.test(title) ? 'cafe' : /такси|бензин/i.test(title) ? 'taxi' : 'food';
+            state.transactions.unshift({
+              id: 'loc_' + Date.now() + Math.random(),
+              merchant: title.charAt(0).toUpperCase() + title.slice(1),
+              raw: title.toUpperCase(),
+              amount,
+              category: cat,
+              type: 'expense',
+              source: 'Ручной ввод',
+              dateStr: state.calSelectedDate || TODAY_STR,
+              isToday: (state.calSelectedDate || TODAY_STR) === TODAY_STR
+            });
+            state.user.balance = Math.max(0, state.user.balance - amount);
+            localStorage.setItem('finpulse_balance', String(state.user.balance));
+            added++;
+          }
+        });
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 text-emerald-300"></i><span>Распознать и записать</span>';
+        document.getElementById('ai-smart-input').value = '';
+        closeAllSheets();
+        if (added > 0) {
+          haptic('success');
+          renderAll(false);
+          showToast(`Добавлено покупок: ${added}`);
+        }
+      }
+    }
+
+    // ==================== СОВЕТНИК, ПРАВИЛА И УДАЛЕНИЕ ОПЕРАЦИЙ ====================
+    function renderAdvisor() {
+      const m = getBudgetMetrics();
+      const expenses = state.transactions.filter(t => (t.type || 'expense') === 'expense');
+      const avg = expenses.length > 0
+        ? Math.round(expenses.reduce((s, t) => s + t.amount, 0) / expenses.length)
+        : 0;
+      document.getElementById('stat-avg-check').textContent = fmt(avg);
+      document.getElementById('stat-reserved-check').textContent = fmt(m.reservedTotal);
+
+      const items = state.insights.length > 0 ? state.insights : DEMO_INSIGHTS;
+      document.getElementById('advisor-cards').innerHTML = items.map(i => `
+        <div class="surface-card p-4 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-accent">${i.tag}</span>
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-500"></i>
+          </div>
+          <h4 class="text-sm font-bold text-main">${i.title}</h4>
+          <p class="text-xs text-sub leading-relaxed">${i.text}</p>
+        </div>
+      `).join('');
+    }
+
+    async function setAdvisorTone(idx, tone) {
+      haptic('medium');
+      document.getElementById('tone-seg-pill').style.transform = `translateX(${idx * 100}%)`;
+      const btns = document.querySelectorAll('#tab-advisor .segmented-btn');
+      btns.forEach((b, i) => b.className = `segmented-btn py-2 ${i === idx ? 'text-main' : 'text-sub'}`);
+
+      if (getApiUrl()) {
+        showToast('Обновляю разбор...');
+        await apiCall({ action: 'update_profile', tone });
+        await initApp();
+      } else {
+        showToast('Стиль советника обновлён');
+      }
+    }
+
+    function renderRules() {
+      document.getElementById('rules-count').textContent = state.rules.length;
+      document.getElementById('rules-list').innerHTML = state.rules.map(r => `
+        <div class="muted-box rounded-xl p-2.5 flex justify-between items-center text-xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${getStoreLogoHTML(r.clean, r.category)}
+            <div class="min-w-0">
+              <div class="font-bold text-main truncate">${r.clean}</div>
+              <div class="text-[10px] text-sub">${CATEGORIES[r.category]?.name || r.category}</div>
+            </div>
+          </div>
+          <button onclick="deleteRule('${r.raw}')" class="p-1.5 text-sub hover:text-red-400 tap-scale"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteRule(raw) {
+      haptic('medium');
+      if (getApiUrl()) await apiCall({ action: 'delete_rule', raw_pattern: raw });
+      state.rules = state.rules.filter(r => r.raw !== raw);
+      renderAll(false);
+      showToast('Магазин удалён из правил');
+    }
+
+    function openCategorySheet(txId) {
+      haptic('light');
+      state.selectedTxId = txId;
+      const tx = state.transactions.find(t => t.id === txId);
+      if (!tx) return;
+      const isInc = (tx.type || 'expense') === 'income';
+      document.getElementById('sheet-tx-icon-wrap').innerHTML = getStoreLogoHTML(tx.merchant, tx.category, tx.type);
+      document.getElementById('sheet-tx-merchant').textContent = tx.merchant;
+      document.getElementById('sheet-tx-meta').textContent = `${isInc ? '+' : '-'}${fmt(tx.amount)} • ${formatHumanDate(tx.dateStr)}`;
+
+      const grid = document.getElementById('category-grid');
+      if (isInc) {
+        grid.innerHTML = '';
+      } else {
+        grid.innerHTML = Object.values(CATEGORIES).map(cat => `
+          <button onclick="applyCategory('${cat.id}')" class="p-3 rounded-2xl border ${tx.category === cat.id ? 'border-emerald-500 malachite-stone text-white' : 'muted-box text-main'} flex flex-col items-center gap-1.5 tap-scale">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:${cat.bg}; color:${cat.color}"><i data-lucide="${cat.icon}" class="w-4 h-4"></i></div>
+            <span class="text-[11px] font-semibold">${cat.name}</span>
+          </button>
+        `).join('');
+      }
+      document.getElementById('category-sheet').classList.remove('hidden');
+      syncTelegramBackButton();
+      lucide.createIcons();
+    }
+
+    async function applyCategory(catId) {
+      haptic('success');
+      closeAllSheets();
+      const tx = state.transactions.find(t => t.id === state.selectedTxId);
+      if (tx) {
+        tx.category = catId;
+        state.rules.unshift({ raw: tx.raw, clean: tx.merchant, category: catId });
+      }
+      renderAll(false);
+      showToast('Категория сохранена');
+      if (getApiUrl()) await apiCall({ action: 'update_category', tx_id: state.selectedTxId, category: catId });
+    }
+
+    async function deleteSelectedTransaction() {
+      haptic('heavy');
+      const txId = state.selectedTxId;
+      const tx = state.transactions.find(t => t.id === txId);
+      closeAllSheets();
+      if (!tx) return;
+
+      const isInc = (tx.type || 'expense') === 'income';
+      state.transactions = state.transactions.filter(t => t.id !== txId);
+      state.user.balance = isInc
+        ? Math.max(0, Number(state.user.balance) - Number(tx.amount))
+        : Number(state.user.balance) + Number(tx.amount);
+      localStorage.setItem('finpulse_balance', String(state.user.balance));
+
+      renderAll(false);
+      showToast('Операция удалена');
+
+      if (getApiUrl()) {
+        await apiCall({ action: 'delete_tx', tx_id: txId });
+      }
+    }
+
+    // ==================== НАВИГАЦИЯ И ОНБОРДИНГ ====================
+    function switchTabByName(tab) {
+      const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+      if (btn) switchTab(tab, btn);
+    }
+
+    function switchTab(tab, btn) {
+      haptic('selection');
+      ['pulse', 'calendar', 'advisor', 'settings'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+      });
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('text-accent');
+        b.classList.add('text-sub');
+        b.querySelector('span').classList.replace('font-bold', 'font-medium');
+      });
+      btn.classList.remove('text-sub');
+      btn.classList.add('text-accent');
+      btn.querySelector('span').classList.replace('font-medium', 'font-bold');
+    }
+
+    function openOnboarding(allowClose = true) {
+      document.getElementById('ob-name').value = state.userName || '';
+      document.getElementById('ob-balance').value = state.user.balance || 22200;
+      document.getElementById('ob-payday').value = state.paydayDate || getDefaultPaydayStr();
+      document.getElementById('ob-pin').value = state.savedPin || '';
+      document.getElementById('ob-close-btn').classList.toggle('hidden', !allowClose);
+
+      document.querySelectorAll('.bank-btn').forEach(b => {
+        const isCurrent = b.dataset.bank === state.selectedBank;
+        b.className = isCurrent
+          ? 'bank-btn p-3 rounded-2xl border-2 border-emerald-600 bg-emerald-500/10 flex items-center gap-2.5 text-left tap-scale'
+          : 'bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale';
+      });
+      document.getElementById('onboarding-modal').classList.remove('hidden');
+      syncTelegramBackButton();
+      lucide.createIcons();
+    }
+
+    function closeOnboarding() {
+      document.getElementById('onboarding-modal').classList.add('hidden');
+      syncTelegramBackButton();
+    }
+
+    function selectBank(btn, bank) {
+      haptic('light');
+      state.selectedBank = bank;
+      document.querySelectorAll('.bank-btn').forEach(b => {
+        b.className = 'bank-btn p-3 rounded-2xl muted-box flex items-center gap-2.5 text-left tap-scale';
+      });
+      btn.className = 'bank-btn p-3 rounded-2xl border-2 border-emerald-600 bg-emerald-500/10 flex items-center gap-2.5 text-left tap-scale';
+    }
+
+    async function saveOnboarding() {
+      const enteredName = document.getElementById('ob-name').value.trim();
+      const enteredPin = document.getElementById('ob-pin').value.trim();
+
+      if (!enteredName) {
+        haptic('error');
+        showToast('Укажите ваше имя');
+        return;
+      }
+      if (!/^\d{4}$/.test(enteredPin)) {
+        haptic('error');
+        showToast('PIN-код должен состоять из 4 цифр');
+        return;
+      }
+      haptic('success');
+
+      const balance = Number(document.getElementById('ob-balance').value) || 20000;
+      const paydayStr = document.getElementById('ob-payday').value || getDefaultPaydayStr();
+      const days_left = calcDaysUntil(paydayStr);
+
+      state.userName = enteredName;
+      state.paydayDate = paydayStr;
+      state.user.balance = balance;
+      state.user.days_left = days_left;
+      state.user.bank = state.selectedBank;
+      state.savedPin = enteredPin;
+
+      localStorage.setItem('finpulse_onboarded', '1');
+      localStorage.setItem('finpulse_user_name', enteredName);
+      localStorage.setItem('finpulse_bank', state.selectedBank);
+      localStorage.setItem('finpulse_balance', String(balance));
+      localStorage.setItem('finpulse_payday', paydayStr);
+      localStorage.setItem('finpulse_pin', enteredPin);
+
+      closeOnboarding();
+      applyTheme();
+      renderAll(true);
+      showToast(`${getTimeGreeting()}, ${enteredName}!`);
+
+      if (getApiUrl()) {
+        await apiCall({
+          action: 'update_profile',
+          name: enteredName,
+          bank: state.selectedBank,
+          balance,
+          days_left,
+          payday_date: paydayStr,
+          pin: enteredPin
+        });
+      }
+    }
+
+    function showToast(txt) {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-text').textContent = txt;
+      el.classList.remove('opacity-0');
+      setTimeout(() => el.classList.add('opacity-0'), 2400);
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
