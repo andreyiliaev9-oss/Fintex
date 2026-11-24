@@ -1087,3 +1087,37 @@ body .capture-spinner { width: 32px; height: 32px; border: 2px solid var(--borde
 @media(prefers-reduced-motion:reduce) { body .capture-spinner { animation: none; } }
 html.no-motion body .capture-spinner { animation: none; }
 body:has(#capture-dialog[open]) { overflow: hidden; }
+
+/* Behavioral observations: factual evidence, quiet feedback and no character score. */
+body .behavior-panel { margin: 18px 0; border: 1px solid var(--border-subtle); border-radius: 24px; background: var(--surface-1); padding: 20px; color: var(--text-primary); }
+body .behavior-tag { font-size: 9px; font-weight: 700; letter-spacing: .07em; color: var(--accent); text-transform: uppercase; }
+body .behavior-heading h3 { font-size: 23px; line-height: 1.18; letter-spacing: -.045em; font-weight: 650; margin: 8px 0; }
+body .behavior-copy, body .behavior-insight > p, body .behavior-scenario > p, body .behavior-unusual > p { font-size: 12px; line-height: 1.7; margin: 9px 0; }
+body .behavior-copy { color: var(--text-secondary); }
+body .behavior-period, body .behavior-evidence, body .behavior-footnote { font-size: 10px !important; line-height: 1.65 !important; color: var(--text-secondary); margin: 10px 0; }
+body .behavior-period { padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); }
+body .behavior-profile { display: grid; gap: 0; margin-bottom: 18px; }
+body .behavior-profile > div { padding: 13px 0; border-bottom: 1px solid var(--border-subtle); }
+body .behavior-profile span { display: block; color: var(--text-secondary); font-size: 11px; }
+body .behavior-profile strong { display: block; font-size: 15px; font-weight: 650; margin: 5px 0; }
+body .behavior-profile small { display: block; color: var(--text-secondary); font-size: 10px; line-height: 1.6; }
+body .behavior-insight, body .behavior-unusual { padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+body .behavior-insight h4, body .behavior-scenario h4, body .behavior-unusual h4 { margin: 7px 0; font-size: 16px; line-height: 1.4; font-weight: 650; letter-spacing: -.02em; overflow-wrap: anywhere; }
+body .behavior-scenario { border: 1px solid var(--companion-border); background: var(--companion-soft); border-radius: 16px; padding: 15px; margin: 16px 0; color: var(--text-primary); }
+body .behavior-note { padding: 11px 12px; background: var(--surface-2); border-radius: 12px; font-size: 11px !important; line-height: 1.65 !important; }
+body .behavior-feedback { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+body .behavior-panel button { min-height: 44px; border: 1px solid var(--border-subtle); background: var(--surface-2); color: var(--text-primary); border-radius: 12px; padding: 10px 12px; font-size: 11px; font-weight: 600; line-height: 1.5; text-align: left; }
+body .behavior-panel button[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+body .behavior-panel .behavior-primary { width: 100%; text-align: center; background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+body .behavior-panel summary { cursor: pointer; padding: 15px 0; font-size: 13px; font-weight: 650; line-height: 1.5; }
+body .behavior-planner, body .behavior-settings, body .behavior-unusual-list { margin-top: 14px; border-top: 1px solid var(--border-subtle); }
+body .behavior-panel label { display: block; font-size: 11px; line-height: 1.5; margin: 12px 0; }
+body .behavior-panel input { display: block; width: 100%; min-width: 0; font-size: 16px; background: var(--bg-canvas); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 12px; min-height: 46px; padding: 11px; margin-top: 7px; }
+body .behavior-empty { padding: 12px 0; font-size: 12px; line-height: 1.8; color: var(--text-secondary); }
+body .behavior-footnote { margin-top: 18px; }
+body .behavior-status { font-size: 12px; line-height: 1.6; color: var(--text-primary); margin-top: 12px; }
+body .behavior-status:empty { display: none; }
+@media(max-width:359px) { body .behavior-panel { padding: 16px; } body .behavior-heading h3 { font-size: 21px; } }
+/* Text explanations contain amounts too; do not leak them beside blurred numerals. */
+body.stealth-mode .behavior-panel > :not(.behavior-heading) { display: none; }
+body.stealth-mode .behavior-panel::after { content: 'Наблюдения скрыты в режиме приватности'; display: block; color: var(--text-secondary); font-size: 12px; line-height: 1.6; margin-top: 12px; }

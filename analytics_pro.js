@@ -389,7 +389,8 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    window.FintexBehavior?.bind(container);
     container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });
     const toolActions = { purchase: () => window.openCanIBuyModal?.(), prices: () => window.openPriceTrackerModal?.(), limits: () => window.openCatLimitModal?.() };
     container.querySelectorAll('[data-tool]').forEach(button => button.addEventListener('click', () => toolActions[button.dataset.tool]?.()));
