@@ -389,7 +389,7 @@ test('free learning account is reachable, has no fake quotes or trades and fits 
     await page.setViewportSize({width,height:844});
     for(const theme of ['dark','light']) {
       await page.evaluate(theme=>setTheme(theme),theme);
-      for(const name of ['Счёт','Уроки','Дневник','Правила']) {
+      for(const name of ['Счёт','Акции','Уроки','Дневник','Правила']) {
         await page.getByRole('button',{name,exact:true}).click();
         const bounds=await page.locator('#invest-learning').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));
         expect(bounds.scroll).toBeLessThanOrEqual(bounds.width);
@@ -442,7 +442,7 @@ test('investment diary escapes user text, survives reload, preserves drafts and 
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).journal.length)).toBe(1);
   await page.getByRole('button',{name:'Сбросить только обучение'}).click();
   await page.getByRole('button',{name:'Удалить учебные данные'}).click();
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).journal)).toEqual([]);
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).journal.length)).toBe(0);
   expect(await page.evaluate(()=>({balance:state.balance,tx:JSON.stringify(state.transactions)}))).toEqual(real);
 });
 
@@ -462,4 +462,132 @@ test('corrupt learning data is not overwritten; storage failure never reports a 
   await expect(page.locator('#inv-message')).toContainText('Не удалось сохранить');
   await expect(page.locator('[name="thesis"]')).toHaveValue('Не потерять эту заметку');
   await expect(page.locator('.inv-note')).toHaveCount(0);
+});
+
+async function openStock(page,symbol) {
+  await page.getByRole('button',{name:'Акции',exact:true}).click();
+  await page.locator('#inv-stock-search').fill(symbol);
+  await page.locator('#inv-stock-list [data-stock]').click();
+}
+async function previewExercise(page,price,qty='1') {
+  await page.locator('#inv-trade-form [name="price"]').fill(price);
+  await page.locator('#inv-trade-form [name="quantity"]').fill(qty);
+  await page.getByRole('button',{name:'Посчитать перед подтверждением'}).click();
+}
+async function confirmExercise(page) {
+  await page.locator('[name="manual-ack"]').check();
+  await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
+  await expect(page.locator('#inv-message')).toContainText('Упражнение сохранено');
+}
+
+test('real share catalogue filters by name and market without inventing prices; lessons use simple examples',async({page})=>{
+  await openApp(page);await openInvestments(page);
+  await page.getByRole('button',{name:'Акции',exact:true}).click();
+  await expect(page.locator('.inv-stock')).toHaveCount(8);
+  await page.locator('#inv-market-filter').selectOption('Россия');await expect(page.locator('.inv-stock')).toHaveCount(3);
+  await page.locator('#inv-stock-search').fill('Apple');await expect(page.locator('.inv-stock')).toHaveCount(0);
+  await page.locator('#inv-market-filter').selectOption('Все');await expect(page.locator('.inv-stock')).toHaveCount(1);
+  await page.locator('.inv-stock').click();
+  await expect(page.locator('.inv-asset h3')).toHaveText('Apple');
+  await expect(page.locator('.inv-asset a')).toHaveAttribute('href','https://investor.apple.com/faq/default.aspx');
+  await expect(page.locator('[name="price"]')).toHaveValue('');
+  await expect(page.locator('#inv-content')).toContainText('Не рыночная котировка');
+  await page.getByRole('button',{name:'Уроки',exact:true}).click();await page.locator('[data-lesson="ownership"]').click();
+  await expect(page.locator('.inv-section')).toContainText('пекарню');
+  await expect(page.locator('.inv-example')).toBeVisible();
+});
+
+test('manual-price share exercises buy and sell with fees, persist holdings and never change the real budget',async({page})=>{
+  await openApp(page,true);await openInvestments(page);
+  const before=await page.evaluate(()=>({balance:state.balance,tx:JSON.stringify(state.transactions),metrics:JSON.stringify(calcMetrics())}));
+  await openStock(page,'SBER');await previewExercise(page,'100','10');
+  await expect(page.locator('.inv-review')).toContainText('1 003');
+  // No ledger event before the explicit manual-price acknowledgement.
+  expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBeNull();
+  await confirmExercise(page);
+  await expect(page.locator('.inv-asset-wallet')).toContainText('10 шт.');
+  await page.locator('[data-trade-side="sell"]').click();await previewExercise(page,'110','2');await confirmExercise(page);
+  await expect(page.locator('.inv-asset-wallet')).toContainText('8 шт.');
+  await page.getByRole('button',{name:'Счёт',exact:true}).click();
+  await expect(page.locator('.inv-cash')).toContainText('99 216,34');
+  await expect(page.locator('.inv-position')).toContainText('8 шт.');
+  await expect(page.locator('.inv-position')).toContainText('802,4');
+  await expect(page.locator('.inv-result-list')).toContainText('18,74');
+  expect(await page.evaluate(()=>({balance:state.balance,tx:JSON.stringify(state.transactions),metrics:JSON.stringify(calcMetrics())}))).toEqual(before);
+  await page.reload();await page.waitForFunction(()=>!!window.FintexAnalyticsPro);await openInvestments(page);
+  await expect(page.locator('.inv-position')).toContainText('8 шт.');
+  await expect(page.locator('.inv-note')).toHaveCount(2);
+});
+
+test('share exercises reject overspend, invalid decimals and overselling; currency wallets stay separate',async({page})=>{
+  await openApp(page);await openInvestments(page);await openStock(page,'AAPL');
+  await previewExercise(page,'10000','2');await expect(page.locator('#inv-message')).toContainText('Не хватает');
+  await previewExercise(page,'100.123','1');await expect(page.locator('#inv-message')).toContainText('двух знаков');
+  await page.locator('[data-trade-side="sell"]').click();await previewExercise(page,'100','1');
+  await expect(page.locator('#inv-message')).toContainText('больше акций');
+  await page.locator('[data-trade-side="buy"]').click();await previewExercise(page,'100','2');await confirmExercise(page);
+  await page.getByRole('button',{name:'Счёт',exact:true}).click();
+  await expect(page.locator('.inv-cash')).toHaveText('100 000 ₽');
+  await expect(page.locator('.inv-currency-wallets')).toContainText('9 799,4');
+});
+
+test('stock detail and confirmation fit 320px in both themes and stale confirmations cannot duplicate a trade',async({page})=>{
+  await openApp(page);await openInvestments(page);await openStock(page,'SAP');await previewExercise(page,'100','2');
+  await page.setViewportSize({width:320,height:700});
+  for(const theme of ['dark','light']) {
+    await page.evaluate(theme=>setTheme(theme),theme);
+    const dimensions=await page.locator('#invest-learning').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));
+    expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
+  }
+  await confirmExercise(page);
+  const count=await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).practice.trades.length);
+  expect(count).toBe(1);
+  await previewExercise(page,'100','1');
+  // Simulate a second local operation while this confirmation is open.
+  await page.evaluate(()=>{
+    const key='fp_invest_learning_v1',data=JSON.parse(localStorage.getItem(key)),m=FintexPracticeMarket;
+    data.practice=m.execute(data.practice,{id:'other-tab',instrumentId:'XETR:SAP',side:'buy',quantity:1,priceMinor:10000,generation:data.practice.generation,revision:data.practice.trades.length,acknowledged:true});
+    localStorage.setItem(key,JSON.stringify(data));
+  });
+  await page.locator('[name="manual-ack"]').check();await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
+  await expect(page.locator('#inv-message')).toContainText('портфель изменился');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).practice.trades.length)).toBe(2);
+});
+
+test('two tabs cannot both execute against the same practice balance revision',async({page})=>{
+  await openApp(page);await openInvestments(page);await openStock(page,'SBER');await previewExercise(page,'100','1');
+  const second=await page.context().newPage();await localOnly(second);await second.goto('/');
+  await second.waitForFunction(()=>!!window.FintexAnalyticsPro);await openInvestments(second);await openStock(second,'SBER');await previewExercise(second,'100','1');
+  await page.locator('[name="manual-ack"]').check();await second.locator('[name="manual-ack"]').check();
+  await page.evaluate(()=>{navigator.locks.request('fp_invest_learning_v1',async()=>{window.practiceLockHeld=true;await new Promise(resolve=>window.releasePracticeLock=resolve);});});
+  await page.waitForFunction(()=>window.practiceLockHeld);
+  await Promise.all([page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click(),second.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click()]);
+  await page.evaluate(()=>window.releasePracticeLock());
+  await expect.poll(async()=>{const messages=await Promise.all([page.locator('#inv-message').textContent(),second.locator('#inv-message').textContent()]);return messages.filter(m=>m.includes('портфель изменился')).length;}).toBe(1);
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')||'{}').practice?.trades.length)).toBe(1);
+  const account=await page.evaluate(()=>FintexPracticeMarket.summary(JSON.parse(localStorage.getItem('fp_invest_learning_v1')).practice));
+  expect(account.cash.RUB).toBe(9989970);expect(account.positions['MOEX:SBER'].quantity).toBe(1);
+  await second.close();
+});
+
+test('practice save failure preserves confirmation and reset invalidates outstanding trade requests',async({page})=>{
+  await openApp(page);await openInvestments(page);await openStock(page,'SBER');await previewExercise(page,'100','1');
+  await page.locator('[name="manual-ack"]').check();
+  await page.evaluate(()=>{window.savedSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='fp_invest_learning_v1')throw new Error('quota');return window.savedSetItem.call(this,k,v);};});
+  await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
+  await expect(page.locator('#inv-message')).toContainText('Упражнение не сохранено');
+  await expect(page.locator('.inv-review')).toBeVisible();
+  expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBeNull();
+  await page.evaluate(()=>{Storage.prototype.setItem=window.savedSetItem;const m=FintexPracticeMarket;localStorage.setItem('fp_invest_learning_v1',JSON.stringify({version:2,cashKopecks:10000000,completed:[],journal:[],practice:m.newPractice()}));});
+  await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
+  await expect(page.locator('#inv-message')).toContainText('счёт был сброшен');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).practice.trades.length)).toBe(0);
+});
+
+test('browser without Web Locks does not silently perform unsafe practice writes',async({page})=>{
+  await openApp(page);await openInvestments(page);await openStock(page,'SBER');await previewExercise(page,'100','1');
+  await page.evaluate(()=>Object.defineProperty(navigator,'locks',{value:undefined,configurable:true}));
+  await page.locator('[name="manual-ack"]').check();await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
+  await expect(page.locator('#inv-message')).toContainText('нет защиты от одновременной записи');
+  expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBeNull();
 });

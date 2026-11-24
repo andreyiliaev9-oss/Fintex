@@ -588,3 +588,46 @@ body .inv-reset-confirm { display: grid; gap: 12px; }
   body .inv-content { padding-inline: 16px; }
   body .inv-entry { padding: 16px; }
 }
+
+/* Shares v27: a reference catalogue and manual-price exercises, never live data. */
+body .inv-nav { grid-template-columns: repeat(5,minmax(0,1fr)); }
+body .inv-nav button { font-size: 11px; }
+body .inv-block { display: block; margin-top: 10px; }
+body .inv-example { margin: 18px 0; padding: 14px 16px 2px; border-left: 2px solid var(--gold); background: var(--gold-soft); border-radius: 0 12px 12px 0; }
+body .inv-example > strong { display: block; font-size: 11px; color: var(--gold); margin-bottom: 6px; }
+body .inv-dialog .inv-field { display: block; color: var(--text-secondary); font-size: 12px; font-weight: 550; margin-bottom: 16px; }
+body .inv-field input, body .inv-field select { display: block; width: 100%; min-width: 0; margin-top: 6px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--surface-1); color: var(--text-primary); font-size: 16px; }
+body .inv-field select { min-height: 46px; }
+body .inv-field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body .inv-stock { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin-bottom: 10px; }
+body .inv-dialog .inv-stock { padding: 18px 14px; }
+body .inv-stock > span:nth-child(2) { flex: 1; min-width: 0; }
+body .inv-stock strong { display: block; color: var(--text-primary); font-size: 14px; }
+body .inv-stock small { display: block; line-height: 1.6; margin-top: 3px; }
+body .inv-stock-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; color: var(--accent); background: var(--accent-soft); font-size: 11px; font-weight: 650; }
+body .inv-asset h3 { font-size: 27px; margin-top: 6px; }
+body .inv-asset a { display: inline-block; color: var(--accent); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+body .inv-asset-wallet { margin-top: 18px; }
+body .inv-trade-side { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 18px 0; }
+body .inv-trade-side button { font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border-subtle); padding-inline: 6px; }
+body .inv-trade-side button[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent); border-color: var(--border-active); }
+body #inv-trade-form > small { display: block; line-height: 1.7; margin-bottom: 18px; }
+body #inv-trade-form > .inv-primary { width: 100%; }
+body .inv-review h4 { font-size: 15px; font-weight: 650; margin: 18px 0; }
+body .inv-review dl { display: grid; gap: 10px; margin-bottom: 14px; }
+body .inv-review dl > div { display: flex; justify-content: space-between; align-items: start; gap: 12px; font-size: 12px; }
+body .inv-review dt { color: var(--text-secondary); }
+body .inv-review dd { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+body #inv-trade-confirm { display: grid; gap: 10px; }
+body .inv-review .inv-answer { font-size: 12px; }
+body .inv-currency-wallets { display: grid; gap: 8px; font-size: 11px; margin: 14px 0; color: var(--text-secondary); }
+body .inv-currency-wallets > span { display: flex; justify-content: space-between; gap: 12px; }
+body .inv-currency-wallets b { color: var(--text-primary); font-weight: 600; }
+body .inv-dialog .inv-position { display: block; width: 100%; text-align: left; margin-bottom: 10px; padding: 16px; }
+body .inv-position strong, body .inv-position span, body .inv-position small { display: block; }
+body .inv-position strong { font-size: 14px; color: var(--text-primary); }
+body .inv-position span { font-size: 12px; color: var(--text-secondary); margin: 6px 0; }
+body .inv-result-list { display: grid; gap: 10px; }
+body .inv-result-list > span { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
+body .inv-result-list b { font-variant-numeric: tabular-nums; }
+@media(max-width:359px) { body .inv-nav button { font-size: 10px; } }
