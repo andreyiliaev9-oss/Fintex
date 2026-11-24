@@ -1,17 +1,17 @@
 /* Independent visual style and light/dark mode. Loaded in <head> to avoid a
- * forest flash for returning Lagoon users. No financial state is touched. */
+ * forest flash for returning users. No financial state is touched. */
 (function () {
   'use strict';
   const root = document.documentElement;
   const system = window.matchMedia('(prefers-color-scheme: dark)');
   const modes = ['dark', 'light', 'auto'];
-  const styles = ['forest', 'lagoon'];
+  const styles = ['forest', 'sapphire'];
   const backgrounds = {
     forest: {dark: '#061C12', light: '#F4F5E8'},
-    lagoon: {dark: '#06232D', light: '#F0F7F5'}
+    sapphire: {dark: '#153073', light: '#F6F6F6'}
   };
   const read = (key, fallback, allowed) => {
-    try { const value = localStorage.getItem(key); return allowed.includes(value) ? value : fallback; }
+    try { const value = localStorage.getItem(key); return allowed.includes(value) ? value : (key === 'fp_visual_style' && value === 'lagoon' ? 'sapphire' : fallback); }
     catch (_) { return fallback; }
   };
   let mode = read('fp_theme', 'dark', modes);
@@ -55,6 +55,8 @@
     apply();
   }
   function setStyle(value) {
+    // Keep legacy links/integrations working while replacing the old style.
+    if (value === 'lagoon') value = 'sapphire';
     if (!styles.includes(value)) return;
     style = value; save('fp_visual_style', style); apply();
   }
