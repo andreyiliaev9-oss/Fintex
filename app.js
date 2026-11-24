@@ -331,7 +331,7 @@ let state = {
   bills: safeJsonParse(localStorage.getItem('fp_bills'), [{ id: 'b1', title: 'Яндекс Плюс', amount: 399, due_date: offsetDateISO(4), is_paid: false, is_recurring: true }]),
   scanHistory: safeJsonParse(localStorage.getItem('fp_scan_history'), []),
   priceHistory: safeJsonParse(localStorage.getItem('fp_price_history'), {}),
-  gasUrl: ((localStorage.getItem('fp_api_url') && localStorage.getItem('fp_api_url') !== 'https://script.google.com/macros/s/AKfycbz_gCZDuLK2Ghkoapf_arMFYu63_9VK7wC8GZUoYn-J3WPqmg7TFRvfKgjJ9KqNXq3F/exec') ? localStorage.getItem('fp_api_url') : DEFAULT_GAS_URL).replace(/\/dev(\?.*)?$/, '/exec$1'),
+  gasUrl: window.FintexAuth.getEndpoint(),
   apiToken: localStorage.getItem('fp_api_token') || '',
   syncQueue: safeJsonParse(localStorage.getItem('fp_sync_queue'), []),
   autopilotLogs: safeJsonParse(localStorage.getItem('fp_ap_logs'), []),

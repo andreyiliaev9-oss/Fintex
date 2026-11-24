@@ -3,7 +3,13 @@
  */
 (function () {
   'use strict';
-  const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5QwCkVgVNt8tzrm7_BTw24Ogl05pZHcSNOE6u6LpXxf6iw5oedtJSnGgsvmV0c9-3/exec';
+  const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyzfhzExalPbmThOsQ24Sq3-qOq_7aLSPQ69dShDbRawnawVIyR5L3hLlN1PSkCHFIM/exec';
+  // Only known retired Fintex deployments migrate; custom server URLs remain intact.
+  const RETIRED_ENDPOINTS = [
+    'https://script.google.com/macros/s/AKfycby5QwCkVgVNt8tzrm7_BTw24Ogl05pZHcSNOE6u6LpXxf6iw5oedtJSnGgsvmV0c9-3/exec',
+    'https://script.google.com/macros/s/AKfycbw2Q0L7sKq0QrOQtffRS3oRpq22nrWZ8b9ErM8aWSuF4I9qMLz4f_N7mVu_F6m8-6j6/exec',
+    'https://script.google.com/macros/s/AKfycbz_gCZDuLK2Ghkoapf_arMFYu63_9VK7wC8GZUoYn-J3WPqmg7TFRvfKgjJ9KqNXq3F/exec'
+  ];
   const read = key => { try { return localStorage.getItem(key); } catch (_) { return null; } };
   const write = (key,value) => { try { localStorage.setItem(key,value); } catch (_) {} };
   const inTelegram = () => !!window.Telegram?.WebApp?.initData;
@@ -12,7 +18,15 @@
   let session = '', expiresAt = 0, view = 'checking', busy = false, resetReady = false, resendAt = 0;
   let gate, blocked = new Map(), expiryTimer, priorFocus, lastActivity = Date.now(), epoch = 0;
   if (required) document.documentElement.dataset.authLocked = '1';
-  function endpoint() { return read('fp_api_url') || DEFAULT_ENDPOINT; }
+  function endpoint() {
+    const saved=read('fp_api_url');
+    const value=String(saved||'').trim().replace(/\/dev$/, '/exec');
+    if(!value || RETIRED_ENDPOINTS.includes(value)) {
+      if(saved)write('fp_api_url',DEFAULT_ENDPOINT);
+      return DEFAULT_ENDPOINT;
+    }
+    return value;
+  }
   function validEndpoint(url) { return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url); }
   function canSync() { return !!session && Date.now() < expiresAt && !document.documentElement.hasAttribute('data-auth-locked'); }
   async function call(action, fields = {}) {
@@ -190,6 +204,6 @@
     setInterval(()=>{updateCountdown();if(session&&Date.now()-lastActivity>5*60*1000)lock('Пять минут без действий. Введите пароль снова.');},1000);
     settings();if(required)connect();
   }
-  window.FintexAuth={request,canSync,lock,defaultEndpoint:DEFAULT_ENDPOINT,open:()=>connect()};
+  window.FintexAuth={request,canSync,lock,defaultEndpoint:DEFAULT_ENDPOINT,getEndpoint:endpoint,open:()=>connect()};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 })();
