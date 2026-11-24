@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>FINTEX — Личные финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./assets/utilities.css?v=27" />
+  <link rel="stylesheet" href="./assets/utilities.css?v=28" />
   <script src="./assets/icons.js?v=21"></script>
   <!-- Бесплатные автономные движки распознавания в браузере (QR + OCR + PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -15,7 +15,7 @@
   <meta name="color-scheme" content="dark light" />
   <link rel="preload" as="image" href="./financial_tree_art.png?v=3" />
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=27" />
+  <link rel="stylesheet" href="./design-system.css?v=28" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -213,7 +213,7 @@
 
   <!-- ==================== 2. ШАПКА ГЛАВНОГО ЭКРАНА ==================== -->
   <header aria-label="Профиль и быстрые действия" id="home-header" class="px-4 pt-3.5 pb-2 flex items-center justify-between">
-    <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openAutopilotModal()">
+    <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="goTab('settings')" title="Профиль и настройки">
       <div id="fintex-ai-orb" class="ai-orb ai-orb-calm shrink-0" title="Состояние FINTEX AI">
         <span class="w-2 h-2 rounded-full bg-white/90"></span>
       </div>
@@ -307,7 +307,7 @@
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-main">FINTEX Autopilot</span>
+                <span class="text-xs font-bold text-main">Импорт и подключение</span>
                 <span id="autopilot-stage-pill" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#00D6C3]/15 text-brand">Подтверждён</span>
               </div>
               <div id="sources-explicit-text" class="text-[11px] text-sub truncate mt-0.5">
@@ -463,6 +463,32 @@
         </div>
       </div>
 
+      <details id="calendar-plan" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="calendar-check"></i></span><span><strong>Платежи, зарплата и цель</strong><small>Планируйте деньги в одном месте</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><div class="grid grid-cols-2 gap-2 pt-2 border-t divider-line">
+          <button type="button" onclick="openBalanceModal()" class="input-surface p-2.5 text-left tap">
+            <div class="text-[10px] uppercase tracking-wider text-sub">На карте</div>
+            <div id="st-balance" class="text-sm font-bold text-main tabular-nums mt-0.5">0 ₽</div>
+          </button>
+          <button type="button" onclick="openPaydayModal()" class="input-surface p-2.5 text-left tap">
+            <div class="text-[10px] uppercase tracking-wider text-sub">Зарплата</div>
+            <div id="st-payday" class="text-sm font-bold text-gold mt-0.5">29 ноя</div>
+          </button>
+        </div><div id="cal-upcoming-events" class="space-y-2.5"></div><div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-brand">Платежи и цель</span>
+          <button type="button" onclick="openBillModal()" class="text-xs font-semibold text-brand tap">+ Платёж</button>
+        </div>
+        <div class="input-surface p-3 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-main" id="st-goal-title">Финансовая подушка</div>
+            <div class="text-[11px] text-sub" id="st-goal-sub">Отложено: 0 ₽ из 10 000 ₽</div>
+          </div>
+          <button type="button" onclick="openGoalDetailsModal()" class="px-3 py-1.5 rounded-lg btn-gold-soft text-xs font-semibold">Открыть</button>
+        </div>
+
+        <h3 class="section-caption">Все запланированные платежи</h3><div id="st-bills-list" class="space-y-2"></div></div>
+      </details>
+
       <!-- Панель навигации по месяцам и денежного потока -->
       <div class="card-surface p-3 space-y-2.5">
         <div class="flex items-center justify-between">
@@ -518,7 +544,7 @@
       <!-- Ритм до зарплаты и предстоящие платежи -->
 
       <!-- Операции выбранного дня -->
-      <div class="space-y-2">
+      <div id="cal-day-section" class="space-y-2">
         <div class="flex items-center justify-between gap-2 px-0.5">
           <div class="flex items-center gap-2 min-w-0 flex-wrap">
             <h3 id="cal-day-heading" class="cal-day-heading">Сегодня</h3><span id="cal-day-count" class="cal-day-count"></span>
@@ -532,7 +558,6 @@
         <div id="cal-day-bills" class="space-y-2"></div>
         <div id="cal-day-txs" class="card-surface overflow-hidden" aria-label="Операции выбранного дня"></div>
       </div>
-      <details class="cal-upcoming card-surface"><summary>План до зарплаты <i data-lucide="chevron-down" class="w-4 h-4" aria-hidden="true"></i></summary><div id="cal-upcoming-events" class="p-3.5 space-y-2.5"></div></details>
     </section>
 
     <!-- ВКЛАДКА 3: ФИНАНСОВЫЙ ЦЕНТР -->
@@ -833,12 +858,10 @@
     <section id="view-settings" class="space-y-4 pt-2 hidden">
       <div>
         <h2 class="text-lg font-bold text-main">Настройки</h2>
-        <p class="text-xs text-sub" id="st-sync-label">Последняя синхронизация: сегодня</p>
+        <p class="text-xs text-sub">Профиль, оформление и данные</p><p class="text-xs text-sub mt-1" id="st-sync-label">Облако не подключено</p>
       </div>
 
-      <!-- 1. Профиль -->
-      <div class="card-surface p-4 space-y-3">
-        <div class="text-[10px] font-bold uppercase tracking-wider text-brand">1. Профиль и счёт</div>
+      <div class="card-surface p-4 space-y-3"><div class="text-[10px] font-bold uppercase tracking-wider text-brand">Профиль</div>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div id="st-avatar" class="w-10 h-10 rounded-xl btn-turquoise font-extrabold text-sm flex items-center justify-center">F</div>
@@ -850,44 +873,11 @@
           <button type="button" onclick="restartOnboardingSetup()" class="px-3 py-1.5 rounded-lg btn-teal-soft text-xs font-semibold">Изменить</button>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 pt-2 border-t divider-line">
-          <button type="button" onclick="openBalanceModal()" class="input-surface p-2.5 text-left tap">
-            <div class="text-[10px] uppercase tracking-wider text-sub">На карте</div>
-            <div id="st-balance" class="text-sm font-bold text-main tabular-nums mt-0.5">0 ₽</div>
-          </button>
-          <button type="button" onclick="openPaydayModal()" class="input-surface p-2.5 text-left tap">
-            <div class="text-[10px] uppercase tracking-wider text-sub">Зарплата</div>
-            <div id="st-payday" class="text-sm font-bold text-gold mt-0.5">29 ноя</div>
-          </button>
         </div>
-      </div>
-
-      <!-- 2. Финансы -->
-      <div class="card-surface p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-brand">2. Финансы</span>
-          <button type="button" onclick="openBillModal()" class="text-xs font-semibold text-brand tap">+ Платёж</button>
-        </div>
-        <div class="input-surface p-3 flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-main" id="st-goal-title">Финансовая подушка</div>
-            <div class="text-[11px] text-sub" id="st-goal-sub">Отложено: 0 ₽ из 10 000 ₽</div>
-          </div>
-          <button type="button" onclick="openGoalDetailsModal()" class="px-3 py-1.5 rounded-lg btn-gold-soft text-xs font-semibold">Открыть</button>
-        </div>
-        <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
-          <div class="pr-2">
-            <div class="text-xs font-medium text-main">Авто-дельта баланса</div>
-            <div class="text-[10px] text-sub">Автоматически закрывать разницу остатка как мелкие траты</div>
-          </div>
-          <input type="checkbox" id="auto-delta-toggle" checked onchange="toggleAutoDeltaPref()" class="w-4 h-4 accent-[#00D6C3] shrink-0" />
-        </label>
-        <div id="st-bills-list" class="space-y-2"></div>
-      </div>
-
-      <!-- 3. Оформление и анимации -->
-      <div class="card-surface p-4 space-y-3">
-        <div class="text-[10px] font-bold uppercase tracking-wider text-brand">3. Оформление и анимации</div>
+      <p class="section-caption">Под себя</p>
+      <details id="settings-appearance" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="palette"></i></span><span><strong>Внешний вид</strong><small>Тема, анимации и заставка</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-main">Тема интерфейса</span>
           <div class="seg-track grid-cols-3 w-48 text-[11px] font-semibold" id="theme-seg">
@@ -901,11 +891,13 @@
           <span class="text-xs font-medium text-main">Анимации интерфейса</span>
           <input type="checkbox" id="motion-toggle" checked onchange="toggleMotionPref()" class="w-4 h-4 accent-[#00D6C3]" />
         </label>
-      </div>
-
-      <!-- 4. Уведомления -->
-      <div class="card-surface p-4 space-y-2.5">
-        <div class="text-[10px] font-bold uppercase tracking-wider text-brand">4. Уведомления</div>
+<button type="button" onclick="replayMotionSplash()" class="text-[11px] text-brand font-semibold">
+            Посмотреть заставку «Росток»
+          </button></div>
+      </details>
+      <details id="settings-notifications" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="bell"></i></span><span><strong>Уведомления</strong><small>Расходы, чеки и напоминания</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">
         <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
           <span class="text-xs font-medium text-main">Новые расходы и чеки</span>
           <input type="checkbox" id="notif-tx" checked onchange="saveNotifPrefs()" class="w-4 h-4 accent-[#00D6C3]" />
@@ -913,38 +905,40 @@
         <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
           <span class="text-xs font-medium text-main">Напоминания о платежах</span>
           <input type="checkbox" id="notif-bills" checked onchange="saveNotifPrefs()" class="w-4 h-4 accent-[#00D6C3]" />
-        </label>
-      </div>
-
-      <!-- 5. Архив сохранённых оригиналов чеков и интеграции -->
-      <div class="card-surface p-4 space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-brand">5. Архив оригиналов чеков и облако</span>
-          <span class="text-[10px] text-sub">IndexedDB</span>
-        </div>
-        <div id="saved-scans-list" class="space-y-2"></div>
-        <button type="button" onclick="openAutopilotModal()" class="w-full py-2.5 rounded-xl btn-teal-soft text-xs font-semibold">
-          Импорт выписок (CSV/PDF) и настройки синхронизации
-        </button>
-      </div>
-
-      <button type="button" class="inv-entry card-surface" data-invest-open><span class="inv-entry-icon" aria-hidden="true">↗</span><span><span class="inv-eyebrow">Бесплатно · Учебный режим</span><strong>Учиться инвестировать</strong><small>Настоящие акции, простые уроки и тренировка</small></span><span aria-hidden="true">→</span></button>
-
-      <!-- 6. О приложении -->
-      <div class="card-surface p-4 space-y-2">
-        <div onclick="handleVersionSecretTap()" class="flex items-center justify-between cursor-pointer">
+        </label></div>
+      </details>
+      <p class="section-caption">Данные и подключение</p>
+      <details id="settings-data" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="cloud"></i></span><span><strong>Импорт и облако</strong><small>Загрузка операций и синхронизация</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><button type="button" class="section-action" onclick="openAutopilotModal('import')"><span><strong>Импорт операций</strong><small>Выписка или скриншот уведомления</small></span><span aria-hidden="true">→</span></button><button type="button" class="section-action" onclick="openAutopilotModal('cloud')"><span><strong>Облачная синхронизация</strong><small>Подключение и адрес сервера</small></span><span aria-hidden="true">→</span></button></div>
+      </details>
+      <details id="settings-receipts" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="receipt"></i></span><span><strong>Оригиналы чеков</strong><small>Сохранённые файлы и повторное распознавание</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><div id="saved-scans-list" class="space-y-2"></div></div>
+      </details>
+      <details id="settings-advanced" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="sliders-horizontal"></i></span><span><strong>Дополнительно</strong><small>Правила учёта, автоматизация и диагностика</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><h3 class="section-caption">Учёт остатка</h3><label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
+          <div class="pr-2">
+            <div class="text-xs font-medium text-main">Учитывать разницу остатка как расход</div>
+            <div class="text-[10px] text-sub">При изменении баланса записывать недостающую сумму отдельной тратой</div>
+          </div>
+          <input type="checkbox" id="auto-delta-toggle" checked onchange="toggleAutoDeltaPref()" class="w-4 h-4 accent-[#00D6C3] shrink-0" />
+        </label><button type="button" class="section-action" onclick="openAutopilotModal('automation')"><span><strong>Автоматизация iPhone</strong><small>Настройка «Команд» iOS</small></span><span aria-hidden="true">→</span></button><button type="button" class="section-action" onclick="openAutopilotModal('logs')"><span><strong>Диагностика</strong><small>Очередь обработки и журнал ошибок</small></span><span aria-hidden="true">→</span></button></div>
+      </details>
+      <details id="settings-about" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="info"></i></span><span><strong>О приложении</strong><small>Версия и знакомство с Fintex</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><div onclick="handleVersionSecretTap()" class="flex items-center justify-between cursor-pointer">
           <span class="text-xs font-semibold text-main">FINTEX · Личные финансы</span>
           <span class="text-xs font-mono text-brand">v4.2</span>
         </div>
         <div class="flex flex-wrap gap-3 pt-1">
-          <button type="button" onclick="replayMotionSplash()" class="text-[11px] text-brand font-semibold">
-            Посмотреть заставку «Росток»
-          </button>
+
           <button type="button" onclick="replayFullOnboarding()" class="text-[11px] text-sub font-semibold">
-            Онбординг первого входа
+            Пройти знакомство с приложением
           </button>
-        </div>
-      </div>
+        </div></div>
+      </details>
 
       <!-- Закрытая админ-панель (только для ADMIN_ID) -->
       <div id="admin-box" class="card-surface p-4 space-y-3 border border-[#00D6C3]/35 hidden">
@@ -1220,12 +1214,36 @@
       <div class="flex items-center justify-between">
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-base font-bold text-main">FINTEX Autopilot</span>
+            <span class="text-base font-bold text-main">Импорт и подключение</span>
             <span id="ap-queue-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-[#00D6C3]/15 text-brand">Доставлено ✓</span>
           </div>
-          <p class="text-[11px] text-sub">OCR скриншотов СМС, журнал обработки и облачный мост</p>
+          <p class="text-[11px] text-sub">Выберите задачу: загрузить операции или настроить подключение</p>
         </div>
         <button type="button" onclick="closeModals()" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <details id="ap-section-import" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="file-input"></i></span><span><strong>Импорт операций</strong><small>Выписка CSV/TXT или скриншот уведомления</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">      <!-- Импорт выписки CSV/TXT -->
+      <div class="input-surface p-3.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-main">Импорт банковской выписки (CSV / TXT)</div>
+            <div class="text-[10px] text-sub">Автоматическое распознавание операций и хэш-защита от дублей</div>
+          </div>
+          <label class="px-3 py-1.5 rounded-lg btn-teal-soft text-xs font-semibold cursor-pointer">
+            Выбрать
+            <input type="file" accept=".csv,.txt,.tsv" onchange="handleStatementFile(event)" class="hidden" />
+          </label>
+        </div>
+        <div id="stmt-preview-box" class="hidden space-y-2 pt-2 border-t divider-line">
+          <div class="flex justify-between text-xs">
+            <span id="stmt-preview-title" class="font-bold text-main">Выписка</span>
+            <span id="stmt-dedup-badge" class="text-[10px] text-gold font-semibold">Дублей: 0</span>
+          </div>
+          <div id="stmt-preview-list" class="max-h-32 overflow-y-auto space-y-1 text-xs"></div>
+          <button type="button" onclick="confirmStatementImport()" class="w-full py-2 rounded-xl btn-turquoise text-xs">Импортировать операции</button>
+        </div>
       </div>
 
       <!-- 1. Распознавание банковских SMS и пушей через OCR -->
@@ -1265,7 +1283,11 @@
         </div>
       </div>
 
-      <!-- Мастер автоматизации Команд iOS -->
+</div>
+      </details>
+      <details id="ap-section-automation" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="workflow"></i></span><span><strong>Автоматизация iPhone</strong><small>Отправка операций через «Команды»</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">      <!-- Мастер автоматизации Команд iOS -->
       <div onclick="closeModals(); openIosShortcutsModal();" class="input-surface p-3.5 flex items-center justify-between cursor-pointer tap border border-[#00D6C3]/25">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-[#00D6C3]/15 text-brand flex items-center justify-center shrink-0">
@@ -1279,29 +1301,29 @@
         <i data-lucide="chevron-right" class="w-4 h-4 text-brand shrink-0"></i>
       </div>
 
-      <!-- Импорт выписки CSV/TXT -->
-      <div class="input-surface p-3.5 space-y-2">
+</div>
+      </details>
+      <details id="ap-section-cloud" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="cloud"></i></span><span><strong>Облачное подключение</strong><small>Адрес сервера и параметры доступа</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">      <!-- Настройки URL Apps Script, UID и Токена безопасности -->
+      <div class="input-surface p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-main">Импорт банковской выписки (CSV / TXT)</div>
-            <div class="text-[10px] text-sub">Автоматическое распознавание операций и хэш-защита от дублей</div>
-          </div>
-          <label class="px-3 py-1.5 rounded-lg btn-teal-soft text-xs font-semibold cursor-pointer">
-            Выбрать
-            <input type="file" accept=".csv,.txt,.tsv" onchange="handleStatementFile(event)" class="hidden" />
-          </label>
+          <span class="text-xs font-bold text-main">Облачный мост Google Apps Script</span>
+          <span class="text-[10px] font-mono text-brand" id="ap-uid-badge">UID: —</span>
         </div>
-        <div id="stmt-preview-box" class="hidden space-y-2 pt-2 border-t divider-line">
-          <div class="flex justify-between text-xs">
-            <span id="stmt-preview-title" class="font-bold text-main">Выписка</span>
-            <span id="stmt-dedup-badge" class="text-[10px] text-gold font-semibold">Дублей: 0</span>
-          </div>
-          <div id="stmt-preview-list" class="max-h-32 overflow-y-auto space-y-1 text-xs"></div>
-          <button type="button" onclick="confirmStatementImport()" class="w-full py-2 rounded-xl btn-turquoise text-xs">Импортировать операции</button>
+        <div class="flex gap-2">
+          <input id="gas-url-field" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-main" />
+          <button type="button" onclick="saveGasUrl()" class="px-3.5 py-2 rounded-lg btn-turquoise text-xs">OK</button>
         </div>
-      </div>
-
-      <!-- 6. Журнал обработки и ошибок (Локальный + лист Logs в Google Таблице) -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <input id="gas-token-field" type="password" placeholder="Секретный token (необяз.)" class="bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-main" />
+          <button type="button" onclick="saveSecurityToken()" class="py-1.5 rounded-lg btn-teal-soft text-[11px] font-semibold">Сохранить token</button>
+        </div>
+      </div></div>
+      </details>
+      <details id="ap-section-logs" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="activity"></i></span><span><strong>Диагностика</strong><small>Результаты обработки, дубли и ошибки</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">      <!-- 6. Журнал обработки и ошибок (Локальный + лист Logs в Google Таблице) -->
       <div class="card-surface p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5">
@@ -1318,21 +1340,9 @@
         <div id="autopilot-logs-list" class="max-h-44 overflow-y-auto space-y-1.5 text-[11px]"></div>
       </div>
 
-      <!-- Настройки URL Apps Script, UID и Токена безопасности -->
-      <div class="input-surface p-3.5 space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-main">Облачный мост Google Apps Script</span>
-          <span class="text-[10px] font-mono text-brand" id="ap-uid-badge">UID: —</span>
-        </div>
-        <div class="flex gap-2">
-          <input id="gas-url-field" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 bg-black/30 border border-white/10 rounded-lg px-2.5 py-2 text-[11px] text-main" />
-          <button type="button" onclick="saveGasUrl()" class="px-3.5 py-2 rounded-lg btn-turquoise text-xs">OK</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <input id="gas-token-field" type="text" placeholder="Секретный token (необяз.)" class="bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-main" />
-          <button type="button" onclick="saveSecurityToken()" class="py-1.5 rounded-lg btn-teal-soft text-[11px] font-semibold">Сохранить token</button>
-        </div>
-      </div>
+</div>
+      </details>
+
     </div>
   </div>
 
@@ -1820,10 +1830,10 @@
 
   <script src="./scanner.js?v=19"></script>
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
-  <script src="./app.js?v=25"></script>
+  <script src="./app.js?v=28"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=26"></script>
+  <script src="./extensions.js?v=28"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=19" data-fintex-mod="sim_ui.js"></script>
