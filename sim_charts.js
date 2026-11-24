@@ -46,7 +46,7 @@
           subtitle: `Просадка до ${this.fmtFull(cur.minCash)}. Попробуйте уменьшить сумму или оформить рассрочку/кредит.`
         };
       }
-      if (cur.cushionMonths < 1.5) {
+      if (cur.cushionMonths !== null && cur.cushionMonths < 1.5) {
         return {
           tone: 'warn',
           badge: 'На грани резерва',
@@ -56,9 +56,9 @@
       }
       return {
         tone: 'safe',
-        badge: 'Безопасное решение',
+        badge: 'Условный сценарий',
         title: `${modeName} сценарий проходит спокойно`,
-        subtitle: `Через ${cur.horizonDays} дн. на руках останется ${this.fmtFull(cur.endCash)}, подушка — ${cur.cushionMonths} мес.`
+        subtitle: `Через ${cur.horizonDays} дн. на руках останется ${this.fmtFull(cur.endCash)}, подушка — ${cur.cushionMonths === null ? 'не оценена (нет расходов)' : `${cur.cushionMonths} мес.`}`
       };
     },
 

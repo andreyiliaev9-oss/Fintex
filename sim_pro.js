@@ -185,7 +185,7 @@
             desc: `Текущего остатка не хватает на ${res.cashGapDay}-й день. Сократите ежемесячные расходы на ${this.fmt(Math.ceil(deficit / Math.max(1, draft.horizonDays / 30)))}/мес.`
           });
         }
-      } else if (res.cushionMonths < 2) {
+      } else if (res.cushionMonths !== null && res.cushionMonths < 2) {
         recs.push({
           title: 'Укрепить финансовую подушку до 3 месяцев',
           desc: `После реализации сценария подушка покроет ${res.cushionMonths} мес. расходов — безопасный минимум от 3 мес.`
@@ -193,13 +193,13 @@
       } else {
         recs.push({
           title: 'Сценарий финансово устойчив',
-          desc: `Ликвидность сохраняется, подушка безопасности составляет ${res.cushionMonths} мес. Можно направить свободный поток в цель.`
+          desc: `Ликвидность сохраняется, подушка безопасности составляет ${res.cushionMonths === null ? 'не рассчитана без расходов' : `${res.cushionMonths} мес.`} Можно направить свободный поток в цель.`
         });
       }
 
       if (firstBigPurchase && firstBigPurchase.useCredit) {
         const loan = Math.max(0, firstBigPurchase.amount - (firstBigPurchase.downPayment || 0));
-        const pmt = SIM.calcAnnuityPayment(loan, firstBigPurchase.creditRate || 18, firstBigPurchase.creditMonths || 36);
+        const pmt = SIM.calcAnnuityPayment(loan, firstBigPurchase.creditRate ?? 18, firstBigPurchase.creditMonths || 36);
         const totalPaid = pmt * (firstBigPurchase.creditMonths || 36);
         const overpay = Math.max(0, totalPaid - loan);
         recs.push({

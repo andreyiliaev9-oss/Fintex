@@ -218,7 +218,7 @@ function parseRussianReceiptText(rawText, qrData, avgConf) {
     }
   }
 
-  const itemsSum = Math.round(items.reduce((s, it) => s + it.total_price, 0) * 100) / 100;
+  const itemsSum = window.FintexMath.sum(items,it=>it.total_price);
   const finalTotal = qrData.sum !== null ? qrData.sum : (ocrTotal !== null ? ocrTotal : (itemsSum > 0 ? itemsSum : null));
 
   const lowFields = [];
@@ -410,7 +410,7 @@ function renderScanResultToForm(scanCtx) {
   const qrMatchEl = document.getElementById('res-qr-match-badge');
   const qrDetEl = document.getElementById('res-qr-details');
   if (d.qr && d.qr.found) {
-    const matchOk = d.total !== null && d.qr.sum !== null && Math.abs(d.total - d.qr.sum) <= 1;
+    const matchOk = d.total !== null && d.qr.sum !== null && FM.minor(d.total) === FM.minor(d.qr.sum);
     qrMatchEl.textContent = matchOk ? 'Сумма = QR ✓' : `QR: ${d.qr.sum} ₽`;
     qrDetEl.textContent = `ФН: ${d.qr.fn} · ФД: ${d.qr.fd} · ФП: ${d.qr.fp} · ${d.qr.operation_type}`;
   } else {
@@ -470,7 +470,7 @@ function addManualScanItem() {
 function recalcScanArithmetic() {
   if (!state.currentScan?.data) return;
   const items = state.currentScan.data.items || [];
-  const itemsSum = Math.round(items.reduce((s, it) => s + (Number(it.total_price) || 0), 0) * 100) / 100;
+  const itemsSum = FM.sum(items,it=>it.total_price);
   const totalVal = Number(document.getElementById('res-total').value) || 0;
   const el = document.getElementById('res-arith-status');
   if (!items.length) {
@@ -478,8 +478,8 @@ function recalcScanArithmetic() {
     return;
   }
   const diff = Math.abs(itemsSum - totalVal);
-  el.textContent = diff <= 2 ? `${fmtR(itemsSum)} = ${fmtR(totalVal)} ✓` : `Позиции ${fmtR(itemsSum)} ≠ Итог ${fmtR(totalVal)}`;
-  el.className = `font-bold tabular-nums ${diff <= 2 ? 'text-brand' : 'text-gold'}`;
+  el.textContent = FM.minor(itemsSum) === FM.minor(totalVal) ? `${fmtR(itemsSum)} = ${fmtR(totalVal)} ✓` : `Позиции ${fmtR(itemsSum)} ≠ Итог ${fmtR(totalVal)}`;
+  el.className = `font-bold tabular-nums ${FM.minor(itemsSum) === FM.minor(totalVal) ? 'text-brand' : 'text-gold'}`;
 }
 
 function upsertScanArchive(entry) {
@@ -493,7 +493,7 @@ function confirmAndCreateExpenseFromScan() {
   if (!state.currentScan?.data) return;
   const merchant = document.getElementById('res-merchant').value.trim() || 'Кассовый чек';
   const date = document.getElementById('res-date').value || TODAY;
-  const total = Math.round(Math.abs(Number(document.getElementById('res-total').value) || 0));
+  const total = Math.abs(FM.parse(document.getElementById('res-total').value) || 0);
   if (total <= 0) { toast('Укажите итоговую сумму'); return; }
 
   if (state.transactions.some(t => t.scan_id === state.currentScan.scan_id)) {
@@ -538,7 +538,7 @@ function normalizeProductKey(name) {
 
 function recordProductPrice(name, price, merchant, date, category = 'other') {
   const cleanName = (name || '').trim();
-  const numPrice = Math.round(Number(price) * 100) / 100;
+  const numPrice = FM.money(price);
   if (!cleanName || numPrice <= 0) return;
 
   const key = normalizeProductKey(cleanName);
@@ -550,7 +550,7 @@ function recordProductPrice(name, price, merchant, date, category = 'other') {
   const entry = state.priceHistory[key];
   entry.displayName = cleanName;
   // Не дублируем идентичную запись в тот же день и в том же магазине
-  const dupSameDay = entry.records.some(r => r.date === date && r.merchant === merchant && Math.abs(r.price - numPrice) < 0.5);
+  const dupSameDay = entry.records.some(r => r.date === date && r.merchant === merchant && FM.minor(r.price) === FM.minor(numPrice));
   if (!dupSameDay) {
     entry.records.push({ date, price: numPrice, merchant });
     entry.records.sort((a, b) => a.date.localeCompare(b.date));
@@ -567,7 +567,7 @@ function getPriceComparison(name, currentPrice) {
   const prevRec = entry.records[entry.records.length - 1];
   if (!prevRec || prevRec.price <= 0) return null;
 
-  const diff = Math.round((cur - prevRec.price) * 100) / 100;
+  const diff = FM.add(cur,-prevRec.price);
   const pct = Math.round((diff / prevRec.price) * 100);
   if (Math.abs(pct) < 1) {
     return { diff: 0, pct: 0, label: `Как раньше (${prevRec.price} ₽)` };

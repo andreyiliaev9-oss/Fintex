@@ -19,12 +19,12 @@
         { key: 'dayOffset', label: 'Через сколько дней', min: 0, max: 180, step: 5, unit: 'дн.' }
       ],
       buildEvent(vals) {
-        const price = Number(vals.amount) || 500000;
-        const down = Math.min(price, Number(vals.downPayment) || 0);
+        const price = window.FintexMath.finite(vals.amount, 500000);
+        const down = Math.min(price, window.FintexMath.finite(vals.downPayment, 0));
         const useCredit = down < price;
         return {
           type: 'purchase',
-          dayOffset: Number(vals.dayOffset) || 14,
+          dayOffset: window.FintexMath.finite(vals.dayOffset, 14),
           title: price >= 400000 ? 'Покупка авто' : 'Крупная покупка',
           amount: price,
           oneOffExtra: Math.round(price * 0.03),
@@ -53,12 +53,12 @@
       buildEvent(vals) {
         return {
           type: 'move',
-          dayOffset: Number(vals.dayOffset) || 30,
+          dayOffset: window.FintexMath.finite(vals.dayOffset, 30),
           title: 'Переезд',
-          amount: Number(vals.amount) || 60000,
+          amount: window.FintexMath.finite(vals.amount, 60000),
           oneOffExtra: 0,
           monthlyIncomeDelta: 0,
-          monthlyExpenseDelta: Number(vals.monthlyExpenseDelta) || 35000,
+          monthlyExpenseDelta: window.FintexMath.finite(vals.monthlyExpenseDelta, 35000),
           isAsset: false,
           useCredit: false
         };
@@ -77,12 +77,12 @@
         { key: 'dayOffset', label: 'Через сколько дней', min: 0, max: 180, step: 5, unit: 'дн.' }
       ],
       buildEvent(vals) {
-        const delta = Number(vals.monthlyIncomeDelta) || 30000;
+        const delta = window.FintexMath.finite(vals.monthlyIncomeDelta, 30000);
         return {
           type: 'work',
-          dayOffset: Number(vals.dayOffset) || 15,
+          dayOffset: window.FintexMath.finite(vals.dayOffset, 15),
           title: delta >= 0 ? 'Рост дохода' : 'Снижение дохода',
-          amount: Number(vals.amount) || 0,
+          amount: window.FintexMath.finite(vals.amount, 0),
           oneOffExtra: 0,
           monthlyIncomeDelta: delta,
           monthlyExpenseDelta: 0,
@@ -106,11 +106,11 @@
       buildEvent(vals) {
         return {
           type: 'risk',
-          dayOffset: Number(vals.dayOffset) || 0,
+          dayOffset: window.FintexMath.finite(vals.dayOffset, 0),
           title: 'Стресс-сценарий',
-          amount: Number(vals.amount) || 30000,
+          amount: window.FintexMath.finite(vals.amount, 30000),
           oneOffExtra: 0,
-          monthlyIncomeDelta: Number(vals.monthlyIncomeDelta) || -40000,
+          monthlyIncomeDelta: window.FintexMath.finite(vals.monthlyIncomeDelta, -40000),
           monthlyExpenseDelta: 0,
           isAsset: false,
           useCredit: false
@@ -456,6 +456,7 @@
       if (!res) throw new Error('Симулятор не вернул результаты расчёта.');
 
       resultsBox.innerHTML = `
+        <p class="text-[10px] text-sub">Условная модель: 30 дней в месяце, обычный поток равномерный; кредит — платёж каждые 30 дней. ${res.snapshot.dataQuality?.hasIncomeData ? '' : 'Доход оценён, поступлений в истории нет.'} ${res.snapshot.dataQuality?.hasEnoughExpenseData ? '' : 'Расходы оценены по дневному бюджету.'} Не банковский график и не гарантия.</p>
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div class="input-surface p-2.5">
             <div class="text-[10px] text-sub">Остаток денег</div>
@@ -467,7 +468,7 @@
           </div>
           <div class="input-surface p-2.5">
             <div class="text-[10px] text-sub">Запас прочности</div>
-            <div class="text-xs font-bold tabular-nums text-main">${res.cushionMonths} мес. без дохода</div>
+            <div class="text-xs font-bold tabular-nums text-main">${res.cushionMonths === null ? 'Нет расходов для оценки' : `${res.cushionMonths} мес. без дохода`}</div>
           </div>
           <div class="input-surface p-2.5">
             <div class="text-[10px] text-sub">${res.monthlyDebtService > 0 ? 'Платёж по кредиту' : 'Баланс в месяц'}</div>

@@ -133,8 +133,11 @@
     const st = getState();
     const currency = st.currency || '₽';
     const now = new Date();
-    const start = new Date(now.getTime() - days * 86400000);
-    const prevStart = new Date(start.getTime() - days * 86400000);
+    const M=window.FintexMath, today=M.key(now);
+    const startKey=M.shift(today,1-days), prevKey=M.shift(startKey,-days);
+    const validTxs=M.transactions(st.transactions,prevKey,today);
+    const start=new Date(`${startKey}T00:00:00`);
+    const prevStart=new Date(`${prevKey}T00:00:00`);
     let spent = 0, income = 0, prevSpent = 0;
     const byCat = {};
     const byWeekday = [0, 0, 0, 0, 0, 0, 0];
@@ -142,8 +145,8 @@
     const activeDates = new Set();
     const currentTxs = [];
 
-    (st.transactions || []).forEach(tx => {
-      const date = parseTxDate(tx);
+    validTxs.forEach(tx => {
+      const date = new Date(`${tx.date}T00:00:00`);
       if (!date) return;
       const amount = Math.abs(Number(tx.amount) || 0);
       if (!amount) return;
@@ -151,23 +154,23 @@
       if (date >= start && date <= now) {
         currentTxs.push({ ...tx, _date: date, _amt: amount, _inc: incomeTx });
         if (incomeTx) {
-          income += amount;
+          income=M.add(income,amount);
           return;
         }
-        spent += amount;
+        spent=M.add(spent,amount);
         const dateKey = localDateKey(date);
         activeDates.add(dateKey);
-        byWeekday[date.getDay()] += amount;
+        byWeekday[date.getDay()] = M.add(byWeekday[date.getDay()],amount);
         if (!byDate[dateKey]) byDate[dateKey] = { total: 0, list: [] };
-        byDate[dateKey].total += amount;
+        byDate[dateKey].total = M.add(byDate[dateKey].total,amount);
         byDate[dateKey].list.push({ title: tx.merchant || tx.title || tx.note || tx.category || 'Покупка', amount, category: tx.category || 'Прочее' });
         const meta = categoryMeta(tx.category || 'Прочее');
         const key = meta.name;
         if (!byCat[key]) byCat[key] = { total: 0, items: [], meta };
-        byCat[key].total += amount;
+        byCat[key].total = M.add(byCat[key].total,amount);
         byCat[key].items.push({ title: tx.merchant || tx.title || tx.note || key, amount, date: date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) });
       } else if (date >= prevStart && date < start && !incomeTx) {
-        prevSpent += amount;
+        prevSpent=M.add(prevSpent,amount);
       }
     });
 
@@ -180,16 +183,18 @@
     const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysLeft = Math.max(0, monthDays - now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    let monthSpent = 0, monthIncome = 0;
-    (st.transactions || []).forEach(tx => {
-      const date = parseTxDate(tx);
+    let monthSpent = 0, monthIncome = 0, monthVariable = 0;
+    M.transactions(st.transactions, M.key(monthStart),today).forEach(tx => {
+      const date = new Date(`${tx.date}T00:00:00`);
       if (!date || date < monthStart || date > now) return;
       const amount = Math.abs(Number(tx.amount) || 0);
-      if (isIncome(tx)) monthIncome += amount; else monthSpent += amount;
+      if (isIncome(tx)) monthIncome=M.add(monthIncome,amount); else {monthSpent=M.add(monthSpent,amount);if(!M.isBill(tx))monthVariable=M.add(monthVariable,amount);}
     });
     const monthElapsed = Math.max(1, now.getDate());
-    const monthDailyRate = monthSpent / monthElapsed;
-    const projectedBalance = monthIncome - monthSpent - monthDailyRate * daysLeft;
+    const monthDailyRate = monthVariable / monthElapsed;
+    const monthEnd = `${today.slice(0,7)}-${String(monthDays).padStart(2,'0')}`;
+    const scheduled=M.sum((st.bills||[]).filter(b=>!b.is_paid && M.ordinal(b.due_date)!==null && b.due_date<=monthEnd),b=>Math.max(0,M.finite(b.amount)));
+    const projectedBalance = M.add(st.balance,-monthDailyRate*daysLeft,-scheduled);
     const weekdayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const weekdayLong = ['воскресенье', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
     const peakIndex = byWeekday.indexOf(Math.max(...byWeekday));
@@ -200,7 +205,7 @@
     if (spent > 0) insights.push({ text: `В среднем расходы составляют ${fmt(burnRate, currency)} в день.`, color: COLORS.mint });
     insights.push({ text: `Дней без покупок: ${quietDays} из ${days}.`, color: '#91A69F' });
 
-    return { st, currency, now, spent, income, net: income - spent, deltaPct, prevSpent, burnRate, projectedBalance, categories, insights, byWeekday, weekdayNames, byDate, activeDates, currentTxs, allTxs: st.transactions || [] };
+    return { st, currency, now, spent, income, net: M.add(income,-spent), deltaPct, prevSpent, burnRate, projectedBalance, categories, insights, byWeekday, weekdayNames, byDate, activeDates, currentTxs, allTxs: M.transactions(st.transactions,null,today) };
   }
 
   function renderPeriodControls() {
@@ -236,8 +241,9 @@
       </div>
       <div class="ftx-ap-summary-row">
         <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:var(--number-ink, var(--accent))">${fmt(data.burnRate, data.currency)}</div></div>
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Прогноз остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? 'var(--danger)' : 'var(--gold)'}">${fmt(data.projectedBalance, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Оценка остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? 'var(--danger)' : 'var(--gold)'}">${fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
+      <p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p>
       <div class="ftx-ap-card">
         <div class="ftx-ap-section-title"><span>Куда уходят деньги</span><span class="ftx-ap-section-sub">Топ категорий</span></div>
         ${topCats || '<div class="ftx-ap-empty">Добавьте расходы — здесь появится их распределение</div>'}
@@ -305,8 +311,8 @@
     start.setDate(start.getDate() - 83);
     (data.allTxs || []).forEach(tx => {
       if (isIncome(tx)) return;
-      const date = parseTxDate(tx);
-      if (!date) return;
+      const date = new Date(`${tx.date}T00:00:00`);
+      if (!date || date < start || date > now) return;
       const key = localDateKey(date);
       if (!map[key]) map[key] = { total: 0, list: [] };
       const amount = Math.abs(Number(tx.amount) || 0);
@@ -424,5 +430,5 @@
     }
     renderProAnalytics(args[0] instanceof HTMLElement ? args[0] : null);
   };
-  window.FintexAnalyticsPro = { render: renderProAnalytics };
+  window.FintexAnalyticsPro = { render: renderProAnalytics, analyze: analyzeData };
 })();

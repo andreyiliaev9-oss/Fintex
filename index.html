@@ -311,7 +311,7 @@
                 <span id="autopilot-stage-pill" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#00D6C3]/15 text-brand">Подтверждён</span>
               </div>
               <div id="sources-explicit-text" class="text-[11px] text-sub truncate mt-0.5">
-                Банк (Т-Банк) · Чеки OCR · Выписки CSV/PDF
+                Банк (Т-Банк) · Чеки OCR · Импорт CSV/TXT
               </div>
             </div>
           </div>
@@ -1240,7 +1240,7 @@
         <div class="flex items-center justify-between">
           <div>
             <div class="text-xs font-bold text-main">Импорт банковской выписки (CSV / TXT)</div>
-            <div class="text-[10px] text-sub">Автоматическое распознавание операций и хэш-защита от дублей</div>
+            <div class="text-[10px] text-sub">Строки: дата ГГГГ-ММ-ДД;магазин;сумма или магазин;сумма. + для дохода. Другие форматы не импортируются.</div>
           </div>
           <label class="px-3 py-1.5 rounded-lg btn-teal-soft text-xs font-semibold cursor-pointer">
             Выбрать
@@ -1457,7 +1457,7 @@
           <button type="button" onclick="withdrawFromGoal(5000, false)" class="py-2 rounded-xl btn-teal-soft text-xs font-bold">−5 000 ₽</button>
         </div>
         <div class="flex gap-2 pt-1">
-          <input id="inp-goal-transfer-amt" type="number" min="1" placeholder="Другая сумма, ₽" class="flex-1 input-surface px-3 py-2 text-xs font-bold tabular-nums" />
+          <input id="inp-goal-transfer-amt" type="number" min="0.01" step="0.01" placeholder="Другая сумма, ₽" class="flex-1 input-surface px-3 py-2 text-xs font-bold tabular-nums" />
           <button type="button" onclick="transferCustomGoal(false)" class="px-3 py-2 rounded-xl btn-teal-soft text-xs font-bold shrink-0">В доступные</button>
           <button type="button" onclick="transferCustomGoal(true)" class="px-3 py-2 rounded-xl bg-red-500/15 text-red-300 border border-red-400/30 text-xs font-bold shrink-0">Потратить</button>
         </div>
@@ -1470,7 +1470,7 @@
       </button>
       <div class="grid grid-cols-2 gap-2">
         <input id="inp-goal-title" type="text" placeholder="Название цели" class="w-full input-surface px-3 py-2 text-xs font-semibold" />
-        <input id="inp-goal-target" type="number" placeholder="Цель ₽" class="w-full input-surface px-3 py-2 text-xs font-bold tabular-nums" />
+        <input id="inp-goal-target" type="number" step="0.01" min="0.01" placeholder="Цель ₽" class="w-full input-surface px-3 py-2 text-xs font-bold tabular-nums" />
       </div>
       <button type="button" onclick="saveGoalSettings()" class="w-full py-3 rounded-xl btn-turquoise text-sm">Сохранить цель</button>
     </div>
@@ -1606,7 +1606,7 @@
         <span class="text-sm font-bold text-main">Зачисление зарплаты</span>
         <button type="button" onclick="closeModals()" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <input id="inp-salary" type="number" placeholder="Сумма зарплаты ₽" class="w-full input-surface px-3.5 py-2.5 text-lg font-bold tabular-nums" />
+      <input id="inp-salary" type="number" step="0.01" min="0.01" placeholder="Сумма зарплаты ₽" class="w-full input-surface px-3.5 py-2.5 text-lg font-bold tabular-nums" />
       <input id="inp-next-payday" type="date" class="w-full input-surface px-3.5 py-2.5 text-xs font-semibold" />
       <button type="button" onclick="applyNewCycle()" class="w-full py-3 rounded-xl btn-turquoise text-sm">Начать новый цикл</button>
     </div>
@@ -1622,7 +1622,7 @@
       </div>
       <input id="inp-bill-title" type="text" placeholder="Название (Яндекс Плюс, Аренда)" class="w-full input-surface px-3.5 py-2.5 text-sm" />
       <div class="grid grid-cols-2 gap-2">
-        <input id="inp-bill-amt" type="number" placeholder="Сумма ₽" class="w-full input-surface px-3.5 py-2.5 text-sm font-bold tabular-nums" />
+        <input id="inp-bill-amt" type="number" step="0.01" min="0.01" placeholder="Сумма ₽" class="w-full input-surface px-3.5 py-2.5 text-sm font-bold tabular-nums" />
         <input id="inp-bill-date" type="date" class="w-full input-surface px-3.5 py-2.5 text-xs font-semibold" />
       </div>
       <button type="button" onclick="saveNewBill()" class="w-full py-3 rounded-xl btn-turquoise text-sm">Добавить в резерв</button>
@@ -1657,7 +1657,7 @@
       </div>
       <div id="pane-income" class="space-y-3 hidden">
         <input id="inp-inc-title" type="text" placeholder="Источник (Аванс, Перевод, Кэшбэк)" class="w-full input-surface px-3.5 py-2.5 text-sm" />
-        <input id="inp-inc-amt" type="number" placeholder="Сумма ₽" class="w-full input-surface px-3.5 py-2.5 text-lg font-bold text-brand tabular-nums" />
+        <input id="inp-inc-amt" type="number" step="0.01" min="0.01" placeholder="Сумма ₽" class="w-full input-surface px-3.5 py-2.5 text-lg font-bold text-brand tabular-nums" />
         <button type="button" onclick="submitIncome()" class="w-full py-3 rounded-xl btn-turquoise text-sm">Зачислить</button>
       </div>
     </div>
@@ -1862,19 +1862,20 @@
     <span id="toast-msg">Готово</span>
   </div>
 
-  <script src="./scanner.js?v=19"></script>
+  <script src="./scanner.js?v=34"></script>
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
+  <script src="./finance-math.js?v=34"></script>
   <script src="./life-cost.js?v=30"></script>
-  <script src="./app.js?v=30"></script>
+  <script src="./app.js?v=34"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=32"></script>
+  <script src="./extensions.js?v=34"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
-  <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>
-  <script src="./sim_ui.js?v=19" data-fintex-mod="sim_ui.js"></script>
-  <script src="./sim_charts.js?v=19" data-fintex-mod="sim_charts.js"></script>
-  <script src="./sim_pro.js?v=19" data-fintex-mod="sim_pro.js"></script>
-  <script src="./stories_recap.js?v=19" data-fintex-mod="stories_recap.js"></script>
+  <script src="./sim_engine.js?v=34" data-fintex-mod="sim_engine.js"></script>
+  <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>
+  <script src="./sim_charts.js?v=34" data-fintex-mod="sim_charts.js"></script>
+  <script src="./sim_pro.js?v=34" data-fintex-mod="sim_pro.js"></script>
+  <script src="./stories_recap.js?v=34" data-fintex-mod="stories_recap.js"></script>
   <script src="./financial-tree-model.js?v=33"></script>
   <script src="./financial_tree.js?v=33"></script>
 </body>
