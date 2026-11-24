@@ -379,23 +379,10 @@ function persistAll() {
 
 // ==================== ТЕМА И АНИМАЦИИ ====================
 function setTheme(mode) {
-  const m = mode || localStorage.getItem('fp_theme') || 'dark';
-  localStorage.setItem('fp_theme', m);
-  const dark = m === 'dark' || (m === 'auto' && tg?.colorScheme !== 'light');
-  document.documentElement.classList.toggle('dark', dark);
-  const idx = m === 'dark' ? 0 : m === 'light' ? 1 : 2;
-  const thumb = document.getElementById('theme-thumb');
-  if (thumb) thumb.style.transform = `translateX(${idx * 100}%)`;
-  document.querySelectorAll('#theme-seg .seg-item').forEach((el, i) => {
-    el.className = `seg-item py-1 ${i === idx ? 'text-[#041311] font-bold' : 'text-sub'}`;
-  });
-  document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#061C12' : '#F4F5E8');
-  if (tg) {
-    const bg = dark ? '#061C12' : '#F4F5E8';
-    tg.setBackgroundColor(bg);
-    tg.setHeaderColor(bg);
-  }
+  window.FintexAppearance.setMode(mode);
+}
+function setVisualStyle(style) {
+  window.FintexAppearance.setStyle(style);
 }
 
 function applyMotionPref() {

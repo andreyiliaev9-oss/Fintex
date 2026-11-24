@@ -679,3 +679,93 @@ body #gas-token-field { min-width: 0; width: 100%; }
 }
 /* Outrank the legacy Settings card padding: disclosure rows provide their own. */
 body #view-settings > .section-group { padding: 0; }
+
+/* Lagoon is an independent style. Semantic income/expense/planned tokens stay
+ * unchanged; switching mode must never change the meaning of financial data. */
+html[data-visual-style='lagoon'] {
+  --bg-canvas: #f0f7f5;
+  --surface-1: #fcfbf3;
+  --surface-2: #e0f0ec;
+  --surface-raised: #cde7e3;
+  --border-subtle: #bfd8d6;
+  --border-active: #689da3;
+  --text-primary: #163d47;
+  --text-secondary: #416871;
+  --text-muted: #53747b;
+  --accent: #176d78;
+  --accent-rgb: 23,109,120;
+  --accent-2: #267c81;
+  --accent-soft: #d4eae6;
+  --accent-ink: #eff9f5;
+  --gold: #896126;
+  --gold-soft: #f4e8cb;
+  --tabbar-bg: rgba(236,247,243,.97);
+  --surface-wash: linear-gradient(145deg, rgba(86,166,173,.08), transparent 70%);
+  --hero-wash: radial-gradient(ellipse at 100% 0%, rgba(85,167,174,.22), transparent 66%);
+  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(112,182,190,.19), transparent 50%);
+  --budget-bg: #c9e9e4;
+  --budget-ink: #153e45;
+  --budget-empty-bg: #f0e4c8;
+  --shadow-card: 0 8px 28px rgba(18,69,80,.05);
+  --shadow-float: 0 12px 40px rgba(12,53,68,.16);
+}
+html.dark[data-visual-style='lagoon'] {
+  --bg-canvas: #06232d;
+  --surface-1: #0e3641;
+  --surface-2: #164751;
+  --surface-raised: #225963;
+  --border-subtle: #35616a;
+  --border-active: #6d9fa7;
+  --text-primary: #f1f8f4;
+  --text-secondary: #c4dee0;
+  --text-muted: #a7c8ce;
+  --accent: #8edbd2;
+  --accent-rgb: 142,219,210;
+  --accent-2: #63bbc3;
+  --accent-soft: #245761;
+  --accent-ink: #062a32;
+  --gold: #e7c68c;
+  --gold-soft: #49442e;
+  --tabbar-bg: rgba(12,48,59,.97);
+  --surface-wash: linear-gradient(140deg, rgba(67,148,163,.12), transparent 70%);
+  --hero-wash: radial-gradient(ellipse at 100% 0%, rgba(78,169,178,.22), transparent 65%), linear-gradient(150deg, rgba(11,80,98,.3), transparent 80%);
+  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(49,133,155,.2), transparent 48%), radial-gradient(ellipse at 0% 75%, rgba(24,102,115,.14), transparent 60%);
+  --budget-bg: #b0e3dc;
+  --budget-ink: #123d45;
+  --budget-empty-bg: #49442e;
+  --shadow-card: 0 12px 32px rgba(0,17,26,.2), inset 0 1px 0 rgba(174,232,227,.04);
+  --shadow-float: 0 12px 40px rgba(0,17,26,.46);
+}
+html[data-visual-style='lagoon'] body #hero-balance-card::before { background-image: url('./assets/lagoon-ripples.svg'); opacity: .25; }
+html[data-visual-style='lagoon'] body .ai-orb-calm { background: linear-gradient(145deg, #a3e3d8, #5ba8ba); color: #123d45; }
+html[data-visual-style='lagoon'] body #nav-active-pill { background: linear-gradient(145deg, #afe4dc, #70bac8); box-shadow: 0 4px 18px rgba(55,142,157,.16); }
+html[data-visual-style='lagoon'] body .nav-tab.is-active-tab { color: #123d45; }
+html[data-visual-style='lagoon'] body .daily-budget-icon { color: var(--budget-ink); }
+html[data-visual-style='lagoon'] body #filely-financial-tree .ft-bar > span { background: linear-gradient(90deg, #61b4bd, #b8e4d8); }
+html[data-visual-style='lagoon'] body #returning-splash { --leaf-light: #b7e6cd; --leaf-deep: #408d83; --stem-deep: #537e66; }
+html:not(.dark)[data-visual-style='lagoon'] body #returning-splash { --leaf-light: #9dcc9f; --leaf-deep: #347b72; --stem-deep: #617c59; }
+html[data-visual-style='lagoon'] body .sprout-light { background: radial-gradient(ellipse at 53% 40%, rgba(96,179,182,.18), transparent 54%), radial-gradient(ellipse at 95% 0%, rgba(230,206,156,.1), transparent 52%); }
+body .visual-style-fieldset { padding: 0; border: 0; min-width: 0; }
+body .visual-style-fieldset > legend { font-size: 12px; font-weight: 650; color: var(--text-primary); margin-bottom: 12px; }
+body .visual-style-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+body .visual-style-options > button { position: relative; min-width: 0; text-align: left; padding: 9px 9px 12px; border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--surface-2); }
+body .visual-style-options > button[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body .visual-style-options strong { display: block; font-size: 13px; margin: 9px 2px 3px; color: var(--text-primary); }
+body .visual-style-options small { display: block; margin: 0 2px; font-size: 10px; line-height: 1.5; color: var(--text-secondary); }
+body .visual-style-check { display: none; position: absolute; right: 13px; bottom: 32px; font-size: 13px; color: var(--accent); }
+body [aria-pressed='true'] > .visual-style-check { display: block; }
+body .visual-style-swatch { display: grid; gap: 6px; padding: 12px; border-radius: 9px; height: 76px; overflow: hidden; }
+body .visual-style-swatch i { display: block; height: 7px; border-radius: 4px; }
+body .visual-style-swatch i:nth-child(1) { width: 43%; height: 10px; }
+body .visual-style-swatch i:nth-child(2) { width: 80%; }
+body .visual-style-swatch i:nth-child(3) { width: 62%; }
+body .swatch-forest { background: linear-gradient(135deg,#103522,#1b482b); }
+body .swatch-forest i { background: #32603a; }
+body .swatch-forest i:first-child { background: #b4e77d; }
+body .swatch-forest i:last-child { background: #e9c76d; }
+body .swatch-lagoon { background: linear-gradient(135deg,#0e3641,#205364); }
+body .swatch-lagoon i { background: #35616a; }
+body .swatch-lagoon i:first-child { background: #8edbd2; }
+body .swatch-lagoon i:last-child { background: #e7c68c; }
+body #appearance-status { font-size: 11px; line-height: 1.5; color: var(--expense); }
+body #appearance-status:empty { display: none; }
