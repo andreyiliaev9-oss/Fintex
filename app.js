@@ -2480,6 +2480,7 @@ function openCanIBuyModal() {
   document.getElementById('modal-can-buy').classList.remove('hidden');
 }
 function calculateCanIBuy() {
+  window.FintexWorkTime?.refreshPurchase();
   const amt = Math.max(0, Number(document.getElementById('cb-amount').value) || 0);
   const m = calcMetrics();
   if (amt <= 0) {

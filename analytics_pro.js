@@ -353,6 +353,7 @@
       <summary><span class="section-icon" aria-hidden="true"><i data-lucide="blocks"></i></span><span><strong>Инструменты</strong><small>Покупки, цены, лимиты и сценарии</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
       <div class="section-body tool-grid">
         <button type="button" class="section-action" data-tool="purchase"><span><strong>Проверить покупку</strong><small>Как трата повлияет на бюджет</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-work-open="calculator"><span><strong>Цена в часах жизни</strong><small>Сколько работы стоит покупка</small></span><span class="companion-text" aria-hidden="true">◷</span></button>
         <button type="button" class="section-action" data-tool="prices"><span><strong>Цены по чекам</strong><small>Сравнение ваших покупок</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-tool="limits"><span><strong>Лимиты категорий</strong><small>Настроить бюджет на расходы</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-act="sim"><span><strong>Дерево будущего</strong><small>Сценарии личных финансов</small></span><span aria-hidden="true">→</span></button>

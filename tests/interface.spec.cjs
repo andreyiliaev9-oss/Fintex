@@ -762,3 +762,113 @@ test('Telegram auto mode and header colours follow both appearance settings', as
   await expect(page.locator('html')).toHaveClass(/dark/);
   expect(await page.evaluate(() => window.telegramColours)).toEqual({background:'#06232D',header:'#06232D'});
 });
+
+async function openWorkCalculator(page) {
+  await page.locator('[data-nav="analytics"]').click();
+  await page.locator('#analytics-tools > summary').click();
+  await page.locator('[data-work-open="calculator"]').click();
+  await expect(page.locator('#life-cost-dialog')).toBeVisible();
+}
+
+test('price in working time calculates, saves only the profile and persists it after reload', async ({ page }) => {
+  await openApp(page,true);
+  const original = await page.evaluate(() => ({balance:state.balance,transactions:JSON.stringify(state.transactions),queue:JSON.stringify(state.syncQueue)}));
+  await openWorkCalculator(page);
+  await expect(page.locator('#work-income')).toBeFocused();
+  await page.getByLabel('Доход на руки за месяц, ₽',{exact:true}).fill('80 000');
+  await page.getByLabel('Рабочих часов в месяц',{exact:true}).fill('160');
+  await page.getByLabel('Стоимость покупки, ₽',{exact:true}).fill('3 000');
+  await expect(page.locator('#work-result')).toHaveText('6 ч');
+  await expect(page.locator('#work-explanation')).toContainText('500 ₽ за час');
+  await page.locator('#work-save').click();
+  await expect(page.locator('#work-status')).toContainText('сохранены на этом устройстве');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('fp_work_time_v1')))).toEqual({version:1,monthlyIncome:80000,monthlyHours:160});
+  expect(await page.evaluate(() => ({balance:state.balance,transactions:JSON.stringify(state.transactions),queue:JSON.stringify(state.syncQueue)}))).toEqual(original);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#life-cost-dialog')).toBeHidden();
+  await expect(page.locator('[data-work-open="calculator"]')).toBeFocused();
+  await page.reload(); await page.waitForFunction(() => !!window.FintexAnalyticsPro);
+  await page.evaluate(() => dismissReturningSplash());
+  await openWorkCalculator(page);
+  await expect(page.locator('#work-income')).toHaveValue('80000');
+  await expect(page.locator('#work-hours')).toHaveValue('160');
+  await expect(page.locator('#work-price')).toHaveValue('');
+});
+
+test('purchase checker shares saved working time while drafts do not change the saved profile', async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => openCanIBuyModal());
+  await page.locator('#cb-amount').fill('750');
+  await expect(page.locator('#cb-work-time')).toContainText('Сколько это часов');
+  await page.locator('[data-work-open="purchase"]').click();
+  await expect(page.locator('#work-price')).toHaveValue('750');
+  await page.locator('#work-income').fill('80000'); await page.locator('#work-hours').fill('160');
+  await page.locator('#work-save').click();
+  await expect(page.locator('#work-result')).toHaveText('1 ч 30 мин');
+  await page.locator('#work-income').fill('160000');
+  await expect(page.locator('#work-result')).toHaveText('45 мин');
+  await expect(page.locator('#work-status')).toContainText('пока не сохранены');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#cb-work-time')).toHaveText('≈ 1 ч 30 мин работы');
+  await expect(page.locator('[data-work-open="purchase"]')).toBeFocused();
+  await page.locator('#cb-amount').fill('500');
+  await expect(page.locator('#cb-work-time')).toHaveText('≈ 1 ч работы');
+  await page.locator('#cb-amount').fill('');
+  await expect(page.locator('#cb-work-hint')).toContainText('Введите стоимость');
+});
+
+test('work calculator reports invalid input and storage failures without overwriting corrupt data', async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => localStorage.setItem('fp_work_time_v1','corrupt'));
+  await openWorkCalculator(page);
+  await expect(page.locator('#work-status')).toContainText('Исходная запись сохранена');
+  await page.locator('#work-income').fill('0');await page.locator('#work-hours').fill('160');await page.locator('#work-price').fill('100');
+  await page.locator('#work-save').click();
+  await expect(page.locator('#work-status')).toContainText('больше 0');
+  expect(await page.evaluate(() => localStorage.getItem('fp_work_time_v1'))).toBe('corrupt');
+  await page.locator('#work-income').fill('80000');await page.locator('#work-hours').fill('745');
+  await expect(page.locator('#work-explanation')).toContainText('не больше 744');
+  await page.locator('#work-hours').fill('160');await page.locator('#work-price').fill('1,25');
+  await expect(page.locator('#work-result')).toHaveText('Меньше 1 мин');
+  await page.evaluate(() => {const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='fp_work_time_v1')throw Error('quota');return original.call(this,key,value);};});
+  await page.locator('#work-save').click();
+  await expect(page.locator('#work-status')).toContainText('Не удалось сохранить');
+  await expect(page.locator('#work-result')).toHaveText('Меньше 1 мин');
+  expect(await page.evaluate(() => localStorage.getItem('fp_work_time_v1'))).toBe('corrupt');
+});
+
+test('work calculator fits 320px and short screens in both styles and modes with keyboard focus contained', async ({ page }) => {
+  await openApp(page);
+  await page.setViewportSize({width:320,height:568});
+  await page.locator('[data-nav="settings"]').click();
+  await page.locator('#settings-work-time > summary').click();
+  await page.locator('[data-work-open="settings"]').click();
+  for (const style of ['forest','lagoon']) for (const mode of ['dark','light']) {
+    await page.evaluate(({style,mode}) => {setVisualStyle(style);setTheme(mode);}, {style,mode});
+    const sizes = await page.locator('#life-cost-dialog').evaluate(el => ({width:el.getBoundingClientRect().width,scroll:el.scrollWidth,client:el.clientWidth,height:el.getBoundingClientRect().height}));
+    expect(sizes.width).toBeLessThanOrEqual(320);expect(sizes.scroll).toBeLessThanOrEqual(sizes.client);expect(sizes.height).toBeLessThanOrEqual(568);
+    await page.locator('#work-income').fill('80000');await page.locator('#work-hours').fill('160');await page.locator('#work-price').fill('3000');
+    await expect(page.locator('#work-result')).toHaveText('6 ч');
+    await page.locator('#work-save').click();
+    await page.locator('.work-formula > summary').focus();await page.keyboard.press('Enter');
+    await expect(page.locator('.work-formula')).toHaveAttribute('open','');
+    await page.keyboard.press('Enter');
+    for(let i=0;i<10;i++) {await page.keyboard.press('Tab');expect(await page.evaluate(() => document.activeElement.closest('#life-cost-dialog') !== null)).toBe(true);}
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-work-open="settings"]')).toBeFocused();
+});
+
+test('forest apricot companion is distinct from semantic financial colours', async ({ page }) => {
+  await openApp(page,true);
+  for (const mode of ['dark','light']) {
+    await page.evaluate(mode=>setTheme(mode),mode);
+    const palette = await page.evaluate(() => {
+      const css=getComputedStyle(document.documentElement);
+      return {companion:css.getPropertyValue('--companion').trim(),expense:css.getPropertyValue('--expense').trim(),income:css.getPropertyValue('--income').trim(),planned:css.getPropertyValue('--planned').trim(),accent:css.getPropertyValue('--accent').trim(),icon:getComputedStyle(document.querySelector('.balance-account-icon')).color};
+    });
+    expect(palette.companion).toBe(mode==='dark'?'#efb184':'#955029');
+    for(const token of ['expense','income','planned','accent']) expect(palette.companion).not.toBe(palette[token]);
+    await expect.poll(() => page.locator('.balance-account-icon').evaluate(el => getComputedStyle(el).color)).toBe(mode==='dark'?'rgb(239, 177, 132)':'rgb(149, 80, 41)');
+  }
+});
