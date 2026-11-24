@@ -2,18 +2,20 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>FINTEX — Financial Autopilot & Autonomous Scan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>FINTEX — Личные финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./assets/utilities.css?v=22" />
+  <script src="./assets/icons.js?v=21"></script>
   <!-- Бесплатные автономные движки распознавания в браузере (QR + OCR + PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#101416" />
+  <meta name="color-scheme" content="dark light" />
   <link rel="preload" as="image" href="./financial_tree_art.png?v=3" />
-  <link rel="stylesheet" href="./styles.css?v=19" />
+  <link rel="stylesheet" href="./styles.css?v=22" />
+  <link rel="stylesheet" href="./design-system.css?v=22" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -212,12 +214,13 @@
   </div>
 
   <!-- ==================== 2. ШАПКА ГЛАВНОГО ЭКРАНА ==================== -->
-  <header id="home-header" class="px-4 pt-3.5 pb-2 flex items-center justify-between">
+  <header aria-label="Профиль и быстрые действия" id="home-header" class="px-4 pt-3.5 pb-2 flex items-center justify-between">
     <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openAutopilotModal()">
       <div id="fintex-ai-orb" class="ai-orb ai-orb-calm shrink-0" title="Состояние FINTEX AI">
         <span class="w-2 h-2 rounded-full bg-white/90"></span>
       </div>
       <div class="min-w-0">
+        <div class="app-wordmark">FINTEX <span>Личные финансы</span></div>
         <div class="flex items-center gap-1.5">
           <span class="text-[11px] font-medium text-sub truncate" id="hdr-sync-status">Автопилот • синхр. сегодня</span>
         </div>
@@ -238,86 +241,58 @@
   </header>
 
   <!-- ==================== 3. ОСНОВНОЙ КОНТЕНТ ==================== -->
-  <main class="px-4 pt-1.5">
+  <main class="app-main px-4 pt-1.5">
     <!-- ВКЛАДКА 1: ГЛАВНАЯ -->
     <section id="view-home" class="space-y-4">
       <div id="hero-card-stage" class="hero-stage-3d card-enter">
-        <div id="hero-balance-card" ondblclick="toggleStealthMode()" ontouchstart="handleHeroTouchTap(event)" class="fintex-hero fintex-hero-3d rounded-[28px] p-5 text-white relative overflow-hidden" style="background: radial-gradient(120% 100% at 100% 0%, rgba(0, 214, 195, 0.22) 0%, rgba(242, 198, 93, 0.09) 36%, rgba(7, 20, 18, 0.96) 72%, #040B0A 100%); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 24px 50px -18px rgba(0, 214, 195, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18);">
-          <div id="hero-glare-layer" class="hero-glare"></div>
-
-          <!-- Декоративная сетка и световые орбиты премиальной карты -->
-          <div class="absolute -right-12 -top-12 w-44 h-44 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(0,214,195,0.24) 0%, transparent 70%); filter: blur(18px);"></div>
-          <div class="absolute -left-10 -bottom-14 w-40 h-40 rounded-full pointer-events-none" style="background: radial-gradient(circle, rgba(242,198,93,0.16) 0%, transparent 70%); filter: blur(22px);"></div>
-
-          <!-- Верхняя строка: Чип карты, банк и статус -->
-          <div class="flex items-center justify-between relative z-10">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-5 rounded-md border border-[#F2C65D]/45 bg-gradient-to-br from-[#F2C65D]/30 via-[#F2C65D]/10 to-transparent flex items-center justify-center">
-                <div class="w-3.5 h-2.5 border border-[#F2C65D]/50 rounded-[2px]"></div>
-              </div>
-              <span class="text-[11px] font-bold tracking-[0.16em] uppercase text-white/75" id="hero-card-brand-lbl">FINTEX BLACK</span>
-              <span id="stealth-pill" class="hidden text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#00D6C3]/20 text-brand border border-[#00D6C3]/35">Стелс</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <button type="button" id="gyro-enable-btn" onclick="event.stopPropagation(); requestGyroPermission()" class="hidden text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-sub hover:text-white">3D</button>
-              <span id="status-badge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/45 text-brand border border-[#00D6C3]/35 backdrop-blur-md">
-                Всё под контролем
-              </span>
-            </div>
+        <div id="hero-balance-card" ondblclick="toggleStealthMode()" ontouchstart="handleHeroTouchTap(event)" class="balance-card fintex-hero">
+          <div class="balance-card-top">
+            <div class="balance-account"><span class="balance-account-icon"><i data-lucide="wallet" class="w-4 h-4"></i></span><span id="hero-card-brand-lbl" class="balance-bank">FINTEX · Т-Банк</span></div>
+            <span id="stealth-pill" class="hidden text-brand">Скрыто</span>
+            <span id="status-badge" class="balance-status" data-tone="calm">Всё спокойно</span>
           </div>
-
-          <!-- Главный фокус: Общий баланс карты + Дневной лимит -->
-          <div class="mt-4 mb-3 flex items-end justify-between gap-2 relative z-10">
-            <button type="button" onclick="openBalanceModal()" class="text-left tap group">
-              <div class="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55 flex items-center gap-1.5">
-                <span>На карте</span>
-                <i data-lucide="pencil" class="w-2.5 h-2.5 text-brand opacity-80"></i>
-              </div>
-              <div id="hero-balance" class="money-val text-[34px] font-extrabold tracking-tight tabular-nums leading-none text-white mt-1.5 hero-amount-glow">0 ₽</div>
+          <button type="button" onclick="openBalanceModal()" class="balance-total" aria-label="Изменить баланс">
+            <span class="balance-label">На вашем счёте <i data-lucide="pencil" class="w-3 h-3"></i></span>
+            <span id="hero-balance" class="money-val balance-amount">0 ₽</span>
+          </button>
+          <div class="daily-budget" id="hero-daily-budget">
+            <div class="daily-budget-heading">
+              <span class="daily-budget-label">Доступно сегодня</span>
+              <i data-lucide="sun" class="daily-budget-icon w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <div class="daily-budget-values">
+              <div id="hero-daily-left" class="money-val daily-budget-amount">0 ₽</div>
+              <span class="daily-budget-caption">из <span id="hero-daily-cap" class="money-val">0 ₽</span></span>
+            </div>
+            <div class="daily-budget-track" role="progressbar" aria-label="Доля использованного дневного бюджета" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="hero-budget-progress"><div id="hero-bar" style="width:0%"></div></div>
+            <div class="daily-budget-footer"><span>Потрачено <span id="hero-today-spent" class="money-val">0 ₽</span></span><span id="hero-budget-used">0% лимита</span></div>
+          </div>
+          <div id="hero-limit-explain" class="balance-explanation">Свободные средства распределены до зарплаты</div>
+          <div class="balance-breakdown">
+            <button type="button" onclick="openGoalDetailsModal()" class="balance-detail">
+              <span class="balance-detail-label"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Резерв <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
+              <span id="hero-reserved" class="money-val balance-detail-amount">0 ₽</span>
+              <span class="balance-detail-note">Платежи и подушка</span>
+              <span id="hero-res-pct" class="hidden"></span>
             </button>
-
-            <div class="text-right bg-black/35 border border-[#00D6C3]/25 rounded-2xl px-3 py-2 backdrop-blur-md shrink-0">
-              <div class="text-[9px] font-bold uppercase tracking-wider text-brand">Лимит сегодня</div>
-              <div id="hero-daily-left" class="money-val text-base font-extrabold tabular-nums text-white leading-tight mt-0.5">0 ₽</div>
-              <div class="text-[9px] text-sub tabular-nums">из <span id="hero-daily-cap" class="money-val text-white/85">0 ₽</span></div>
-            </div>
-          </div>
-
-          <div id="hero-limit-explain" class="text-[11px] text-white/65 mb-3 relative z-10">
-            Свободные средства распределены до зарплаты
-          </div>
-
-          <!-- Прогресс-бар дня -->
-          <div class="w-full h-1.5 bg-black/50 rounded-full overflow-hidden mb-3.5 relative z-10">
-            <div id="hero-bar" class="h-full rounded-full living-progress-bar" style="width: 0%;"></div>
-          </div>
-
-          <!-- Две интерактивные капсулы: Подушка/Резерв (с переводом) и Свободно + Прогноз -->
-          <div class="grid grid-cols-2 gap-2.5 relative z-10">
-            <button type="button" onclick="openGoalDetailsModal()" class="tap text-left rounded-2xl p-3 border border-[#F2C65D]/30 bg-gradient-to-br from-[#F2C65D]/14 to-black/35 backdrop-blur-md">
-              <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gold">
-                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#F2C65D]"></span>Резерв · <span id="hero-res-pct">0%</span></span>
-                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
-              </div>
-              <div id="hero-reserved" class="money-val text-sm font-extrabold tabular-nums text-white mt-1">0 ₽</div>
-              <div class="text-[9px] text-gold/80 mt-0.5">Пополнить или снять</div>
-            </button>
-
-            <button type="button" onclick="openForecastExplainModal()" class="tap text-left rounded-2xl p-3 border border-[#00D6C3]/30 bg-gradient-to-br from-[#00D6C3]/14 to-black/35 backdrop-blur-md">
-              <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-brand">
-                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#00D6C3]"></span>Свободно · <span id="hero-free-pct">100%</span></span>
-                <i data-lucide="info" class="w-3.5 h-3.5"></i>
-              </div>
-              <div id="hero-free-pool" class="money-val text-sm font-extrabold tabular-nums text-white mt-1">0 ₽</div>
-              <div class="text-[9px] text-sub mt-0.5 truncate">К <span id="hero-payday-date" class="text-white/85">29 ноя</span>: <span id="hero-forecast-text" class="money-val font-semibold text-brand">—</span></div>
+            <button type="button" onclick="openForecastExplainModal()" class="balance-detail">
+              <span class="balance-detail-label"><i data-lucide="coins" class="w-3.5 h-3.5"></i> Свободно <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
+              <span id="hero-free-pool" class="money-val balance-detail-amount">0 ₽</span>
+              <span class="balance-detail-note">До зарплаты</span>
+              <span id="hero-free-pct" class="hidden"></span>
             </button>
           </div>
-
-          <!-- Скрытые опорные полосы структуры капитала для совместимости -->
-          <div class="w-full h-1 rounded-full bg-black/40 overflow-hidden flex gap-0.5 mt-3 relative z-10">
-            <div id="hero-split-free" class="h-full bg-[#00D6C3] rounded-full transition-all duration-500" style="width: 70%;"></div>
-            <div id="hero-split-res" class="h-full bg-[#F2C65D] rounded-full transition-all duration-500" style="width: 30%;"></div>
-          </div>
+          <button type="button" onclick="openForecastExplainModal()" class="balance-forecast" id="hero-forecast-row">
+            <span class="balance-forecast-copy"><span class="balance-forecast-label">Прогноз к <span id="hero-payday-date">зарплате</span></span><span class="balance-detail-note" id="hero-forecast-note">Нужно больше данных</span></span>
+            <span id="hero-forecast-text" class="money-val balance-forecast-value">—</span>
+            <i data-lucide="chevron-right" class="w-4 h-4" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="balance-notice" id="hero-notice" hidden>
+            <i data-lucide="circle-alert" class="w-4 h-4" aria-hidden="true"></i>
+            <span><span id="hero-notice-title" class="balance-notice-title"></span><span id="hero-notice-description" class="balance-notice-description"></span></span>
+            <i data-lucide="arrow-up-right" class="w-4 h-4" aria-hidden="true"></i>
+          </button>
+          <div class="hidden" aria-hidden="true"><div id="hero-split-free"></div><div id="hero-split-res"></div></div>
         </div>
       </div>
 
@@ -419,12 +394,12 @@
       <!-- Умная лента операций -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between px-0.5">
-          <span class="text-xs font-bold uppercase tracking-wider text-sub">Умная лента операций</span>
+          <h2 class="feed-heading">Операции</h2>
           <div class="flex items-center gap-3">
-            <button type="button" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
+            <button type="button" id="feed-today-btn" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
               Сегодня: <span id="feed-today-sum" class="money-val text-brand font-bold tabular-nums">0 ₽</span>
             </button>
-            <button type="button" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте">
+            <button type="button" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте" aria-label="Поиск операций">
               <i data-lucide="search" class="w-3.5 h-3.5"></i>
             </button>
           </div>
@@ -476,7 +451,7 @@
       <!-- Двухэтажная шапка без обрезки текста -->
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
-          <h2 class="text-lg font-extrabold tracking-tight text-main">Финансовый календарь</h2>
+          <h2 class="text-lg font-extrabold tracking-tight text-main">Календарь</h2>
           <p id="cal-period-summary" class="text-[11px] text-sub mt-0.5">Сводка операций и платежей по дням</p>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
@@ -485,7 +460,7 @@
           </button>
           <button type="button" onclick="exportToIosCalendar()" class="h-8 px-2.5 rounded-lg btn-teal-soft text-[11px] font-semibold flex items-center gap-1 tap" title="Экспорт в Календарь iOS (.ics)">
             <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
-            <span>В iOS (.ics)</span>
+            <span>Экспорт .ics</span>
           </button>
         </div>
       </div>
@@ -919,13 +894,13 @@
           <span class="text-xs font-semibold text-main">Тема интерфейса</span>
           <div class="seg-track grid-cols-3 w-48 text-[11px] font-semibold" id="theme-seg">
             <div id="theme-thumb" class="seg-thumb w-[calc(33.333%-2.5px)]" style="transform: translateX(0%);"></div>
-            <button type="button" onclick="setTheme('dark')" class="seg-item py-1 text-[#041311] font-bold">Бирюза</button>
+            <button type="button" onclick="setTheme('dark')" class="seg-item py-1 text-[#041311] font-bold">Тёмная</button>
             <button type="button" onclick="setTheme('light')" class="seg-item py-1 text-sub">Светлая</button>
             <button type="button" onclick="setTheme('auto')" class="seg-item py-1 text-sub">Авто</button>
           </div>
         </div>
         <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
-          <span class="text-xs font-medium text-main">Декоративные анимации FINTEX Motion</span>
+          <span class="text-xs font-medium text-main">Анимации интерфейса</span>
           <input type="checkbox" id="motion-toggle" checked onchange="toggleMotionPref()" class="w-4 h-4 accent-[#00D6C3]" />
         </label>
       </div>
@@ -958,8 +933,8 @@
       <!-- 6. О приложении -->
       <div class="card-surface p-4 space-y-2">
         <div onclick="handleVersionSecretTap()" class="flex items-center justify-between cursor-pointer">
-          <span class="text-xs font-semibold text-main">FINTEX Autonomous Edition</span>
-          <span class="text-xs font-mono text-brand">v4.1</span>
+          <span class="text-xs font-semibold text-main">FINTEX · Личные финансы</span>
+          <span class="text-xs font-mono text-brand">v4.2</span>
         </div>
         <div class="flex flex-wrap gap-3 pt-1">
           <button type="button" onclick="replayMotionSplash()" class="text-[11px] text-brand font-semibold">
@@ -996,10 +971,10 @@
   <div id="tx-batch-dock" class="hidden"></div>
 
   <!-- ==================== НИЖНЯЯ НАВИГАЦИЯ (ЕДИНАЯ КАПСУЛА-ДОК) ==================== -->
-  <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-3.5 pt-1.5 z-30 pointer-events-none" style="padding-bottom: calc(10px + env(safe-area-inset-bottom));">
+  <nav aria-label="Основная навигация" class="app-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto px-3.5 pt-1.5 z-30 pointer-events-none" style="padding-bottom: calc(10px + env(safe-area-inset-bottom));">
     <div class="pointer-events-auto relative rounded-[22px] border border-[#00D6C3]/25 bg-[#081311]/92 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.10)] p-1.5 flex items-center justify-around">
       <div id="nav-active-pill" class="nav-pill-slider" style="top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 4); transform: translateX(0%);"></div>
-      <button type="button" data-nav="home" onclick="goTab('home')" class="nav-tab is-active-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-brand nav-active-glow tap">
+      <button type="button" data-nav="home" aria-current="page" onclick="goTab('home')" class="nav-tab is-active-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-brand nav-active-glow tap">
         <i data-lucide="wallet" class="w-5 h-5"></i>
         <span class="text-[10px] font-semibold">Главная</span>
       </button>
@@ -1844,8 +1819,8 @@
   </div>
 
   <script src="./scanner.js?v=19"></script>
-  <script src="./app.js?v=20"></script>
-  <script src="./extensions.js?v=19"></script>
+  <script src="./app.js?v=22"></script>
+  <script src="./extensions.js?v=22"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=19" data-fintex-mod="sim_ui.js"></script>
@@ -1853,6 +1828,6 @@
   <script src="./sim_pro.js?v=19" data-fintex-mod="sim_pro.js"></script>
   <script src="./cosmic_intro.js?v=19" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./stories_recap.js?v=19" data-fintex-mod="stories_recap.js"></script>
-  <script src="./financial_tree.js?v=3"></script>
+  <script src="./financial_tree.js?v=21"></script>
 </body>
 </html>

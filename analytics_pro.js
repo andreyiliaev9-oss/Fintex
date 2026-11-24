@@ -17,8 +17,8 @@
   ];
 
   const CATEGORY_META = [
-    { name: 'Продукты', icon: 'shopping-basket', color: '#00D6C3', bg: 'rgba(0,214,195,.13)', keys: ['продукт', 'питан', 'бакалея', 'супермаркет', 'пятероч', 'пятёроч', 'магнит', 'перекрест', 'перекрёст', 'лента', 'ашан', 'дикси', 'вкусвилл', 'еда домой'] },
-    { name: 'Кафе и рестораны', icon: 'utensils', color: '#F2C65D', bg: 'rgba(242,198,93,.14)', keys: ['кафе', 'ресторан', 'кофе', 'общепит', 'еда вне дома', 'фастфуд', 'доставка еды', 'столов', 'бар', 'перекус', 'макдон', 'вкусно — и точка', 'бургер', 'пицц'] },
+    { name: 'Продукты', icon: 'shopping-basket', color: 'var(--accent)', bg: 'rgba(0,214,195,.13)', keys: ['продукт', 'питан', 'бакалея', 'супермаркет', 'пятероч', 'пятёроч', 'магнит', 'перекрест', 'перекрёст', 'лента', 'ашан', 'дикси', 'вкусвилл', 'еда домой'] },
+    { name: 'Кафе и рестораны', icon: 'utensils', color: 'var(--gold)', bg: 'rgba(242,198,93,.14)', keys: ['кафе', 'ресторан', 'кофе', 'общепит', 'еда вне дома', 'фастфуд', 'доставка еды', 'столов', 'бар', 'перекус', 'макдон', 'вкусно — и точка', 'бургер', 'пицц'] },
     { name: 'Транспорт', icon: 'car-front', color: '#64B5F6', bg: 'rgba(100,181,246,.14)', keys: ['транспорт', 'такси', 'бензин', 'топлив', 'азс', 'метро', 'автобус', 'трамвай', 'проезд', 'каршеринг', 'парков'] },
     { name: 'Дом и ЖКХ', icon: 'house', color: '#A7D88D', bg: 'rgba(167,216,141,.14)', keys: ['жкх', 'коммун', 'жиль', 'квартир', 'аренд', 'дом', 'ремонт', 'мебел', 'хозтовар', 'бытов', 'интернет домой'] },
     { name: 'Покупки', icon: 'shopping-bag', color: '#C4A7FF', bg: 'rgba(196,167,255,.14)', keys: ['покуп', 'магазин', 'одежд', 'обув', 'маркетплейс', 'wildberries', 'вайлдберриз', 'озон', 'ozon', 'техник', 'электроник', 'аксессуар'] },
@@ -37,7 +37,7 @@
 
   const COLORS = {
     bg: '#071916', surface: '#0B211D', surface2: '#102B25', border: 'rgba(0,214,195,.16)',
-    mint: '#00D6C3', gold: '#F2C65D', text: '#F3F8F5', muted: '#91A69F', red: '#FF777F'
+    mint: 'var(--accent)', gold: 'var(--gold)', text: '#F3F8F5', muted: '#91A69F', red: '#FF777F'
   };
 
   function esc(value) {
@@ -88,11 +88,11 @@
     const style = document.createElement('style');
     style.id = 'ftx-analytics-pro-style';
     style.textContent = `
-      .ftx-ap{--ap-mint:#00D6C3;--ap-gold:#F2C65D;--ap-bg:#071916;--ap-surface:#0B211D;--ap-line:rgba(0,214,195,.16);color:#F3F8F5;padding:10px 0 92px;font-family:inherit}
+      .ftx-ap{--ap-mint:var(--accent);--ap-gold:var(--gold);--ap-bg:#071916;--ap-surface:#0B211D;--ap-line:rgba(0,214,195,.16);color:#F3F8F5;padding:10px 0 92px;font-family:inherit}
       .ftx-ap *{box-sizing:border-box}.ftx-ap button{font:inherit;-webkit-tap-highlight-color:transparent}
       .ftx-ap-pills{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:4px;background:rgba(0,0,0,.22);border:1px solid var(--ap-line);border-radius:15px;margin-bottom:10px}
       .ftx-ap-pill{border:0;background:transparent;color:#91A69F;font-size:12px;font-weight:650;padding:9px 3px;border-radius:11px;cursor:pointer;transition:all .22s ease}
-      .ftx-ap-pill.active{color:#041311;background:linear-gradient(120deg,#00D6C3,#70E8D8);box-shadow:0 4px 16px rgba(0,214,195,.18)}
+      .ftx-ap-pill.active{color:#041311;background:linear-gradient(120deg,var(--accent),#70E8D8);box-shadow:0 4px 16px rgba(0,214,195,.18)}
       .ftx-ap-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:13px}
       .ftx-ap-tab{border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);color:#9BAFA9;font-size:12px;font-weight:700;padding:10px 5px;border-radius:12px;cursor:pointer;transition:all .2s ease}
       .ftx-ap-tab.active{border-color:rgba(0,214,195,.45);color:#EFFFFB;background:linear-gradient(135deg,rgba(0,214,195,.16),rgba(242,198,93,.07));box-shadow:inset 0 0 0 1px rgba(0,214,195,.06)}
@@ -108,7 +108,7 @@
       .ftx-ap-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px;font-size:13px;font-weight:800;color:#F3F8F5}
       .ftx-ap-section-sub{font-size:10px;color:#91A69F;font-weight:550}
       .ftx-ap-insight{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.055);font-size:12px;line-height:1.45;color:#D5E2DC}
-      .ftx-ap-insight:last-child{border-bottom:0;padding-bottom:0}.ftx-ap-insight-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:none;background:#00D6C3;box-shadow:0 0 9px rgba(0,214,195,.35)}
+      .ftx-ap-insight:last-child{border-bottom:0;padding-bottom:0}.ftx-ap-insight-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:none;background:var(--accent);box-shadow:0 0 9px rgba(0,214,195,.35)}
       .ftx-ap-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:3px}.ftx-ap-btn{border:1px solid rgba(0,214,195,.25);background:linear-gradient(130deg,rgba(0,214,195,.13),rgba(0,214,195,.045));color:#8CEDE1;font-size:11px;font-weight:750;padding:12px 7px;border-radius:13px;cursor:pointer}
       .ftx-ap-cat{display:flex;gap:11px;align-items:center;background:linear-gradient(120deg,rgba(13,43,36,.96),rgba(8,27,23,.96));border:1px solid rgba(255,255,255,.065);border-radius:16px;padding:12px;margin-bottom:8px;cursor:pointer;transition:transform .2s,border-color .2s,background .2s}
       .ftx-ap-cat:active{transform:scale(.985)}.ftx-ap-cat.open{border-color:rgba(0,214,195,.32);background:linear-gradient(120deg,rgba(14,54,45,.98),rgba(8,27,23,.98))}
@@ -118,10 +118,10 @@
       .ftx-ap-empty{text-align:center;color:#91A69F;padding:24px 12px;font-size:12px;line-height:1.5}
       .ftx-ap-legend{display:flex;align-items:center;gap:5px;font-size:9px;color:#91A69F}.ftx-ap-legend-dot{width:8px;height:8px;border-radius:3px}
       .ftx-ap-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;align-items:end}.ftx-ap-weekday{min-width:0;text-align:center}.ftx-ap-weekday-track{height:94px;display:flex;align-items:flex-end;justify-content:center;background:rgba(255,255,255,.035);border-radius:9px;overflow:hidden}.ftx-ap-weekday-fill{width:100%;min-height:3px;border-radius:7px 7px 2px 2px;transition:height .5s ease}.ftx-ap-weekday-name{font-size:9px;color:#91A69F;margin-top:7px}.ftx-ap-weekday-value{font-size:9px;color:#D5E2DC;font-weight:700;margin-top:4px;white-space:nowrap}
-      .ftx-ap-heat-wrap{overflow-x:auto;padding-bottom:3px}.ftx-ap-heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);grid-auto-columns:minmax(0,1fr);gap:5px;min-width:250px;margin:12px 0}.ftx-ap-heat-cell{width:100%;aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.025);cursor:pointer;transition:transform .16s,border-color .16s}.ftx-ap-heat-cell.l1{background:rgba(0,214,195,.20)}.ftx-ap-heat-cell.l2{background:rgba(0,214,195,.48)}.ftx-ap-heat-cell.l3{background:linear-gradient(135deg,#00D6C3,#F2C65D);box-shadow:0 0 9px rgba(0,214,195,.18)}.ftx-ap-heat-cell.sel{border:2px solid #F2C65D;transform:scale(1.12)}
+      .ftx-ap-heat-wrap{overflow-x:auto;padding-bottom:3px}.ftx-ap-heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);grid-auto-columns:minmax(0,1fr);gap:5px;min-width:250px;margin:12px 0}.ftx-ap-heat-cell{width:100%;aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.025);cursor:pointer;transition:transform .16s,border-color .16s}.ftx-ap-heat-cell.l1{background:rgba(0,214,195,.20)}.ftx-ap-heat-cell.l2{background:rgba(0,214,195,.48)}.ftx-ap-heat-cell.l3{background:linear-gradient(135deg,var(--accent),var(--gold));box-shadow:0 0 9px rgba(0,214,195,.18)}.ftx-ap-heat-cell.sel{border:2px solid var(--gold);transform:scale(1.12)}
       .ftx-ap-day-detail{margin-top:10px;padding:11px;border-radius:13px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.055)}
-      .ftx-ap-day-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:800;margin-bottom:5px}.ftx-ap-day-total{color:#F2C65D;font-variant-numeric:tabular-nums}
-      .ftx-ap-meter{height:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:8px}.ftx-ap-meter>span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#00A899,#00D6C3,#F2C65D)}
+      .ftx-ap-day-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:800;margin-bottom:5px}.ftx-ap-day-total{color:var(--gold);font-variant-numeric:tabular-nums}
+      .ftx-ap-meter{height:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:8px}.ftx-ap-meter>span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#00A899,var(--accent),var(--gold))}
       .ftx-ap-note{font-size:10px;color:#91A69F;line-height:1.45;margin-top:8px}
       @media(prefers-reduced-motion:reduce){.ftx-ap *{transition:none!important;animation:none!important}}
     `;
@@ -224,18 +224,18 @@
       <div class="ftx-ap-card gold">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div class="ftx-ap-kicker">Расходы за период · ${period.label.toLocaleLowerCase('ru-RU')}</div>
-          <span style="font-size:9px;color:#F2C65D;border:1px solid rgba(242,198,93,.28);padding:4px 7px;border-radius:99px">FINTEX ANALYTICS</span>
+          <span class="ftx-ap-brand-label">FINTEX</span>
         </div>
         <div class="ftx-ap-big">${fmt(data.spent, data.currency)}</div>
         <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↑' : data.deltaPct < 0 ? '↓' : '•'} ${esc(deltaLabel)}</span>
         <div style="display:flex;gap:16px;margin-top:15px;padding-top:12px;border-top:1px solid rgba(242,198,93,.14)">
-          <div style="flex:1"><div class="ftx-ap-stat-label">Доходы</div><div style="font-size:14px;font-weight:800;color:#00D6C3;margin-top:3px">${fmt(data.income, data.currency)}</div></div>
-          <div style="flex:1"><div class="ftx-ap-stat-label">Разница</div><div style="font-size:14px;font-weight:800;color:${data.net >= 0 ? '#F2C65D' : '#FF8D94'};margin-top:3px">${data.net > 0 ? '+' : ''}${fmt(data.net, data.currency)}</div></div>
+          <div style="flex:1"><div class="ftx-ap-stat-label">Доходы</div><div style="font-size:14px;font-weight:800;color:var(--accent);margin-top:3px">${fmt(data.income, data.currency)}</div></div>
+          <div style="flex:1"><div class="ftx-ap-stat-label">Разница</div><div style="font-size:14px;font-weight:800;color:${data.net >= 0 ? 'var(--gold)' : 'var(--danger)'};margin-top:3px">${data.net > 0 ? '+' : ''}${fmt(data.net, data.currency)}</div></div>
         </div>
       </div>
       <div class="ftx-ap-summary-row">
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:#00D6C3">${fmt(data.burnRate, data.currency)}</div></div>
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Прогноз остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? '#FF8D94' : '#F2C65D'}">${fmt(data.projectedBalance, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:var(--accent)">${fmt(data.burnRate, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Прогноз остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? 'var(--danger)' : 'var(--gold)'}">${fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
       <div class="ftx-ap-card">
         <div class="ftx-ap-section-title"><span>Куда уходят деньги</span><span class="ftx-ap-section-sub">Топ категорий</span></div>
@@ -285,10 +285,10 @@
         const value = data.byWeekday[day];
         const pct = value ? Math.max(4, value / max * 100) : 0;
         const isPeak = day === peak && value > 0;
-        const color = isPeak ? 'linear-gradient(180deg,#F2C65D,#B88928)' : 'linear-gradient(180deg,#00D6C3,#087D70)';
-        return `<div class="ftx-ap-weekday"><div class="ftx-ap-weekday-track"><div class="ftx-ap-weekday-fill" style="height:${pct}%;background:${color};opacity:${value ? 1 : .12}"></div></div><div class="ftx-ap-weekday-name" style="color:${isPeak ? '#F2C65D' : ''};font-weight:${isPeak ? 800 : 600}">${data.weekdayNames[day]}</div><div class="ftx-ap-weekday-value">${value ? compactMoney(value) : '—'}</div></div>`;
+        const color = isPeak ? 'linear-gradient(180deg,var(--gold),#B88928)' : 'linear-gradient(180deg,var(--accent),#087D70)';
+        return `<div class="ftx-ap-weekday"><div class="ftx-ap-weekday-track"><div class="ftx-ap-weekday-fill" style="height:${pct}%;background:${color};opacity:${value ? 1 : .12}"></div></div><div class="ftx-ap-weekday-name" style="color:${isPeak ? 'var(--gold)' : ''};font-weight:${isPeak ? 800 : 600}">${data.weekdayNames[day]}</div><div class="ftx-ap-weekday-value">${value ? compactMoney(value) : '—'}</div></div>`;
       }).join('')}</div>
-      <div class="ftx-ap-legend" style="margin-top:11px"><span class="ftx-ap-legend-dot" style="background:#00D6C3"></span> Обычная активность <span class="ftx-ap-legend-dot" style="background:#F2C65D;margin-left:8px"></span> Самый затратный день</div>
+      <div class="ftx-ap-legend" style="margin-top:11px"><span class="ftx-ap-legend-dot" style="background:var(--accent)"></span> Обычная активность <span class="ftx-ap-legend-dot" style="background:var(--gold);margin-left:8px"></span> Самый затратный день</div>
       <div class="ftx-ap-note">Сравниваются суммарные расходы по дням недели. Это помогает заметить повторяющиеся привычки, а не оценивать отдельную покупку.</div>
     </div>`;
   }
@@ -340,7 +340,7 @@
     return `<div class="ftx-ap-card">
       <div class="ftx-ap-section-title"><span>Карта финансовой активности</span><span class="ftx-ap-section-sub">12 недель</span></div>
       <div class="ftx-ap-heat-wrap"><div class="ftx-ap-heat">${cells.join('')}</div></div>
-      <div class="ftx-ap-legend" style="justify-content:flex-end;margin-top:7px"><span>Меньше</span><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.2)"></i><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.48)"></i><i class="ftx-ap-legend-dot" style="background:linear-gradient(135deg,#00D6C3,#F2C65D)"></i><span>Больше</span></div>
+      <div class="ftx-ap-legend" style="justify-content:flex-end;margin-top:7px"><span>Меньше</span><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.2)"></i><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.48)"></i><i class="ftx-ap-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--gold))"></i><span>Больше</span></div>
       <div class="ftx-ap-day-detail"><div class="ftx-ap-day-head"><span>${esc(dateLabel)}</span><span class="ftx-ap-day-total">${fmt(selected.total, data.currency)}</span></div>${listHtml}</div>
       <div class="ftx-ap-note">Нажмите на любую ячейку, чтобы посмотреть покупки за конкретную дату. Яркость показывает относительный объём расходов за последние 12 недель.</div>
     </div>`;
@@ -370,7 +370,7 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>`;
+    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>`;
     container.querySelectorAll('[data-period]').forEach(button => {
       button.addEventListener('click', () => { activePeriod = button.dataset.period; renderProAnalytics(container); });
     });
@@ -393,7 +393,11 @@
     const storiesButton = container.querySelector('[data-act="stories"]');
     if (storiesButton) storiesButton.addEventListener('click', () => (window.openStoriesRecap || window.openStories || (() => {}))());
     const simButton = container.querySelector('[data-act="sim"]');
-    if (simButton) simButton.addEventListener('click', () => (window.SIM?.ui?.open || window.openSimulator || (() => {}))());
+    if (simButton) simButton.addEventListener('click', () => {
+      if (window.SIM?.ui?.openModal) window.SIM.ui.openModal();
+      else if (window.SIM?.ui?.open) window.SIM.ui.open();
+      else if (window.openSimulator) window.openSimulator();
+    });
     try { if (window.lucide?.createIcons) window.lucide.createIcons({ attrs: { 'stroke-width': 2 } }); } catch (_) {}
   }
 

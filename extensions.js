@@ -151,7 +151,7 @@ window.FINTEX_EXT = {
       return;
     }
     const s = document.createElement('script');
-    s.src = `./${src}?v=18`;
+    s.src = `./${src}?v=21`;
     s.dataset.fintexMod = src;
     s.async = false;
     s.onload = () => {
@@ -240,7 +240,7 @@ if (document.readyState === 'loading') {
   let undoBannerTimer = null;
 
   function ensureSelectHeaderButton() {
-    const todayBtn = document.querySelector('button[onclick="openTodayDetailModal()"]');
+    const todayBtn = document.getElementById('feed-today-btn');
     if (!todayBtn || !todayBtn.parentElement) return;
     let btn = document.getElementById('feed-select-mode-btn');
     if (!btn) {
