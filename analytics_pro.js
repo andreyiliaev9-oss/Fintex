@@ -235,7 +235,7 @@
         </div>
       </div>
       <div class="ftx-ap-summary-row">
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:var(--accent)">${fmt(data.burnRate, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:var(--number-ink, var(--accent))">${fmt(data.burnRate, data.currency)}</div></div>
         <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Прогноз остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? 'var(--danger)' : 'var(--gold)'}">${fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
       <div class="ftx-ap-card">
