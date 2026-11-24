@@ -1074,7 +1074,7 @@ test('Warm Growth is a third persistent choice without changing money or theme m
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-visual-style','growth');
   await page.evaluate(()=>setTheme('dark'));
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#241E1A');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#1C252B');
   await page.evaluate(()=>setVisualStyle('forest'));
   await expect(page.locator('html')).toHaveClass(/dark/);
 });
@@ -1089,11 +1089,17 @@ test('Warm Growth contrast, semantic colours and responsive screens',async({page
     await page.evaluate(mode=>{setVisualStyle('forest');setTheme(mode);},mode);
     const semantics=await page.evaluate(()=>{const c=getComputedStyle(document.documentElement);return ['--income','--expense','--danger'].map(x=>c.getPropertyValue(x).trim());});
     await page.evaluate(()=>setVisualStyle('growth'));
-    const tokens=await page.evaluate(()=>{const c=getComputedStyle(document.documentElement);return Object.fromEntries(['--bg-canvas','--surface-1','--text-primary','--text-secondary','--text-muted','--accent','--accent-ink','--budget-bg','--budget-ink','--income','--expense','--danger'].map(x=>[x,c.getPropertyValue(x).trim()]));});
+    const tokens=await page.evaluate(()=>{const c=getComputedStyle(document.documentElement);return Object.fromEntries(['--bg-canvas','--surface-1','--text-primary','--text-secondary','--text-muted','--accent','--accent-ink','--budget-bg','--budget-ink','--hero-bg','--hero-ink','--hero-secondary','--sage-bg','--sage-ink','--income','--expense','--danger'].map(x=>[x,c.getPropertyValue(x).trim()]));});
     expect(['--income','--expense','--danger'].map(x=>tokens[x])).toEqual(semantics);
     for(const fg of ['--text-primary','--text-secondary','--text-muted','--accent'])for(const bg of ['--bg-canvas','--surface-1'])expect(contrast(tokens[fg],tokens[bg])).toBeGreaterThanOrEqual(4.5);
     expect(contrast(tokens['--accent-ink'],tokens['--accent'])).toBeGreaterThanOrEqual(4.5);
     expect(contrast(tokens['--budget-ink'],tokens['--budget-bg'])).toBeGreaterThanOrEqual(4.5);
+    for(const fg of ['--hero-ink','--hero-secondary'])expect(contrast(tokens[fg],tokens['--hero-bg'])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(tokens['--sage-ink'],tokens['--sage-bg'])).toBeGreaterThanOrEqual(4.5);
+    expect(new Set(['--hero-bg','--budget-bg','--sage-bg'].map(x=>tokens[x])).size).toBe(3);
+    const hero=await page.locator('#hero-balance-card').evaluate(el=>{const c=getComputedStyle(el);return {risk:c.getPropertyValue('--danger').trim(),accent:c.getPropertyValue('--accent').trim()};});
+    expect(contrast(hero.risk,tokens['--hero-bg'])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(hero.accent,tokens['--hero-bg'])).toBeGreaterThanOrEqual(4.5);
     for(const width of [320,390,448]){
       await page.setViewportSize({width,height:844});
       for(const tab of ['home','calendar','analytics','settings']){
@@ -1112,6 +1118,6 @@ test('Warm Growth home preview in both modes',async({page})=>{
   await expect(page.locator('body')).toHaveCSS('background-color','rgb(250, 245, 237)');
   await page.screenshot({path:'docs/growth-light-preview.png'});
   await page.evaluate(()=>setTheme('dark'));
-  await expect(page.locator('body')).toHaveCSS('background-color','rgb(36, 30, 26)');
+  await expect(page.locator('body')).toHaveCSS('background-color','rgb(28, 37, 43)');
   await page.screenshot({path:'docs/growth-dark-preview.png'});
 });
