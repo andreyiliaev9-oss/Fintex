@@ -1121,3 +1121,36 @@ test('Warm Growth home preview in both modes',async({page})=>{
   await expect(page.locator('body')).toHaveCSS('background-color','rgb(28, 37, 43)');
   await page.screenshot({path:'docs/growth-dark-preview.png'});
 });
+
+test('figure hierarchy retains kopecks, negative signs and complete accessible amounts',async({page})=>{
+  await openApp(page);
+  await page.evaluate(()=>{state.balance=-12345.67;renderAll(false);});
+  const amount=page.locator('#hero-balance');
+  await expect(amount).toHaveAttribute('aria-label','-12 345,67 ₽');
+  await expect(amount.locator('.number-minor')).toHaveText(',67');
+  await expect(amount.locator('.number-currency')).toHaveText('₽');
+  const sizes=await amount.evaluate(el=>({major:parseFloat(getComputedStyle(el).fontSize),minor:parseFloat(getComputedStyle(el.querySelector('.number-minor')).fontSize),currency:parseFloat(getComputedStyle(el.querySelector('.number-currency')).fontSize)}));
+  expect(sizes.minor).toBeLessThan(sizes.major);expect(sizes.currency).toBeLessThan(sizes.minor);
+  await page.evaluate(()=>{state.balance=0;renderAll(false);});
+  await expect(amount).toHaveAttribute('aria-label','0 ₽');await expect(amount.locator('.number-minor')).toHaveCount(0);
+  await page.evaluate(()=>toggleStealthMode(true));await expect(amount).toHaveCSS('filter','blur(7.5px)');await expect(amount).toHaveAttribute('aria-label','Сумма скрыта');
+});
+
+test('large figures fit 320px across all three palettes and both modes',async({page})=>{
+  await openApp(page);await page.setViewportSize({width:320,height:844});
+  await page.evaluate(()=>document.fonts.ready);
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);state.balance=999999999999.99;state.goal.saved=0;state.bills=[];renderAll(false);},{style,mode});
+    await expect(page.locator('#hero-balance')).toHaveAttribute('aria-label','999 999 999 999,99 ₽');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    for(const id of ['hero-balance','hero-daily-left'])expect(await page.locator('#'+id).evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  }
+});
+
+test('local numeral font and preview',async({page})=>{
+  await openApp(page,true);
+  await page.evaluate(async()=>{setVisualStyle('growth');setTheme('light');state.balance=128450.75;renderAll(false);await document.fonts.load('650 42px "Fintex Figures"');});
+  await expect(page.locator('body')).toHaveCSS('background-color','rgb(250, 245, 237)');
+  expect(await page.evaluate(()=>document.fonts.check('650 42px "Fintex Figures"'))).toBe(true);
+  await page.screenshot({path:'docs/numerals-preview.png'});
+});

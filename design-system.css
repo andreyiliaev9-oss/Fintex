@@ -993,3 +993,34 @@ body [data-visual-style-choice='growth'] .visual-style-swatch { height: 70px; }
 body [data-visual-style-choice='growth'] .visual-style-check { right: 12px; bottom: auto; top: 10px; }
 body [data-visual-style-choice='growth'] .visual-style-description { padding-right: 12px; }
 body .appearance-philosophy { font-size: 11px; line-height: 1.6; color: var(--text-secondary); }
+
+/* Financial typography: expressive figures, quiet decimals, no colour confetti. */
+@font-face {
+  font-family: 'Fintex Figures';
+  src: url('./assets/fonts/Manrope-Variable.ttf') format('truetype');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+body .number-display, body .number-display * {
+  font-family: 'Fintex Figures', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+body .number-display { letter-spacing: -.045em; line-height: 1.2; font-weight: 650; }
+body .number-major { white-space: nowrap; }
+body .number-display .number-minor { font-size: .53em; letter-spacing: -.015em; font-weight: 500; }
+body .number-display .number-currency { font-size: .44em; letter-spacing: 0; font-weight: 500; white-space: nowrap; }
+body #hero-balance.number-display { font-size: clamp(36px, 10.8vw, 48px); font-weight: 650; }
+body #hero-daily-left.number-display { font-size: clamp(32px, 9.5vw, 42px); font-weight: 700; }
+body .balance-detail-amount.number-display { font-size: clamp(19px, 5.6vw, 24px); font-weight: 600; }
+body .number-display[data-number-size='medium']:is(#hero-balance, #hero-daily-left) { font-size: clamp(25px, 7.4vw, 34px); }
+body .number-display[data-number-size='wide']:is(#hero-balance, #hero-daily-left) { font-size: clamp(19px, 5.5vw, 25px); letter-spacing: -.055em; }
+body .balance-detail-amount.number-display[data-number-size='medium'] { font-size: clamp(14px, 4.2vw, 18px); }
+body .balance-detail-amount.number-display[data-number-size='wide'] { font-size: clamp(10px, 3vw, 14px); letter-spacing: -.05em; }
+body #st-balance.number-display[data-number-size='wide'] { font-size: 22px; }
+body .balance-detail-amount.number-display .number-currency { font-size: .6em; margin-left: .1em; }
+/* Huge secondary balances get another row instead of unreadably small type. */
+body .balance-breakdown:has(.number-display[data-number-size='wide']) { grid-template-columns: minmax(0,1fr); }
+body .balance-breakdown:has(.number-display[data-number-size='wide']) .balance-detail + .balance-detail { border-left: 0; border-top: 1px solid var(--border-subtle); padding-left: 0; padding-top: 12px; }
+body .balance-breakdown:has(.number-display[data-number-size='wide']) .number-display { font-size: clamp(18px,5.5vw,24px); }

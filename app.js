@@ -106,13 +106,8 @@ function animateCounter(el, target, fromZero = false) {
   el.dataset.val = num;
   const motionOn = localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const formatted = fmtN(num);
-  el.setAttribute('aria-label', `${formatted} ₽`);
-
-  if (!motionOn || prevVal === num || num < 0 || !Number.isInteger(num)) {
-    el.setAttribute('aria-label', fmtR(num));
-    el.textContent = fmtR(num);
-    return;
-  }
+  window.FintexNumerals.render(el,num);
+  if (!motionOn || prevVal === num || num < 0 || !Number.isInteger(num)) return;
 
   const prevStr = fmtN(prevVal).padStart(formatted.length, '0');
   let digitIdx = 0;
@@ -128,7 +123,7 @@ function animateCounter(el, target, fromZero = false) {
     return `<span class="odo-col"><span class="odo-reel" data-target-digit="${targetDigit}" style="transform: translateY(-${startDigit * 10}%); transition-delay: ${delay}ms;">${digitsHtml}</span></span>`;
   });
 
-  el.innerHTML = `<span class="odo-wrap">${htmlParts.join('')}<span class="ml-1">₽</span></span>`;
+  el.querySelector('.number-major').innerHTML = `<span class="odo-wrap">${htmlParts.join('')}</span>`;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       el.querySelectorAll('.odo-reel').forEach(reel => {
@@ -761,8 +756,8 @@ function renderAll(animateFromZero = false) {
   animateCounter(document.getElementById('hero-balance'), state.balance, animateFromZero);
 
   document.getElementById('hero-daily-cap').textContent = fmtR(m.dailyCap);
-  document.getElementById('hero-reserved').textContent = fmtR(m.reserved);
-  document.getElementById('hero-free-pool').textContent = fmtR(m.freePool);
+  window.FintexNumerals.render(document.getElementById('hero-reserved'),m.reserved);
+  window.FintexNumerals.render(document.getElementById('hero-free-pool'),m.freePool);
   document.getElementById('hero-payday-date').textContent = humanDate(state.payday);
   document.getElementById('feed-today-sum').textContent = fmtR(m.totalTodaySpent);
 
@@ -1439,7 +1434,7 @@ function formatCalDayFullHeading(iso) {
 
 // Planning lives in Calendar; keep legacy IDs stable for stored-data renderers.
 function renderCalendarPlan() {
-  document.getElementById('st-balance').textContent = fmtR(state.balance);
+  window.FintexNumerals.render(document.getElementById('st-balance'),state.balance);
   document.getElementById('st-payday').textContent = humanDate(state.payday);
   document.getElementById('st-goal-title').textContent = state.goal?.title || 'Финансовая подушка';
   document.getElementById('st-goal-sub').textContent = `Отложено: ${fmtR(state.goal?.saved || 0)} из ${fmtR(state.goal?.target || 10000)}`;
@@ -1852,6 +1847,7 @@ function renderSettings() {
 function applyStealthUI() {
   const active = Boolean(state.privacyMode);
   document.body.classList.toggle('stealth-mode', active);
+  window.FintexNumerals.syncPrivacy();
   const pill = document.getElementById('stealth-pill');
   if (pill) pill.classList.toggle('hidden', !active);
   const eyeIcon = document.getElementById('privacy-eye-icon');
