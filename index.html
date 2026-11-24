@@ -14,10 +14,14 @@
   <meta name="theme-color" content="#061C12" />
   <meta name="color-scheme" content="dark light" />
   <script src="./appearance.js?v=31"></script>
+  <link rel="stylesheet" href="./auth.css?v=35" />
+  <script src="./auth.js?v=35"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=33" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
+
+  <section id="fintex-auth" hidden tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div class="auth-content"><h1 id="auth-title">Защищённый вход</h1><p>Загружаем экран входа… Если он не появился, обновите приложение.</p></div></section>
 
   <!-- Индикатор Pull-to-Refresh -->
   <div id="ptr-indicator" class="fixed top-2 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded-full card-surface border border-[#00D6C3]/35 text-[11px] font-semibold text-brand flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-200 -translate-y-4">
@@ -874,6 +878,15 @@
         </div>
 
         </div>
+      <details id="settings-security" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="shield-check"></i></span><span><strong>Пароль и доступ</strong><small>Вход, смена пароля и восстановление через Telegram</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3">
+          <p id="auth-settings-status" class="auth-settings-note" role="status">Проверяем защиту входа…</p>
+          <div class="auth-settings-buttons"><button type="button" id="auth-change">Настроить вход</button><button type="button" id="auth-logout" hidden>Выйти со всех устройств</button></div>
+          <p class="auth-settings-note">Код восстановления приходит в личный чат того же бота. Сначала нажмите в чате «Начать». Пароли и коды не сохраняются на устройстве. Финансовые записи в браузере не зашифрованы.</p>
+          <button type="button" id="auth-rotate-webhook">Обновить ключ автоматизации iOS →</button>
+        </div>
+      </details>
       <p class="section-caption">Под себя</p>
       <details id="settings-work-time" class="section-group card-surface">
         <summary><span class="section-icon companion-icon" aria-hidden="true"><i data-lucide="hourglass"></i></span><span><strong>Цена в часах жизни</strong><small>Доход и рабочее время для расчёта покупок</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
@@ -1327,8 +1340,8 @@
           <button type="button" onclick="saveGasUrl()" class="px-3.5 py-2 rounded-lg btn-turquoise text-xs">OK</button>
         </div>
         <div class="grid grid-cols-2 gap-2 pt-1">
-          <input id="gas-token-field" type="password" placeholder="Секретный token (необяз.)" class="bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-main" />
-          <button type="button" onclick="saveSecurityToken()" class="py-1.5 rounded-lg btn-teal-soft text-[11px] font-semibold">Сохранить token</button>
+          <input id="gas-token-field" type="password" placeholder="Ключ iOS: 32–128 символов" class="bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-main" />
+          <button type="button" onclick="saveSecurityToken()" class="py-1.5 rounded-lg btn-teal-soft text-[11px] font-semibold">Сохранить ключ iOS</button>
         </div>
       </div></div>
       </details>
@@ -1866,7 +1879,7 @@
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./finance-math.js?v=34"></script>
   <script src="./life-cost.js?v=30"></script>
-  <script src="./app.js?v=34"></script>
+  <script src="./app.js?v=35"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=34"></script>
