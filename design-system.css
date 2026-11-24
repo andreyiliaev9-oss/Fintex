@@ -813,3 +813,17 @@ body #modal-can-buy .modal-sheet { max-height: 95dvh; overflow-y: auto; overscro
 @media(max-width:480px) { body .work-dialog { border-radius: 24px 24px 0 0; margin: auto auto 0; max-height: 96dvh; } }
 
 html[data-visual-style='sapphire'] body .work-dialog::backdrop { background: rgba(10,26,68,.78); }
+
+/* Neutral figures in Sapphire only: keep headings/controls blue and preserve
+ * income, expense, category, planned-payment and risk colours. The budget card
+ * uses the opposite surface, so its figure colour follows that surface. */
+html[data-visual-style='sapphire'] { --number-ink: #30343b; --budget-number-ink: #f6f3ed; }
+html.dark[data-visual-style='sapphire'] { --number-ink: #f6f3ed; --budget-number-ink: #30343b; }
+html[data-visual-style='sapphire'] body :is(#hero-balance, #hero-reserved, #hero-free-pool, #st-balance, #work-result, #cb-work-time),
+html[data-visual-style='sapphire'] body #filely-financial-tree .ft-saved,
+html[data-visual-style='sapphire'] body .ftx-ap :is(.ftx-ap-big, .ftx-ap-weekday-value, .ftx-ap-tx-sum),
+html[data-visual-style='sapphire'] body .work-field input,
+html[data-visual-style='sapphire'] body .balance-forecast:not([data-tone='risk']) .balance-forecast-value { color: var(--number-ink); }
+html[data-visual-style='sapphire'] body .daily-budget[data-exhausted='true'] { --budget-number-ink: var(--number-ink); }
+html[data-visual-style='sapphire'] body .daily-budget .money-val,
+html[data-visual-style='sapphire'] body .daily-budget #hero-budget-used { color: var(--budget-number-ink); }

@@ -921,3 +921,33 @@ test('Sapphire uses the reference colours with readable controls and no Lagoon d
     expect(palette.swatch).toContain('rgb(21, 48, 115)');
   }
 });
+
+test('Sapphire figures are neutral per card surface while financial colours and Forest stay unchanged', async ({ page }) => {
+  await openApp(page,true);
+  const contrast = (a,b) => {
+    const luminance=rgb=>rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+    const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+  };
+  const colour = selector => page.locator(selector).first().evaluate(el=>getComputedStyle(el).color);
+  for(const mode of ['light','dark']) {
+    await page.evaluate(mode=>{setTheme(mode);setVisualStyle('forest');},mode);
+    await expect.poll(() => colour('#hero-balance')).toBe(mode==='light'?'rgb(24, 60, 36)':'rgb(245, 248, 233)');
+    const forest = await colour('#hero-balance');
+    const semantics = await page.evaluate(()=>['--income','--expense','--planned','--danger'].map(t=>getComputedStyle(document.documentElement).getPropertyValue(t)));
+    await page.evaluate(()=>setVisualStyle('sapphire'));
+    const neutral=mode==='light'?'rgb(48, 52, 59)':'rgb(246, 243, 237)';
+    for(const selector of ['#hero-balance','#hero-reserved','#hero-free-pool','.ft-saved','.ftx-ap-big']) await expect.poll(() => colour(selector),selector).toBe(neutral);
+    await expect.poll(() => colour('#hero-daily-left')).toBe(mode==='light'?'rgb(246, 243, 237)':'rgb(48, 52, 59)');
+    const budget=await page.locator('.daily-budget').evaluate(el=>getComputedStyle(el).backgroundColor);
+    const parse=s=>s.match(/\d+/g).slice(0,3).map(Number);
+    expect(contrast(parse(await colour('#hero-daily-left')),parse(budget))).toBeGreaterThan(4.5);
+    expect(await page.evaluate(()=>['--income','--expense','--planned','--danger'].map(t=>getComputedStyle(document.documentElement).getPropertyValue(t)))).toEqual(semantics);
+    const income=await colour('.operation-income'),expense=await colour('.operation-expense');
+    expect(income).not.toBe(neutral);expect(expense).not.toBe(neutral);
+    await page.evaluate(()=>{document.getElementById('hero-daily-budget').dataset.exhausted='true';document.getElementById('hero-forecast-row').dataset.tone='risk';});
+    await expect.poll(() => colour('#hero-daily-left')).toBe(neutral);
+    await expect.poll(() => colour('#hero-forecast-text')).toBe(mode==='light'?'rgb(180, 62, 69)':'rgb(255, 166, 154)');
+    await page.evaluate(()=>{document.getElementById('hero-daily-budget').dataset.exhausted='false';setVisualStyle('forest');});
+    await expect.poll(() => colour('#hero-balance')).toBe(forest);
+  }
+});
