@@ -40,3 +40,8 @@ test('context retains only minimal validated dates, ids and flags; older devices
   assert.deepEqual(c,{lastSeen:local.date,lastReceipt:'2026-11-23',lastExpense:'',goalActive:false,bills:[{id:'b1',due:'2026-11-25'}]});
   assert.equal(R.date('2026-02-30'),null);assert.notEqual(R.date('2028-02-29'),null);
 });
+test('urgent bill is chosen by due date, never by unsorted client list order',()=>{
+  const c={...ctx(),bills:[{id:'later',due:'2026-11-26'},{id:'today',due:local.date},{id:'tomorrow',due:'2026-11-25'}]};
+  assert.equal(R.due(base(),c,{},local,now).key,'bill_today_'+local.date);
+  assert.equal(c.bills[0].id,'later');
+});

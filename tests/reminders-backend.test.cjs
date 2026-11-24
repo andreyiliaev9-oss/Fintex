@@ -57,3 +57,14 @@ test('bounded round-robin cursor reaches later users without repeated attempts f
   }
   f.ctx.sendFintexReminders();assert.equal(f.messages.length,20);f.ctx.sendFintexReminders();assert.equal(f.messages.length,25);assert.equal(new Set(f.messages.map(m=>m.chat_id)).size,25);
 });
+test('long-running batch refreshes time for each user and never starts later deliveries during quiet hours',()=>{
+  const f=fixture();f.tick((9*60+59)*60000); // 21:59 UTC
+  for(const uid of ['1001','1002'])f.post({action:'reminders_save',init_data:f.initData(uid),consent:true,settings:{...prefs(),time:'21:30'},context:{lastExpense:'2026-11-23'}});
+  const fetch=f.ctx.UrlFetchApp.fetch;f.ctx.UrlFetchApp.fetch=function(...args){const response=fetch(...args);f.tick(60000);return response;};
+  f.ctx.sendFintexReminders();assert.equal(f.messages.length,1);assert.equal(f.messages[0].chat_id,'1001');
+});
+test('clock is rechecked after persisting a reservation; a slow sheet write cannot cause a late send',()=>{
+  const f=fixture();f.tick((9*60+59)*60000);enable(f,{time:'21:30'});
+  const write=f.ctx.reminderWrite;let slow=true;f.ctx.reminderWrite=function(...args){write(...args);if(slow&&args[2].delivery.status==='pending'){slow=false;f.tick(60000);}};
+  f.ctx.sendFintexReminders();assert.equal(f.messages.length,0);assert.equal(JSON.parse(row(f)[3]).status,'skipped');assert.equal(JSON.parse(row(f)[3]).error,'WINDOW_PASSED');
+});

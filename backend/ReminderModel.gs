@@ -34,7 +34,7 @@ var FintexReminderModel = (function () {
       if(report){report.from=p.reportFrequency==='weekly'?week:local.date;report.to=local.date;return report;}
     }
     if(!at(p.time)||!c.lastSeen||date(c.lastSeen)===null||date(local.date)-date(c.lastSeen)>7*DAY)return null;
-    if(p.bills){var bill=(c.bills||[]).find(function(b){return date(b.due)!==null&&b.due>=local.date&&b.due<=shift(local.date,2)&&!sent['bill_'+b.id+'_'+b.due];});if(bill)return item('bills','bill_'+bill.id+'_'+bill.due,'📅 FINTEX · Предстоящий платёж\nВ последнем синхронизированном списке есть неоплаченный платёж на '+bill.due.split('-').reverse().join('.')+'. Проверьте актуальность и оплату в приложении.');}
+    if(p.bills){var bill=(c.bills||[]).slice().sort(function(a,b){return String(a.due).localeCompare(String(b.due));}).find(function(b){return date(b.due)!==null&&b.due>=local.date&&b.due<=shift(local.date,2)&&!sent['bill_'+b.id+'_'+b.due];});if(bill)return item('bills','bill_'+bill.id+'_'+bill.due,'📅 FINTEX · Предстоящий платёж\nВ последнем синхронизированном списке есть неоплаченный платёж на '+bill.due.split('-').reverse().join('.')+'. Проверьте актуальность и оплату в приложении.');}
     var choices=[];
     var receiptBase=c.lastReceipt||c.registered;
     if(p.receipts&&date(receiptBase)!==null&&date(local.date)-date(receiptBase)>=3*DAY)choices.push({kind:'receipts',text:'🧾 FINTEX · Не забудьте загрузить чеки\nВ доступных данных давно не было новых чеков. Если были покупки, добавьте их, чтобы они попали в аналитику. Если покупок не было — ничего делать не нужно.'});

@@ -59,6 +59,7 @@ function sendFintexReminders(){
       props.setProperty('FINTEX_REMINDERS_CURSOR',String((index)%total));
       if(!/^\d+$/.test(uid)||r.settings.enabled!==true)continue;
       try{
+        now=Date.now();
         var p=FintexReminderModel.settings(r.settings),local=reminderLocal(now,p.timezone),c=reminderCloudContext(txs,uid,r.context,local.date);c.registered=r.delivery.registered;
         var item=FintexReminderModel.due(p,c,r.delivery,local,now);if(!item)continue;
         var text=item.text;if(item.kind==='reports'&&p.includeAmounts)text+=reminderReport(item,txs,uid);
@@ -66,6 +67,9 @@ function sendFintexReminders(){
         var s=r.delivery;s.lastAt=now;s.lastDay=local.date;s.status='pending';s.error='';s.sent=s.sent||{};s.sent[item.key]=now;s.byKind=s.byKind||{};s.byKind[item.kind]=now;
         var keys=Object.keys(s.sent).sort(function(a,b){return s.sent[b]-s.sent[a];});keys.slice(80).forEach(function(k){delete s.sent[k];});
         reminderWrite(sh,uid,r);
+        var beforeSend=reminderLocal(Date.now(),p.timezone),scheduled=item.kind==='reports'?p.reportTime:p.time;
+        var delta=Number(beforeSend.time.slice(0,2))*60+Number(beforeSend.time.slice(3))-Number(scheduled.slice(0,2))*60-Number(scheduled.slice(3));
+        if(beforeSend.date!==local.date||beforeSend.time<'09:00'||beforeSend.time>='22:00'||delta<0||delta>=90){s.status='skipped';s.error='WINDOW_PASSED';reminderWrite(sh,uid,r);continue;}
         var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+bot+'/sendMessage',{method:'post',contentType:'application/json',muteHttpExceptions:true,payload:JSON.stringify({chat_id:uid,text:text,disable_web_page_preview:true,reply_markup:{inline_keyboard:[[{text:'Открыть FINTEX →',web_app:{url:'https://andreyiliaev9-oss.github.io/Fintex/'}}]]}})});
         var code=response.getResponseCode(),answer;try{answer=JSON.parse(response.getContentText());}catch(e){answer={};}
         if(code===200&&answer.ok===true){s.status='sent';}
