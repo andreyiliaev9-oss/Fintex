@@ -113,8 +113,9 @@ function animateCounter(el, target, fromZero = false) {
   const num = Math.max(0, Math.round(Number(target) || 0));
   const prevVal = fromZero ? 0 : Number(el.dataset.val || 0);
   el.dataset.val = num;
-  const motionOn = localStorage.getItem('fp_motion') !== '0';
+  const motionOn = localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const formatted = fmtN(num);
+  el.setAttribute('aria-label', `${formatted} ₽`);
 
   if (!motionOn || prevVal === num) {
     el.textContent = `${formatted} ₽`;
@@ -388,8 +389,10 @@ function setTheme(mode) {
   document.querySelectorAll('#theme-seg .seg-item').forEach((el, i) => {
     el.className = `seg-item py-1 ${i === idx ? 'text-[#041311] font-bold' : 'text-sub'}`;
   });
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#101416' : '#F4F6F7');
   if (tg) {
-    const bg = dark ? '#050A09' : '#F2F6F5';
+    const bg = dark ? '#101416' : '#F4F6F7';
     tg.setBackgroundColor(bg);
     tg.setHeaderColor(bg);
   }
@@ -772,6 +775,49 @@ function detectSubscriptionsAndAnomalies() {
   return { subsList, monthlySubs, annualSubs, anomalies };
 }
 
+// Presentation states are independent: a forecast deficit is not a duplicate charge.
+function renderBalanceCardFeedback(m, hasAnomaly) {
+  const exhausted = m.freePool === 0 || m.todaySpent >= m.dailyCap;
+  const forecastRisk = m.hasData && Number.isFinite(m.forecastBalance) && m.forecastBalance < 0;
+  const tone = exhausted || forecastRisk ? 'risk' : (hasAnomaly || m.pct >= 75 ? 'caution' : 'calm');
+  const badge = document.getElementById('status-badge');
+  badge.className = 'balance-status';
+  badge.dataset.tone = tone;
+  badge.textContent = tone === 'risk' ? 'Нужен контроль' : tone === 'caution' ? 'Обратите внимание' : 'Всё спокойно';
+  const orb = document.getElementById('fintex-ai-orb');
+  if (orb) orb.className = `ai-orb ai-orb-${tone === 'risk' ? 'alert' : tone === 'caution' ? 'amber' : 'calm'} shrink-0`;
+
+  const used = Math.max(0, Math.min(100, Number(m.pct) || 0));
+  const bar = document.getElementById('hero-bar');
+  bar.style.width = `${used}%`;
+  bar.style.background = 'currentColor';
+  document.getElementById('hero-budget-progress').setAttribute('aria-valuenow', String(used));
+  document.getElementById('hero-daily-budget').dataset.exhausted = String(exhausted);
+  document.getElementById('hero-today-spent').textContent = fmtR(m.todaySpent);
+  document.getElementById('hero-budget-used').textContent = `${used}% лимита`;
+
+  const forecast = document.getElementById('hero-forecast-text');
+  forecast.textContent = m.hasData && Number.isFinite(m.forecastBalance)
+    ? fmtR(Math.abs(m.forecastBalance), m.forecastBalance < 0 ? '−' : m.forecastBalance > 0 ? '+' : '')
+    : '—';
+  document.getElementById('hero-forecast-row').dataset.tone = forecastRisk ? 'risk' : 'calm';
+  document.getElementById('hero-forecast-note').textContent = m.hasData
+    ? 'При текущем темпе трат' : 'Появится после первых расходов';
+
+  const notice = document.getElementById('hero-notice');
+  notice.hidden = !(exhausted || hasAnomaly);
+  notice.dataset.tone = exhausted ? 'risk' : 'caution';
+  document.getElementById('hero-notice-title').textContent = exhausted ? 'Бюджет на сегодня исчерпан' : 'Проверьте последние расходы';
+  document.getElementById('hero-notice-description').textContent = exhausted
+    ? (m.freePool === 0 ? 'Средства зарезервированы. Посмотрите расчёт.' : 'Лимит достигнут. Посмотрите расходы за день.')
+    : 'Есть повторные списания или высокая доля одной категории.';
+  notice.onclick = () => {
+    if (exhausted && m.freePool === 0) openForecastExplainModal();
+    else if (exhausted) openTodayDetailModal();
+    else { goTab('analytics'); toast('Проверьте операции и распределение расходов по категориям'); }
+  };
+}
+
 function renderAll(animateFromZero = false) {
   const m = calcMetrics();
   const intel = detectSubscriptionsAndAnomalies();
@@ -790,33 +836,11 @@ function renderAll(animateFromZero = false) {
   document.getElementById('feed-today-sum').textContent = fmtR(m.todaySpent);
 
   const explainEl = document.getElementById('hero-limit-explain');
-  if (m.freePool === 0) explainEl.textContent = `Весь баланс (${fmtR(state.balance)}) зарезервирован под платежи и подушку`;
-  else if (m.todaySpent > 0) explainEl.textContent = `Сегодня потрачено ${fmtR(m.todaySpent)} из нормы ${fmtR(m.dailyCap)}/день`;
-  else explainEl.textContent = `Свободные ${fmtR(m.freePool)} распределены на ${m.days} дн. без ущерба для платежей`;
+  explainEl.textContent = m.freePool === 0
+    ? 'Средства защищены для платежей и накоплений.'
+    : `До зарплаты ${m.days} дн. Резерв не входит в дневной бюджет.`;
 
-  const badge = document.getElementById('status-badge');
-  const orb = document.getElementById('fintex-ai-orb');
-  if (m.freePool === 0 || m.pct > 100 || hasAnomaly) {
-    badge.textContent = hasAnomaly && m.pct <= 100 ? 'Внимание: аномалия' : 'Риск перерасхода';
-    badge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-red-500/20 text-red-300 border border-red-400/30';
-    if (orb) orb.className = 'ai-orb ai-orb-alert shrink-0';
-  } else if (m.pct >= 75) {
-    badge.textContent = 'Будь осторожнее';
-    badge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-[#F2C65D]/20 text-gold border border-[#F2C65D]/35';
-    if (orb) orb.className = 'ai-orb ai-orb-amber shrink-0';
-  } else {
-    badge.textContent = 'Всё под контролем';
-    badge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-black/35 text-brand border border-[#00D6C3]/30';
-    if (orb) orb.className = 'ai-orb ai-orb-calm shrink-0';
-  }
-
-  const bar = document.getElementById('hero-bar');
-  bar.style.width = `${m.pct}%`;
-  bar.style.background = m.pct > 90 ? '#FB7185' : 'linear-gradient(90deg, #00D6C3 0%, #F2C65D 100%)';
-
-  const fcEl = document.getElementById('hero-forecast-text');
-  if (!m.hasData) fcEl.textContent = 'Недостаточно данных для прогноза';
-  else fcEl.textContent = m.forecastBalance >= 0 ? fmtR(m.forecastBalance, '+') : fmtR(Math.abs(m.forecastBalance), '-');
+  renderBalanceCardFeedback(m, hasAnomaly);
 
   document.getElementById('sources-explicit-text').textContent = `Банк (${state.bank}) · Чеки OCR · Выписки CSV/PDF`;
   const cardBrandLbl = document.getElementById('hero-card-brand-lbl');
@@ -1018,8 +1042,8 @@ function organizeSimplifiedLayout() {
 
   // 2. Убираем лишние мелкие подписи в шапке и главной карточке
   document.getElementById('hdr-sync-status')?.classList.add('hidden');
-  document.getElementById('hero-limit-explain')?.classList.add('hidden');
-  document.getElementById('hero-card-brand-lbl')?.classList.add('hidden');
+  document.getElementById('hero-limit-explain')?.classList.remove('hidden');
+  document.getElementById('hero-card-brand-lbl')?.classList.remove('hidden');
   document.getElementById('hero-res-pct')?.classList.add('hidden');
   document.getElementById('hero-free-pct')?.classList.add('hidden');
 
@@ -1058,7 +1082,7 @@ function organizeSimplifiedLayout() {
 
     if (heroCard) {
       heroCard.classList.remove('p-3.5', 'p-4', 'space-y-2', 'space-y-2.5', 'space-y-3');
-      heroCard.classList.add('p-5', 'space-y-4');
+      heroCard.classList.remove('p-5', 'space-y-4');
     }
 
     if (feedBlock) {
@@ -3813,6 +3837,8 @@ function goTab(name) {
   document.querySelectorAll('.nav-tab').forEach(btn => {
     const active = btn.dataset.nav === name;
     btn.classList.toggle('is-active-tab', active);
+    if (active) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
     btn.classList.toggle('text-brand', active);
     btn.classList.toggle('nav-active-glow', active);
     btn.classList.toggle('text-sub', !active);
