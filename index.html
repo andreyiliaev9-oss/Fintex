@@ -14,8 +14,8 @@
   <meta name="theme-color" content="#061C12" />
   <meta name="color-scheme" content="dark light" />
   <script src="./appearance.js?v=31"></script>
-  <link rel="stylesheet" href="./auth.css?v=35" />
-  <script src="./auth.js?v=37"></script>
+  <link rel="stylesheet" href="./auth.css?v=38" />
+  <script src="./auth.js?v=38"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=33" />
 </head>
@@ -879,11 +879,11 @@
 
         </div>
       <details id="settings-security" class="section-group card-surface">
-        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="shield-check"></i></span><span><strong>Пароль и доступ</strong><small>Вход, смена пароля и восстановление через Telegram</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="shield-check"></i></span><span><strong>PIN-код и доступ</strong><small>Вход по 6 цифрам и восстановление через Telegram</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
         <div class="section-body space-y-3">
           <p id="auth-settings-status" class="auth-settings-note" role="status">Проверяем защиту входа…</p>
           <div class="auth-settings-buttons"><button type="button" id="auth-change">Настроить вход</button><button type="button" id="auth-logout" hidden>Выйти со всех устройств</button></div>
-          <p class="auth-settings-note">Код восстановления приходит в личный чат того же бота. Сначала нажмите в чате «Начать». Пароли и коды не сохраняются на устройстве. Финансовые записи в браузере не зашифрованы.</p>
+          <p class="auth-settings-note">Код восстановления приходит в личный чат того же бота. Сначала нажмите в чате «Начать». PIN-коды и коды восстановления не сохраняются на устройстве. Финансовые записи в браузере не зашифрованы.</p>
           <button type="button" id="auth-rotate-webhook">Обновить ключ автоматизации iOS →</button>
         </div>
       </details>

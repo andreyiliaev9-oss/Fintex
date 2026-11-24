@@ -575,9 +575,6 @@ var FintexKdf = (() => {
   return __toCommonJS(password_kdf_entry_exports);
 })();
 
-
-// ==================== Auth.gs ====================
-
 /** FINTEX authentication. Deploy together with Code.gs and PasswordKdf.gs.
  * No token, password, initData or reset code may be logged.
  * Required Script Properties: FINTEX_BOT_TOKEN, FINTEX_AUTH_SECRET (64 hex chars).
@@ -634,7 +631,7 @@ function authRecord(db,uid,create) {
 }
 function authSave(rec) { rec.sheet.getRange(rec.row,1,1,AUTH_COLUMNS.length).setValues([rec.v]); }
 function authPassword(password) {
-  if(typeof password!=='string' || password.length<10 || password.length>128) authError('PASSWORD_POLICY','Пароль должен содержать от 10 до 128 символов.');
+  if(typeof password!=='string' || !/^[0-9]{6}$/.test(password)) authError('PASSWORD_POLICY','PIN-код должен содержать ровно 6 цифр.');
   return password; // Never trim or silently truncate passwords.
 }
 function authVerifier(password,salt,uid) {
@@ -648,7 +645,7 @@ function authWrong(rec) {
   rec.v[4]=Number(rec.v[4]||0)+1;
   if(rec.v[4]>=5) {rec.v[5]=Date.now()+15*60*1000;rec.v[4]=0;}
   authSave(rec);
-  authError('WRONG_PASSWORD','Неверный пароль.');
+  authError('WRONG_PASSWORD','Неверный PIN-код.');
 }
 function authCheckPassword(rec,password,uid) {
   authBlocked(rec);
@@ -675,7 +672,7 @@ function authRequire(db,body) {
   var parts=token.split('.'), payload;
   if(parts.length!==2 || !authEqual(authHmac('session|'+parts[0]),parts[1])) authError('AUTH_REQUIRED','Войдите в приложение.');
   try { payload=JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString()); } catch(e) {}
-  if(!payload || !/^\d+$/.test(payload.uid) || !Number.isFinite(payload.exp) || payload.exp<=Date.now() || payload.exp>Date.now()+1800000+60000) authError('AUTH_REQUIRED','Сеанс истёк. Введите пароль снова.');
+  if(!payload || !/^\d+$/.test(payload.uid) || !Number.isFinite(payload.exp) || payload.exp<=Date.now() || payload.exp>Date.now()+1800000+60000) authError('AUTH_REQUIRED','Сеанс истёк. Введите PIN снова.');
   if(body.user_id && String(body.user_id)!==payload.uid) authError('AUTH_REQUIRED','Учётная запись не совпадает.');
   var rec=authRecord(db,payload.uid,false);
   if(!rec || !rec.v[2] || Number(rec.v[3])!==payload.v) authError('AUTH_REQUIRED','Войдите в приложение снова.');
@@ -699,7 +696,7 @@ function authSendReset(db,uid,rec) {
   try {
     var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+authProperties().bot+'/sendMessage',{
       method:'post',contentType:'application/json',muteHttpExceptions:true,
-      payload:JSON.stringify({chat_id:uid,text:'Fintex: код сброса пароля — '+code+'\nДействует 10 минут. Никому не сообщайте код. Если это не вы, не используйте его.'})
+      payload:JSON.stringify({chat_id:uid,text:'Fintex: код сброса PIN — '+code+'\nДействует 10 минут. Никому не сообщайте код. Если это не вы, не используйте его.'})
     });
     var data=JSON.parse(response.getContentText());
     if(response.getResponseCode()!==200 || !data.ok) throw new Error('delivery');
@@ -718,13 +715,13 @@ function authDispatch(db,body) {
   uid=authTelegram(body.init_data);
   if(body.user_id && String(body.user_id)!==uid) authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
   rec=authRecord(db,uid,false);
-  if(action==='auth_status') return {ok:true,password_set:!!(rec&&rec.v[2]),uid:uid};
+  if(action==='auth_status') return {ok:true,password_set:!!(rec&&rec.v[2]),pin_protocol:1,uid:uid};
   if(action==='auth_setup') {
-    if(rec&&rec.v[2]) authError('PASSWORD_EXISTS','Пароль уже задан. Войдите или запросите сброс.');
+    if(rec&&rec.v[2]) authError('PASSWORD_EXISTS','PIN или пароль уже задан. Войдите или запросите сброс.');
     authPassword(body.password);rec=rec||authRecord(db,uid,true);
     authSetPassword(rec,body.password,uid);return authSession(rec,uid,authRotateWebhook(db,uid));
   }
-  if(!rec || !rec.v[2]) authError('PASSWORD_NOT_SET','Сначала создайте пароль.');
+  if(!rec || !rec.v[2]) authError('PASSWORD_NOT_SET','Сначала создайте PIN-код.');
   if(action==='auth_login') {authCheckPassword(rec,body.password,uid);return authSession(rec,uid);}
   if(action==='auth_reset_request') return authSendReset(db,uid,rec);
   if(action==='auth_reset') {
@@ -738,8 +735,6 @@ function authDispatch(db,body) {
   authError('UNKNOWN_ACTION','Неизвестная команда.');
 }
 
-
-// ==================== Code.gs ====================
 /** FINTEX Cloud v5. Deploy ALL THREE .gs files; see docs/password-setup.md.
  * API actions require a password session; Shortcut tokens are ingest-only.
  */

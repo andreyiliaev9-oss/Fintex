@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const crypto=require('node:crypto'),fs=require('node:fs'),vm=require('node:vm');
 const SECRET='ab'.repeat(32),BOT='123456:example-server-only-bot-token',UID='8141670312';
-const PASSWORD='Лесной пароль 2026';
+const PASSWORD='836291';
 function fixture(){
   let now=Date.UTC(2026,10,24,12),deliver=true;
   class Clock extends Date {constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}}
@@ -71,23 +71,23 @@ test('reset is bound to verified Telegram, delivered only to its chat, hashed, r
   const f=fixture(),old=f.setup();assert.equal(f.auth('auth_reset_request').ok,true);
   const message=f.messages[0];assert.equal(message.chat_id,UID);const code=message.text.match(/\b\d{6}\b/)[0];
   assert.ok(!JSON.stringify(f.sheets.get('Auth').data).includes(code));assert.equal(f.auth('auth_reset_request').code,'RATE_LIMIT');
-  assert.equal(f.auth('auth_reset',{code:'bad',new_password:'a new secure password'}).code,'WRONG_CODE');
-  const next=f.auth('auth_reset',{code,new_password:'a new secure password'});assert.equal(next.ok,true);
-  assert.equal(f.auth('auth_reset',{code,new_password:'reuse code password'}).code,'CODE_EXPIRED');
+  assert.equal(f.auth('auth_reset',{code:'bad',new_password:'947382'}).code,'WRONG_CODE');
+  const next=f.auth('auth_reset',{code,new_password:'947382'});assert.equal(next.ok,true);
+  assert.equal(f.auth('auth_reset',{code,new_password:'947382'}).code,'CODE_EXPIRED');
   assert.equal(f.post({action:'init',session:old.session}).code,'AUTH_REQUIRED');assert.notEqual(next.webhook_token,old.webhook_token);
-  assert.equal(f.auth('auth_login',{password:PASSWORD}).code,'WRONG_PASSWORD');assert.equal(f.auth('auth_login',{password:'a new secure password'}).ok,true);
+  assert.equal(f.auth('auth_login',{password:PASSWORD}).code,'WRONG_PASSWORD');assert.equal(f.auth('auth_login',{password:'947382'}).ok,true);
 });
 test('reset codes expire and exhaust five attempts; failed delivery cannot leave an active code',()=>{
   const f=fixture();f.setup();f.auth('auth_reset_request');const code=f.messages[0].text.match(/\b\d{6}\b/)[0];
-  for(let i=0;i<5;i++)assert.equal(f.auth('auth_reset',{code:'abcdef',new_password:'new secure password'}).code,'WRONG_CODE');
-  assert.equal(f.auth('auth_reset',{code,new_password:'new secure password'}).code,'CODE_EXPIRED');
-  f.tick(60001);f.auth('auth_reset_request');f.tick(600001);assert.equal(f.auth('auth_reset',{code,new_password:'new secure password'}).code,'CODE_EXPIRED');
+  for(let i=0;i<5;i++)assert.equal(f.auth('auth_reset',{code:'abcdef',new_password:'947382'}).code,'WRONG_CODE');
+  assert.equal(f.auth('auth_reset',{code,new_password:'947382'}).code,'CODE_EXPIRED');
+  f.tick(60001);f.auth('auth_reset_request');f.tick(600001);assert.equal(f.auth('auth_reset',{code,new_password:'947382'}).code,'CODE_EXPIRED');
   f.failDelivery();assert.equal(f.auth('auth_reset_request').code,'DELIVERY_FAILED');assert.equal(f.sheets.get('Auth').data[1][6],'');
   f.tick(60001);assert.equal(f.auth('auth_reset_request').code,'RATE_LIMIT');
 });
 test('password change verifies the old password and revokes existing sessions; logout revokes all devices',()=>{
-  const f=fixture(),s=f.setup();assert.equal(f.post({action:'auth_change',session:s.session,password:'wrong',new_password:'a changed password'}).code,'WRONG_PASSWORD');
-  const changed=f.post({action:'auth_change',session:s.session,password:PASSWORD,new_password:'a changed password'});assert.equal(changed.ok,true);
+  const f=fixture(),s=f.setup();assert.equal(f.post({action:'auth_change',session:s.session,password:'wrong',new_password:'728493'}).code,'WRONG_PASSWORD');
+  const changed=f.post({action:'auth_change',session:s.session,password:PASSWORD,new_password:'728493'});assert.equal(changed.ok,true);
   assert.equal(f.post({action:'init',session:s.session}).code,'AUTH_REQUIRED');assert.equal(f.post({action:'init',session:changed.session}).ok,true);
   assert.equal(f.post({action:'auth_logout',session:changed.session}).ok,true);assert.equal(f.post({action:'init',session:changed.session}).code,'AUTH_REQUIRED');
 });
@@ -116,4 +116,17 @@ test('phone setup creates a private 64-hex secret without replacing an existing 
   f.ctx.createFintexSecret();assert.equal(f.props.get('FINTEX_AUTH_SECRET'),secret);
   f.props.delete('FINTEX_AUTH_SECRET');f.props.set('FINTEX_BOT_TOKEN','wrong');
   assert.throws(()=>f.ctx.createFintexSecret());assert.equal(f.props.has('FINTEX_AUTH_SECRET'),false);
+});
+
+test('PIN policy is enforced on the server before setup and reset writes',()=>{
+  const f=fixture();
+  for(const password of ['12345','1234567','abcdef','１２３４５６','123 56','',123456]) {
+    assert.equal(f.auth('auth_setup',{password}).code,'PASSWORD_POLICY');
+    assert.equal(f.auth('auth_status').password_set,false);
+  }
+  assert.equal(f.auth('auth_setup',{password:'012345'}).ok,true);
+  assert.equal(f.auth('auth_login',{password:'012345'}).ok,true);
+  f.auth('auth_reset_request');const code=f.messages[0].text.match(/\b\d{6}\b/)[0];
+  assert.equal(f.auth('auth_reset',{code,new_password:'password-long-enough'}).code,'PASSWORD_POLICY');
+  assert.equal(f.auth('auth_login',{password:'012345'}).ok,true);
 });
