@@ -563,6 +563,7 @@ function addOrMergeTransactions(incomingList, sourceName) {
       const transaction = {
         id: 'tx_' + token,
         scan_id: item.scan_id || '',
+        ...(sourceName==='FINTEX Capture'?{bank:item.bank||'',capture_confidence:Number.isFinite(item.confidence)?item.confidence:null}:{}),
         dedup_hash: dedupHash,
         merchant,
         amount: amt,
@@ -597,7 +598,7 @@ function addOrMergeTransactions(incomingList, sourceName) {
     pushTransactionsToBackend(added);
     try { window.FINTEX_EXT?.onTransactionsAdded?.(added); } catch (e) {}
   }
-  return { addedCount, mergedCount };
+  return { addedCount, mergedCount, added };
 }
 
 // ==================== БЮДЖЕТ, РЕЙТИНГ, ДЕТЕКТИВ, КАЛЕНДАРЬ И АНАЛИТИКА ====================
