@@ -370,7 +370,7 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>`;
+    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexInvestments?.entryHTML() || ''}`;
     container.querySelectorAll('[data-period]').forEach(button => {
       button.addEventListener('click', () => { activePeriod = button.dataset.period; renderProAnalytics(container); });
     });

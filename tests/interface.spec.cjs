@@ -371,3 +371,95 @@ test('sprout artwork actually resolves to visible leaves and type in both themes
     }
   }
 });
+
+async function openInvestments(page) {
+  await page.locator('[data-nav="analytics"]').click();
+  await page.locator('#view-analytics [data-invest-open]').click();
+  await expect(page.locator('#invest-learning')).toBeVisible();
+}
+
+test('free learning account is reachable, has no fake quotes or trades and fits both themes', async({page})=>{
+  await openApp(page,true); await openInvestments(page);
+  await expect(page.locator('#invest-learning')).toContainText('Демо · Только виртуальные деньги');
+  await expect(page.locator('.inv-cash')).toHaveText('100 000 ₽');
+  await expect(page.getByRole('button',{name:'Купить',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Продать',exact:true})).toBeDisabled();
+  await expect(page.locator('#invest-learning')).toContainText('Котировки не подключены');
+  for(const width of [320,390,448]) {
+    await page.setViewportSize({width,height:844});
+    for(const theme of ['dark','light']) {
+      await page.evaluate(theme=>setTheme(theme),theme);
+      for(const name of ['Счёт','Уроки','Дневник','Правила']) {
+        await page.getByRole('button',{name,exact:true}).click();
+        const bounds=await page.locator('#invest-learning').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));
+        expect(bounds.scroll).toBeLessThanOrEqual(bounds.width);
+      }
+    }
+  }
+  await page.keyboard.press('Escape');await expect(page.locator('#invest-learning')).toBeHidden();
+  await expect(page.locator('#view-analytics [data-invest-open]')).toBeFocused();
+});
+
+test('lessons require a correct answer and persist progress without affecting personal finances',async({page})=>{
+  await openApp(page,true);
+  const before=await page.evaluate(()=>({balance:state.balance,transactions:JSON.stringify(state.transactions),metrics:JSON.stringify(calcMetrics())}));
+  await openInvestments(page);
+  await page.getByRole('button',{name:'Уроки',exact:true}).click();
+  await page.locator('[data-lesson="ownership"]').click();
+  await page.locator('input[name="answer"][value="0"]').check();
+  await page.getByRole('button',{name:'Проверить ответ'}).click();
+  await expect(page.locator('#inv-feedback')).toContainText('Попробуйте ещё раз');
+  expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBeNull();
+  await page.locator('input[name="answer"][value="1"]').check();
+  await page.getByRole('button',{name:'Проверить ответ'}).click();
+  await expect(page.locator('#inv-feedback')).toContainText('Верно.');
+  await page.getByRole('button',{name:'Проверить ответ'}).click();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).completed)).toEqual(['ownership']);
+  expect(await page.evaluate(()=>({balance:state.balance,transactions:JSON.stringify(state.transactions),metrics:JSON.stringify(calcMetrics())}))).toEqual(before);
+  await page.reload();await page.waitForFunction(()=>!!window.FintexAnalyticsPro);await openInvestments(page);
+  await page.getByRole('button',{name:'Уроки',exact:true}).click();
+  await expect(page.locator('[data-lesson="ownership"]')).toContainText('Пройдено');
+});
+
+test('investment diary escapes user text, survives reload, preserves drafts and reset is scoped and confirmed',async({page})=>{
+  await openApp(page,true); await openInvestments(page);
+  const real=await page.evaluate(()=>({balance:state.balance,tx:JSON.stringify(state.transactions)}));
+  await page.getByRole('button',{name:'Дневник',exact:true}).click();
+  await page.locator('[name="company"]').fill('<img src=x onerror="window.badInvestment=true">');
+  await page.locator('[name="thesis"]').fill('Изучаю риски, не отправляю заявку.');
+  await page.getByRole('button',{name:'Счёт',exact:true}).click();
+  await page.getByRole('button',{name:'Дневник',exact:true}).click();
+  await expect(page.locator('[name="thesis"]')).toHaveValue('Изучаю риски, не отправляю заявку.');
+  await page.getByRole('button',{name:'Сохранить запись'}).click();
+  await expect(page.locator('.inv-note')).toContainText('<img src=x');
+  await expect(page.locator('.inv-note img')).toHaveCount(0);
+  expect(await page.evaluate(()=>window.badInvestment)).toBeUndefined();
+  await page.reload(); await page.waitForFunction(()=>!!window.FintexAnalyticsPro);await openInvestments(page);
+  await page.getByRole('button',{name:'Дневник',exact:true}).click();await expect(page.locator('.inv-note')).toHaveCount(1);
+  await page.getByRole('button',{name:'Правила',exact:true}).click();
+  await page.getByRole('button',{name:'Сбросить только обучение'}).click();
+  await page.getByRole('button',{name:'Отмена',exact:true}).click();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).journal.length)).toBe(1);
+  await page.getByRole('button',{name:'Сбросить только обучение'}).click();
+  await page.getByRole('button',{name:'Удалить учебные данные'}).click();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('fp_invest_learning_v1')).journal)).toEqual([]);
+  expect(await page.evaluate(()=>({balance:state.balance,tx:JSON.stringify(state.transactions)}))).toEqual(real);
+});
+
+test('corrupt learning data is not overwritten; storage failure never reports a successful diary save',async({page})=>{
+  await openApp(page);
+  await page.evaluate(()=>localStorage.setItem('fp_invest_learning_v1','{broken'));
+  await openInvestments(page);await expect(page.locator('#inv-message')).toContainText('не перезаписана');
+  await page.getByRole('button',{name:'Уроки',exact:true}).click();await page.locator('[data-lesson="fees"]').click();
+  await page.locator('input[value="1"]').check();await page.getByRole('button',{name:'Проверить ответ'}).click();
+  expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBe('{broken');
+  await page.getByRole('button',{name:'Правила',exact:true}).click();
+  await page.getByRole('button',{name:'Сбросить только обучение'}).click();await page.getByRole('button',{name:'Удалить учебные данные'}).click();
+  await page.getByRole('button',{name:'Дневник',exact:true}).click();
+  await page.locator('[name="thesis"]').fill('Не потерять эту заметку');
+  await page.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='fp_invest_learning_v1')throw new Error('quota');return original.call(this,k,v);};});
+  await page.getByRole('button',{name:'Сохранить запись'}).click();
+  await expect(page.locator('#inv-message')).toContainText('Не удалось сохранить');
+  await expect(page.locator('[name="thesis"]')).toHaveValue('Не потерять эту заметку');
+  await expect(page.locator('.inv-note')).toHaveCount(0);
+});
