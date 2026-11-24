@@ -769,3 +769,48 @@ body .swatch-lagoon i:first-child { background: #8edbd2; }
 body .swatch-lagoon i:last-child { background: #e7c68c; }
 body #appearance-status { font-size: 11px; line-height: 1.5; color: var(--expense); }
 body #appearance-status:empty { display: none; }
+
+/* Forest + apricot: a warm companion, never an expense/income signal. */
+:root {
+  --companion: #955029;
+  --companion-soft: #f6e4d2;
+  --companion-border: #d5b393;
+  --companion-ink: #492d1e;
+}
+html.dark {
+  --companion: #efb184;
+  --companion-soft: #453729;
+  --companion-border: #836447;
+  --companion-ink: #39291e;
+}
+html[data-visual-style='lagoon'] { --companion: #896126; --companion-soft: #f4e8cb; --companion-border: #cfbc8f; --companion-ink: #49381f; }
+html.dark[data-visual-style='lagoon'] { --companion: #e7c68c; --companion-soft: #49442e; --companion-border: #857349; --companion-ink: #3e331e; }
+html:not([data-visual-style='lagoon']) body .ai-orb-calm { background: linear-gradient(145deg, #f2cb9e, #d39b70); color: var(--companion-ink); }
+html:not([data-visual-style='lagoon']) body .balance-account-icon { color: var(--companion); background: var(--companion-soft); border-color: var(--companion-border); }
+html:not([data-visual-style='lagoon']) body .balance-bank { color: var(--companion); }
+body .companion-text { color: var(--companion); }
+body .companion-icon { background: var(--companion-soft); color: var(--companion); }
+body .work-dialog { position: fixed; inset: 0; margin: auto; padding: 0; width: min(100%, 448px); max-width: 100%; max-height: min(920px, 100dvh); border: 1px solid var(--border-subtle); border-radius: 24px; background: var(--bg-canvas); color: var(--text-primary); box-shadow: var(--shadow-float); overflow-y: auto; overscroll-behavior: contain; }
+body .work-dialog::backdrop { background: rgba(3,20,13,.78); backdrop-filter: blur(5px); }
+body .work-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 20px 16px; border-bottom: 1px solid var(--border-subtle); }
+body .work-header h2 { font-size: 22px; margin: 5px 0 0; }
+body .work-close { flex-shrink: 0; min-width: 44px; min-height: 44px; border-radius: 14px; background: var(--surface-2); color: var(--text-secondary); font-size: 26px; }
+body .work-content { padding: 20px 20px calc(24px + env(safe-area-inset-bottom)); display: grid; gap: 18px; }
+body .work-note { font-size: 12px; line-height: 1.65; color: var(--text-secondary); margin: 0; overflow-wrap: anywhere; }
+body .work-eyebrow { display: block; font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; color: var(--companion); }
+body .work-field { display: grid; gap: 8px; min-width: 0; color: var(--text-primary); font-size: 12px; font-weight: 600; }
+body .work-field input { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 48px; background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; font: inherit; font-size: 17px; font-weight: 600; color: var(--text-primary); }
+body .work-result-card, body .work-purchase-card { background: var(--companion-soft); border: 1px solid var(--companion-border); border-radius: 18px; padding: 18px; }
+body #work-result { display: block; font-size: clamp(26px, 8vw, 38px); line-height: 1.25; letter-spacing: -.04em; margin: 10px 0; color: var(--text-primary); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+body .work-profile { display: grid; gap: 14px; min-width: 0; border: 0; padding: 0; margin: 0; }
+body .work-profile legend { padding: 0; margin-bottom: 10px; color: var(--text-primary); font-size: 14px; font-weight: 700; }
+body .work-save { min-height: 46px; padding: 12px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 750; }
+html:not(.dark) body .work-save { color: white; }
+body #work-status:empty { display: none; }
+body .work-formula { border-top: 1px solid var(--border-subtle); padding-top: 14px; }
+body .work-formula summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; font-weight: 600; padding: 6px 0; }
+body .work-formula p { margin-top: 10px; }
+body .work-link { display: inline-block; text-align: left; color: var(--companion); min-height: 44px; padding: 12px 0 0; font-size: 12px; font-weight: 700; }
+body #cb-work-time { display: block; font-size: 18px; line-height: 1.4; color: var(--text-primary); margin: 7px 0 4px; overflow-wrap: anywhere; }
+body #modal-can-buy .modal-sheet { max-height: 95dvh; overflow-y: auto; overscroll-behavior: contain; }
+@media(max-width:480px) { body .work-dialog { border-radius: 24px 24px 0 0; margin: auto auto 0; max-height: 96dvh; } }

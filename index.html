@@ -16,7 +16,7 @@
   <script src="./appearance.js?v=29"></script>
   <link rel="preload" as="image" href="./financial_tree_art.png?v=3" />
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=29" />
+  <link rel="stylesheet" href="./design-system.css?v=30" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -876,6 +876,10 @@
 
         </div>
       <p class="section-caption">Под себя</p>
+      <details id="settings-work-time" class="section-group card-surface">
+        <summary><span class="section-icon companion-icon" aria-hidden="true"><i data-lucide="hourglass"></i></span><span><strong>Цена в часах жизни</strong><small>Доход и рабочее время для расчёта покупок</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body"><p class="work-note">Переводите стоимость покупки в часы работы. Укажите доход на руки и рабочие часы за один и тот же месяц. Эти данные не меняют баланс.</p><button type="button" class="work-link" data-work-open="settings">Настроить расчёт →</button></div>
+      </details>
       <details id="settings-appearance" class="section-group card-surface">
         <summary><span class="section-icon" aria-hidden="true"><i data-lucide="palette"></i></span><span><strong>Внешний вид</strong><small>Стиль, светлый/тёмный режим и анимации</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
         <div class="section-body space-y-3">
@@ -1364,8 +1368,8 @@
         <button type="button" onclick="closeModals()" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <input id="cb-title" type="text" placeholder="Что покупаем?" class="w-full input-surface px-3.5 py-2.5 text-xs font-medium" />
-        <input id="cb-amount" type="number" oninput="calculateCanIBuy()" placeholder="15 000 ₽" class="w-full input-surface px-3.5 py-2.5 text-base font-bold text-gold tabular-nums" />
+        <input id="cb-title" type="text" aria-label="Название покупки" placeholder="Что покупаем?" class="w-full input-surface px-3.5 py-2.5 text-xs font-medium" />
+        <input id="cb-amount" type="number" min="0" step="0.01" aria-label="Стоимость покупки в рублях" oninput="calculateCanIBuy()" placeholder="15 000 ₽" class="w-full input-surface px-3.5 py-2.5 text-base font-bold text-gold tabular-nums" />
       </div>
       <div class="input-surface p-4 space-y-2 text-xs">
         <div class="font-bold text-main" id="cb-verdict-title">Введите стоимость покупки</div>
@@ -1373,6 +1377,12 @@
         <div class="flex justify-between"><span class="text-sub">Влияние на подушку:</span><span id="cb-cushion" class="font-bold text-gold">—</span></div>
         <div class="flex justify-between"><span class="text-sub">Дней экономии:</span><span id="cb-economy-days" class="font-bold text-main">—</span></div>
         <div class="flex justify-between"><span class="text-sub">Когда купить без риска:</span><span id="cb-safe-date" class="font-bold text-brand">—</span></div>
+      </div>
+      <div class="work-purchase-card">
+        <span class="work-eyebrow">Цена в часах жизни</span>
+        <strong id="cb-work-time" aria-live="polite">Сколько это часов работы?</strong>
+        <p id="cb-work-hint" class="work-note">Укажите доход и рабочие часы — без доступа к счетам.</p>
+        <button type="button" class="work-link" data-work-open="purchase">Открыть расчёт →</button>
       </div>
       <button type="button" onclick="commitCanIBuy()" class="w-full py-3 rounded-xl btn-turquoise text-xs">Записать покупку сейчас</button>
     </div>
@@ -1831,6 +1841,23 @@
     </div>
   </div>
 
+  <dialog id="life-cost-dialog" class="work-dialog" aria-labelledby="work-title" aria-describedby="work-intro">
+    <header class="work-header"><div><span class="work-eyebrow">Деньги ↔ время</span><h2 id="work-title">Цена в часах жизни</h2></div><button type="button" class="work-close" data-work-close aria-label="Закрыть расчёт">×</button></header>
+    <div class="work-content">
+      <p id="work-intro" class="work-note">Не оценка вашей жизни, а другой взгляд на цену покупки. Считаем только рабочее время — решение остаётся за вами.</p>
+      <label class="work-field" for="work-price">Стоимость покупки, ₽<input id="work-price" type="text" inputmode="decimal" maxlength="24" placeholder="Например, 3 000" autocomplete="off" /></label>
+      <div class="work-result-card" role="status" aria-live="polite" aria-atomic="true"><span class="work-eyebrow">Примерно столько работы</span><strong id="work-result">—</strong><p id="work-explanation" class="work-note">Укажите ваши данные ниже.</p></div>
+      <fieldset class="work-profile"><legend>Ваш рабочий месяц</legend>
+        <p class="work-note">Для нерегулярного дохода возьмите средние значения за несколько месяцев. Доход и часы должны относиться к одному периоду.</p>
+        <label class="work-field" for="work-income">Доход на руки за месяц, ₽<input id="work-income" type="text" inputmode="decimal" maxlength="24" placeholder="Например, 80 000" autocomplete="off" /></label>
+        <label class="work-field" for="work-hours">Рабочих часов в месяц<input id="work-hours" type="text" inputmode="decimal" maxlength="8" placeholder="Например, 160" autocomplete="off" /></label>
+        <button type="button" id="work-save" class="work-save">Сохранить доход и часы</button>
+        <p id="work-status" class="work-note" role="status" aria-live="polite"></p>
+      </fieldset>
+      <details class="work-formula"><summary>Как считается и где хранится</summary><p class="work-note">Цена ÷ доход на руки за месяц × рабочие часы в месяц. Например: 3 000 ₽ ÷ 80 000 ₽ × 160 ч = 6 ч работы.</p><p class="work-note">Не учитываем дорогу, бытовые расходы и время отдыха. Это не число дней до покупки и не рекомендация потратить деньги. Доход и часы сохраняются только в этом браузере, без отправки в облако. Стоимость покупки не сохраняется, операция не создаётся.</p></details>
+    </div>
+  </dialog>
+
   <!-- Уведомление -->
   <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl fintex-hero text-white text-xs font-semibold opacity-0 pointer-events-none transition-opacity duration-200">
     <span id="toast-msg">Готово</span>
@@ -1838,10 +1865,11 @@
 
   <script src="./scanner.js?v=19"></script>
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
-  <script src="./app.js?v=29"></script>
+  <script src="./life-cost.js?v=30"></script>
+  <script src="./app.js?v=30"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=28"></script>
+  <script src="./extensions.js?v=30"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=19" data-fintex-mod="sim_ui.js"></script>

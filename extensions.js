@@ -151,7 +151,7 @@ window.FINTEX_EXT = {
       return;
     }
     const s = document.createElement('script');
-    s.src = `./${src}?v=28`;
+    s.src = `./${src}?v=30`;
     s.dataset.fintexMod = src;
     s.async = false;
     s.onload = () => {
