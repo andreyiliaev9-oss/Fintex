@@ -2,6 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 const base='https://script.google.com/macros/s/';
 const current=base+'AKfycbyzfhzExalPbmThOsQ24Sq3-qOq_7aLSPQ69dShDbRawnawVIyR5L3hLlN1PSkCHFIM/exec';
 const retired=[
+ 'AKfycbxXANSbGhKg-owDC4NFctMJ0mUW5H9XuXwXTohc0n0',
  'AKfycby5QwCkVgVNt8tzrm7_BTw24Ogl05pZHcSNOE6u6LpXxf6iw5oedtJSnGgsvmV0c9-3',
  'AKfycbw2Q0L7sKq0QrOQtffRS3oRpq22nrWZ8b9ErM8aWSuF4I9qMLz4f_N7mVu_F6m8-6j6',
  'AKfycbz_gCZDuLK2Ghkoapf_arMFYu63_9VK7wC8GZUoYn-J3WPqmg7TFRvfKgjJ9KqNXq3F'
