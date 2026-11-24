@@ -483,6 +483,7 @@ function recalcScanArithmetic() {
 }
 
 function upsertScanArchive(entry) {
+  if (entry.confirmed) entry = { ...entry, confirmed_at: new Date().toISOString() };
   const idx = state.scanHistory.findIndex(x => x.scan_id === entry.scan_id);
   if (idx >= 0) state.scanHistory[idx] = { ...state.scanHistory[idx], ...entry };
   else state.scanHistory.unshift(entry);

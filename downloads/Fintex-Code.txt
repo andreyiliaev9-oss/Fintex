@@ -1,7 +1,8 @@
-/** FINTEX v6 — единый сервер БЕЗ паролей и PIN.
- * Замените весь Code.gs этим файлом; не оставляйте дубли Auth.gs.
- * Таблицу и существующие свойства скрипта менять не нужно.
- * После сохранения опубликуйте новую версию текущего развёртывания.
+/** FINTEX v7 — единый сервер без паролей/PIN, с добровольными напоминаниями.
+ * Замените весь Code.gs этим файлом; не оставляйте дубли Auth/Reminders/ReminderModel.gs.
+ * Существующую таблицу и свойства скрипта сохраняйте, новую базу создавать не нужно.
+ * Для напоминаний один раз запустите setupFintexReminders от имени владельца.
+ * После сохранения обновите версию текущего развёртывания, сохранив /exec URL.
  */
 /** FINTEX cloud access via verified Telegram initData. No passwords or PINs.
  * No token, password, initData or reset code may be logged.
@@ -59,7 +60,139 @@ function authRotateWebhook(db,uid) {
   return token;
 }
 
-/** FINTEX Cloud v6. Deploy Code.gs and Auth.gs, or the combined installer.
+/* Pure reminder policy. No network, storage, implicit permission or financial mutations. */
+var FintexReminderModel = (function () {
+  'use strict';
+  var DAY=86400000;
+  function date(s){if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(s))return null;var n=Date.parse(s+'T00:00:00Z');return Number.isFinite(n)&&new Date(n).toISOString().slice(0,10)===s?n:null;}
+  function shift(s,n){return new Date(date(s)+n*DAY).toISOString().slice(0,10);}
+  function defaults(){return {enabled:false,receipts:true,expenses:true,bills:true,reports:true,goals:false,time:'20:30',reportTime:'19:00',reportFrequency:'weekly',timezone:'Europe/Warsaw',includeAmounts:false};}
+  function settings(raw){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Укажите настройки напоминаний.');
+    var out=defaults();
+    ['enabled','receipts','expenses','bills','reports','goals','includeAmounts'].forEach(function(k){if(typeof raw[k]!=='boolean')throw new Error('Некорректный переключатель: '+k);out[k]=raw[k];});
+    ['time','reportTime'].forEach(function(k){if(!/^(09|1\d|20|21):[0-5]\d$/.test(raw[k]||''))throw new Error('Выберите время с 09:00 до 21:59.');out[k]=raw[k];});
+    if(['weekly','daily'].indexOf(raw.reportFrequency)<0)throw new Error('Выберите ежедневный или еженедельный итог.');out.reportFrequency=raw.reportFrequency;
+    if(['UTC','Europe/Warsaw','Europe/Moscow','Europe/Kaliningrad','Europe/Berlin','Europe/London','Europe/Istanbul','Asia/Yekaterinburg','Asia/Novosibirsk','Asia/Almaty','Asia/Tbilisi','Asia/Dubai','Asia/Vladivostok','Asia/Bangkok','Asia/Tokyo','America/New_York','America/Los_Angeles'].indexOf(raw.timezone)<0)throw new Error('Выберите поддерживаемый часовой пояс.');
+    if(typeof raw.timezone!=='string'||raw.timezone.length>64||!/^([A-Za-z_+-]+\/)*[A-Za-z_+-]+$/.test(raw.timezone))throw new Error('Укажите часовой пояс IANA, например Europe/Warsaw.');out.timezone=raw.timezone;
+    if(out.enabled&&!['receipts','expenses','bills','reports','goals'].some(function(k){return out[k];}))throw new Error('Выберите хотя бы один тип напоминаний.');
+    return out;
+  }
+  function context(raw,today,old){
+    raw=raw||{};old=old||{};var out={lastSeen:today,goalActive:raw.goalActive===true,bills:[]};
+    ['lastReceipt','lastExpense'].forEach(function(k){var v=raw[k];out[k]=date(v)!==null&&v<=today?v:'';if(date(old[k])!==null&&old[k]<=today&&old[k]>out[k])out[k]=old[k];});
+    if(Array.isArray(raw.bills))out.bills=raw.bills.slice(0,50).filter(function(b){return b&&typeof b.id==='string'&&/^[\w-]{1,100}$/.test(b.id)&&date(b.due)!==null&&b.due>=today&&b.due<=shift(today,366);}).map(function(b){return {id:b.id,due:b.due};});
+    return out;
+  }
+  function due(p,c,s,local,now){
+    if(!p.enabled||date(local.date)===null||!/^\d{2}:\d{2}$/.test(local.time))return null;
+    var hour=Number(local.time.slice(0,2)),minute=hour*60+Number(local.time.slice(3));
+    if(hour<9||hour>=22||s.lastDay===local.date||now-Number(s.lastAt||0)<20*3600000||Number(s.retryAfter||0)>now)return null;
+    var sent=s.sent||{},dow=new Date(date(local.date)).getUTCDay(),week=shift(local.date,-((dow+6)%7));
+    function at(time){var parts=time.split(':'),delta=minute-(Number(parts[0])*60+Number(parts[1]));return delta>=0&&delta<90;}
+    function item(kind,key,text){return sent[key]?null:{kind:kind,key:key,text:text};}
+    if(p.reports&&(p.reportFrequency==='daily'||dow===0)&&at(p.reportTime)){
+      var report=item('reports','report_'+(p.reportFrequency==='weekly'?week:local.date),'📊 FINTEX · '+(p.reportFrequency==='weekly'?'Ваш финансовый итог за неделю':'Ваш финансовый итог за день')+'\nПосмотрите записанные доходы и расходы. Полнота учёта зависит от добавленных вами операций.');
+      if(report){report.from=p.reportFrequency==='weekly'?week:local.date;report.to=local.date;return report;}
+    }
+    if(!at(p.time)||!c.lastSeen||date(c.lastSeen)===null||date(local.date)-date(c.lastSeen)>7*DAY)return null;
+    if(p.bills){var bill=(c.bills||[]).find(function(b){return date(b.due)!==null&&b.due>=local.date&&b.due<=shift(local.date,2)&&!sent['bill_'+b.id+'_'+b.due];});if(bill)return item('bills','bill_'+bill.id+'_'+bill.due,'📅 FINTEX · Предстоящий платёж\nВ последнем синхронизированном списке есть неоплаченный платёж на '+bill.due.split('-').reverse().join('.')+'. Проверьте актуальность и оплату в приложении.');}
+    var choices=[];
+    var receiptBase=c.lastReceipt||c.registered;
+    if(p.receipts&&date(receiptBase)!==null&&date(local.date)-date(receiptBase)>=3*DAY)choices.push({kind:'receipts',text:'🧾 FINTEX · Не забудьте загрузить чеки\nВ доступных данных давно не было новых чеков. Если были покупки, добавьте их, чтобы они попали в аналитику. Если покупок не было — ничего делать не нужно.'});
+    if(p.expenses&&c.lastExpense!==local.date)choices.push({kind:'expenses',text:'💳 FINTEX · Время проверить учёт\nПроверьте, все ли сегодняшние операции добавлены. Мы не знаем, были ли неучтённые покупки; если операций не было, пропустите напоминание.'});
+    if(p.goals&&c.goalActive&&dow===3)choices.push({kind:'goals',text:'🎯 FINTEX · Ваш план накоплений\nЕсли это сейчас комфортно, вернитесь к своей цели. Можно пополнить подушку, изменить темп или пропустить — решение за вами.'});
+    choices=choices.filter(function(x){return !s.byKind||!s.byKind[x.kind]||now-s.byKind[x.kind]>=3*DAY;}).sort(function(a,b){return Number((s.byKind||{})[a.kind]||0)-Number((s.byKind||{})[b.kind]||0);});
+    return choices.length?item(choices[0].kind,choices[0].kind+'_'+local.date,choices[0].text):null;
+  }
+  return {defaults:defaults,settings:settings,context:context,due:due,date:date,shift:shift};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=FintexReminderModel;
+
+/** Opt-in Telegram reminders; owner installs the clock trigger once. No public webhook. */
+var REMINDER_COLUMNS=['user_id','settings_json','context_json','delivery_json','updated_at'];
+function reminderSheet(db){return getOrCreateSheet(db.ss,'Reminders',REMINDER_COLUMNS);}
+function reminderJson(raw,fallback){try{var v=JSON.parse(String(raw||''));return v&&typeof v==='object'&&!Array.isArray(v)?v:fallback;}catch(e){return fallback;}}
+function reminderFind(sh,uid){var rows=sh.getDataRange().getValues();for(var i=1;i<rows.length;i++)if(String(rows[i][0])===uid)return {row:i+1,settings:reminderJson(rows[i][1],FintexReminderModel.defaults()),context:reminderJson(rows[i][2],{}),delivery:reminderJson(rows[i][3],{})};return null;}
+function reminderWrite(sh,uid,r){var values=[uid,JSON.stringify(r.settings),JSON.stringify(r.context),JSON.stringify(r.delivery),new Date().toISOString()];if(r.row)sh.getRange(r.row,1,1,5).setValues([values]);else{sh.appendRow(values);r.row=sh.getLastRow();}}
+function reminderLocal(now,timezone){return {date:Utilities.formatDate(new Date(now),timezone,'yyyy-MM-dd'),time:Utilities.formatDate(new Date(now),timezone,'HH:mm')};}
+function reminderReady(){return ScriptApp.getProjectTriggers().some(function(t){return t.getHandlerFunction()==='sendFintexReminders';});}
+function reminderStatus(r){return {ok:true,configured:!!r.row,botUsername:PropertiesService.getScriptProperties().getProperty('FINTEX_BOT_USERNAME')||'',settings:r.settings,schedulerReady:reminderReady(),delivery:{status:r.delivery.status||'none',lastAt:r.delivery.lastAt||null,error:r.delivery.error||''},contextUpdated:r.context.lastSeen||null};}
+function reminderAction(db,uid,action,body){
+  var sh=reminderSheet(db),r=reminderFind(sh,uid)||{settings:FintexReminderModel.defaults(),context:{},delivery:{}};
+  if(action==='reminders_get')return reminderStatus(r);
+  if(action==='reminders_save'){
+    var p;try{p=FintexReminderModel.settings(body.settings);reminderLocal(Date.now(),p.timezone);}catch(e){authError('INVALID_REMINDERS','Проверьте настройки: '+e.message);}
+    // Authenticated self-service consent only. Never trust a supplied chat_id/UID.
+    if(p.enabled&&body.consent!==true)authError('REMINDER_CONSENT_REQUIRED','Подтвердите включение напоминаний.');
+    if(p.enabled&&!r.settings.enabled){r.delivery.registered=reminderLocal(Date.now(),p.timezone).date;r.delivery.consentedAt=new Date().toISOString();r.delivery.consentVersion=1;}
+    r.settings=p;
+  }else if(action==='reminders_context'){
+    if(!r.settings.enabled)return {ok:true,skipped:true};
+  }else authError('UNKNOWN_ACTION','Неизвестная команда.');
+  var local=reminderLocal(Date.now(),r.settings.timezone);
+  if(r.settings.enabled)r.context=FintexReminderModel.context(body.context,local.date,r.context);
+  else r.context={};
+  reminderWrite(sh,uid,r);return reminderStatus(r);
+}
+/** Run manually as owner AFTER deployment. Re-running never creates duplicate clocks. */
+function setupFintexReminders(){
+  authProperties();reminderSheet(getDb());
+  var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+authProperties().bot+'/getMe',{muteHttpExceptions:true});
+  var answer;try{answer=JSON.parse(response.getContentText());}catch(e){}
+  if(response.getResponseCode()!==200||!answer||!answer.ok)throw new Error('Не удалось проверить бота. Проверьте свойства скрипта.');
+  if(answer.result&&/^[A-Za-z0-9_]{5,32}$/.test(answer.result.username||''))PropertiesService.getScriptProperties().setProperty('FINTEX_BOT_USERNAME',answer.result.username);
+  var triggers=ScriptApp.getProjectTriggers().filter(function(t){return t.getHandlerFunction()==='sendFintexReminders';});
+  if(!triggers.length)ScriptApp.newTrigger('sendFintexReminders').timeBased().everyMinutes(15).create();
+  else triggers.slice(1).forEach(function(t){ScriptApp.deleteTrigger(t);});
+  return {ok:true,intervalMinutes:15};
+}
+function stopFintexReminders(){ScriptApp.getProjectTriggers().forEach(function(t){if(t.getHandlerFunction()==='sendFintexReminders')ScriptApp.deleteTrigger(t);});return {ok:true};}
+function reminderCloudContext(rows,uid,c,today){
+  var out=Object.assign({},c);
+  rows.forEach(function(r){if(String(r[1])!==uid)return;var d=serverIso(r[2]);if(!serverDate(d)||d>today)return;
+    if(String(r[7])==='expense'&&!/transfer|refund|atm/i.test(String(r[8]))){if(!out.lastExpense||d>out.lastExpense)out.lastExpense=d;}
+  });return out;
+}
+function reminderReport(item,rows,uid){
+  var income=0,expense=0,seen=Object.create(null);
+  rows.forEach(function(r){var d=serverIso(r[2]),amount=serverMoney(r[5]);if(String(r[1])!==uid||!serverDate(d)||d<item.from||d>item.to||amount===null||amount<=0||/transfer|refund|atm/i.test(String(r[8]))||seen[String(r[0])])return;seen[String(r[0])]=true;if(String(r[7])==='income')income=serverAdd(income,amount);if(String(r[7])==='expense')expense=serverAdd(expense,amount);});
+  return '\nВ облачном журнале '+item.from+' — '+item.to+' на момент отправки: доходы '+income.toFixed(2)+' ₽, расходы '+expense.toFixed(2)+' ₽. Локальные несинхронизированные записи и накопления вне журнала не учтены.';
+}
+function sendFintexReminders(){
+  var lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
+  try{
+    var now=Date.now(),started=now,db=getDb(),sh=reminderSheet(db),rows=sh.getDataRange().getValues(),total=rows.length-1;if(total<=0)return;
+    var props=PropertiesService.getScriptProperties(),cursor=Math.max(0,Math.floor(Number(props.getProperty('FINTEX_REMINDERS_CURSOR'))||0))%total,txs=db.txs.getDataRange().getValues().slice(1),bot=authProperties().bot;
+    // Small Apps Script deployment: bounded work, round-robin across users.
+    for(var count=0;count<Math.min(total,20)&&Date.now()-started<240000;count++){
+      var index=(cursor+count)%total+1,raw=rows[index],uid=String(raw[0]),r={row:index+1,settings:reminderJson(raw[1],{}),context:reminderJson(raw[2],{}),delivery:reminderJson(raw[3],{})};
+      props.setProperty('FINTEX_REMINDERS_CURSOR',String((index)%total));
+      if(!/^\d+$/.test(uid)||r.settings.enabled!==true)continue;
+      try{
+        var p=FintexReminderModel.settings(r.settings),local=reminderLocal(now,p.timezone),c=reminderCloudContext(txs,uid,r.context,local.date);c.registered=r.delivery.registered;
+        var item=FintexReminderModel.due(p,c,r.delivery,local,now);if(!item)continue;
+        var text=item.text;if(item.kind==='reports'&&p.includeAmounts)text+=reminderReport(item,txs,uid);
+        // Reserve BEFORE network I/O: at-most-one attempt/day even on ambiguous timeout.
+        var s=r.delivery;s.lastAt=now;s.lastDay=local.date;s.status='pending';s.error='';s.sent=s.sent||{};s.sent[item.key]=now;s.byKind=s.byKind||{};s.byKind[item.kind]=now;
+        var keys=Object.keys(s.sent).sort(function(a,b){return s.sent[b]-s.sent[a];});keys.slice(80).forEach(function(k){delete s.sent[k];});
+        reminderWrite(sh,uid,r);
+        var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+bot+'/sendMessage',{method:'post',contentType:'application/json',muteHttpExceptions:true,payload:JSON.stringify({chat_id:uid,text:text,disable_web_page_preview:true,reply_markup:{inline_keyboard:[[{text:'Открыть FINTEX →',web_app:{url:'https://andreyiliaev9-oss.github.io/Fintex/'}}]]}})});
+        var code=response.getResponseCode(),answer;try{answer=JSON.parse(response.getContentText());}catch(e){answer={};}
+        if(code===200&&answer.ok===true){s.status='sent';}
+        else if(code===403||(code===400&&/chat not found|user is deactivated/i.test(String(answer.description||'')))){s.status='blocked';s.error='BOT_BLOCKED';r.settings.enabled=false;r.context={};}
+        else if(code===429){s.status='limited';s.error='RATE_LIMIT';s.retryAfter=now+Math.min(86400,Math.max(60,Number(answer.parameters&&answer.parameters.retry_after)||3600))*1000;}
+        else{s.status='failed';s.error='DELIVERY_FAILED';}
+        reminderWrite(sh,uid,r);
+      }catch(e){
+        // Never log exceptions containing Bot API URL/token or request contents.
+        if(r.delivery.status==='pending'){r.delivery.status='unknown';r.delivery.error='DELIVERY_UNCERTAIN';reminderWrite(sh,uid,r);}
+      }
+    }
+  }finally{lock.releaseLock();}
+}
+
+/** FINTEX Cloud v7. Deploy Code.gs, Auth.gs, ReminderModel.gs and Reminders.gs, or the combined installer.
  * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
@@ -161,7 +294,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'6.0-telegram',cloud_protocol:2});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'7.0-reminders',cloud_protocol:2,reminders_protocol:1});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -171,12 +304,13 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
-    var allowed=['init','push_tx','set_config'];
+    var allowed=['init','push_tx','set_config','reminders_get','reminders_save','reminders_context'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
     if(allowed.indexOf(action)<0)authError('UNKNOWN_ACTION','Неизвестная команда.');
     var uid=authTelegram(body.init_data);
     if(body.user_id&&String(body.user_id)!==uid)authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
     var db=getDb();
+    if(action.indexOf('reminders_')===0)return reminderAction(db,uid,action,body);
     if(action==='init'&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
     if(action==='set_config') {
       var token=String(body.api_token||'');
