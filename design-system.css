@@ -376,3 +376,86 @@ body .ftx-ap .ftx-ap-card.gold { background: var(--hero-wash), var(--surface-1);
 body .ftx-ap .ftx-ap-weekday-track { background: var(--accent-soft); }
 body .ftx-ap .ftx-ap-heat-cell.l3 { background: var(--accent); }
 html:not(.dark) body .daily-budget[data-exhausted='true'] { color: #4c451d; }
+
+/* Calendar / semantic financial colours are independent of the forest brand. */
+:root {
+  --income: #246c36;
+  --income-soft: rgba(36,108,54,.09);
+  --expense: #ad3545;
+  --expense-soft: rgba(173,53,69,.09);
+  --planned: #896014;
+}
+html.dark {
+  --income: #9be4b0;
+  --income-soft: rgba(85,191,118,.11);
+  --expense: #ffaaa4;
+  --expense-soft: rgba(237,119,110,.13);
+  --planned: #efcd79;
+}
+body .cal-expense, body .operation-expense { color: var(--expense); }
+body .cal-income, body .operation-income { color: var(--income); }
+body .cal-planned { color: var(--planned); }
+body #cal-month-cashflow { gap: 8px; padding-top: 14px; margin-top: 10px; }
+body #cal-month-cashflow > div { padding: 10px 5px; min-width: 0; }
+body #cal-month-cashflow > div:nth-child(1) { background: var(--income-soft); }
+body #cal-month-cashflow > div:nth-child(2) { background: var(--expense-soft); }
+body .cal-summary-value { font-size: 13px; line-height: 1.3; font-weight: 650; margin-top: 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+body .calendar-board { padding: 14px 12px 12px; }
+body #cal-filter-strip { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 3px; margin-bottom: 14px; background: var(--bg-canvas); border-radius: 13px; overflow: visible; }
+body .cal-filter { min-width: 0; min-height: 38px; padding: 5px 2px; border: 1px solid transparent; border-radius: 10px; color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
+body .cal-filter.is-active { color: var(--accent); background: var(--accent-soft); border-color: var(--border-active); }
+body .cal-filter[data-cal-filter='expense'] { color: var(--expense); }
+body .cal-filter[data-cal-filter='income'] { color: var(--income); }
+body .cal-filter[data-cal-filter='bills'] { color: var(--planned); }
+body .cal-filter[data-cal-filter='expense'].is-active { background: var(--expense-soft); border-color: var(--expense); }
+body .cal-filter[data-cal-filter='income'].is-active { background: var(--income-soft); border-color: var(--income); }
+body .cal-filter[data-cal-filter='bills'].is-active { background: var(--gold-soft); border-color: var(--planned); }
+body #cal-cells { gap: 5px; }
+body .cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-width: 0; min-height: 58px; padding: 4px 0 3px; background: transparent; border: 1px solid transparent; border-radius: 13px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+body .cal-day-number { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 8px; font-size: 12px; font-weight: 550; }
+body .cal-day-amounts { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 25px; width: 100%; margin-top: 3px; }
+body .cal-amount { font-size: 10px; font-weight: 650; line-height: 1; white-space: nowrap; }
+body .cal-day.has-expense { background: var(--expense-soft); }
+body .cal-day.has-income:not(.has-expense) { background: var(--income-soft); }
+body .cal-day.has-planned { border-color: var(--planned); }
+body .cal-day.is-today .cal-day-number { box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
+body .cal-day.is-selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body .cal-day.is-selected .cal-day-number { background: var(--accent); color: var(--accent-ink); box-shadow: none; font-weight: 750; }
+html:not(.dark) body .cal-day.is-selected .cal-day-number { color: white; }
+body .cal-day.is-adjacent { color: var(--text-muted); opacity: .5; }
+body .cal-bill-dot { position: absolute; top: 5px; right: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--planned); }
+body .cal-payday-label { font-size: 8px; font-weight: 700; color: var(--planned); }
+body .cal-legend { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border-subtle); font-size: 10px; color: var(--text-secondary); }
+body .cal-legend > span { display: flex; align-items: center; gap: 5px; }
+body .cal-legend-dot { width: 5px; height: 5px; border-radius: 50%; }
+body .cal-expense-dot { background: var(--expense); }
+body .cal-income-dot { background: var(--income); }
+body .cal-planned-dot { background: var(--planned); }
+body .cal-legend-payday { color: var(--planned); font-size: 8px; font-weight: 700; font-style: normal; }
+body #cal-day-heading { font-size: 17px; font-weight: 650; }
+body .cal-day-count { flex-basis: 100%; font-size: 10px; color: var(--text-muted); }
+body #cal-day-total { font-size: 11px; }
+body .cal-operation { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 76px; padding: 16px 14px; text-align: left; }
+body .cal-operation + .cal-operation { border-top: 1px solid var(--border-subtle); }
+body .cal-operation-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0; background: var(--expense-soft); color: var(--expense); }
+body .cal-operation[data-operation-type='income'] .cal-operation-icon { background: var(--income-soft); color: var(--income); }
+body .cal-operation-copy { flex: 1; min-width: 0; }
+body .cal-operation-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+body .cal-operation-meta { display: block; margin-top: 4px; font-size: 11px; color: var(--text-secondary); }
+body .cal-operation-amount { max-width: 44%; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+body .cal-empty { display: grid; justify-items: center; gap: 12px; padding: 24px 14px; color: var(--text-secondary); font-size: 12px; text-align: center; }
+body .cal-empty > svg { color: var(--accent); opacity: .7; }
+body .cal-empty button { min-height: 38px; padding: 8px 12px; }
+body .cal-upcoming { margin-top: 18px; }
+body .cal-upcoming > summary { display: flex; align-items: center; justify-content: space-between; list-style: none; padding: 16px; cursor: pointer; color: var(--planned); font-size: 12px; font-weight: 600; }
+body .cal-upcoming > summary::-webkit-details-marker { display: none; }
+body .cal-upcoming[open] > summary svg { transform: rotate(180deg); }
+body .cal-upcoming > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 16px; }
+@media(max-width:359px) {
+  body .calendar-board { padding-inline: 9px; }
+  body #cal-cells { gap: 3px; }
+  body .cal-filter { font-size: 10px; }
+  body .cal-amount { font-size: 9px; }
+  body .cal-legend { gap: 7px; font-size: 9px; }
+  body .cal-operation { gap: 8px; padding-inline: 11px; }
+}
