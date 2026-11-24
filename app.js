@@ -1473,7 +1473,36 @@ function formatCalDayFullHeading(iso) {
   return `${wDays[dt.getDay()]}, ${d} ${mShort[m - 1]}`;
 }
 
+// Planning lives in Calendar; keep legacy IDs stable for stored-data renderers.
+function renderCalendarPlan() {
+  document.getElementById('st-balance').textContent = fmtR(state.balance);
+  document.getElementById('st-payday').textContent = humanDate(state.payday);
+  document.getElementById('st-goal-title').textContent = state.goal?.title || 'Финансовая подушка';
+  document.getElementById('st-goal-sub').textContent = `Отложено: ${fmtR(state.goal?.saved || 0)} из ${fmtR(state.goal?.target || 10000)}`;
+  const activeBills = state.bills.filter(b => !b.is_paid).slice().sort((a,b) => String(a.due_date).localeCompare(String(b.due_date)));
+  const planList = document.getElementById('st-bills-list');
+  planList.innerHTML = activeBills.length
+    ? activeBills.map(b => `<div class="plan-bill-row input-surface">
+        <button type="button" data-plan-bill="${escapeHtml(b.id)}"><strong>${escapeHtml(b.title)}</strong><small>${humanDate(b.due_date)} · ${fmtR(b.amount)} · К дате →</small></button>
+        <button type="button" data-plan-delete="${escapeHtml(b.id)}" aria-label="Удалить платёж ${escapeHtml(b.title)}">Удалить</button>
+      </div>`).join('')
+    : '<p class="text-xs text-sub">Нет запланированных платежей</p>';
+  planList.querySelectorAll('[data-plan-bill]').forEach(button => button.addEventListener('click', () => {
+    const bill = state.bills.find(b => b.id === button.dataset.planBill);
+    if (!bill) return;
+    pickCalDayFromAdjacent(bill.due_date);
+    document.getElementById('calendar-plan').open = false;
+    const heading = document.getElementById('cal-day-heading');
+    heading.setAttribute('tabindex','-1');
+    heading.focus({ preventScroll: true });
+    document.getElementById('cal-day-section').scrollIntoView({block:'start',behavior:'auto'});
+  }));
+  planList.querySelectorAll('[data-plan-delete]').forEach(button => button.addEventListener('click', () => deleteBill(button.dataset.planDelete)));
+
+}
+
 function renderCalendar(forceReveal = false) {
+  renderCalendarPlan();
   const focusedCalDate = document.activeElement?.dataset.calDate;
   const mNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const calFilter = state.calFilter || 'all';
@@ -1634,16 +1663,6 @@ function renderCalendar(forceReveal = false) {
         <div class="font-extrabold text-gold tabular-nums mt-0.5">${fmtR(m.billsReserved)}</div>
       </div>
     </div>
-    ${upcoming.length ? `
-      <div class="space-y-1.5 pt-1 border-t divider-line">
-        ${upcoming.slice(0, 3).map(b => `
-          <button type="button" onclick="pickCalDayFromAdjacent('${b.due_date}')" class="w-full flex items-center justify-between text-xs py-1 px-1.5 rounded-lg hover:bg-white/[0.04] tap">
-            <span class="text-main font-medium truncate pr-2">• ${escapeHtml(b.title)} <span class="text-sub text-[10px]">(${humanDate(b.due_date)})</span></span>
-            <span class="font-bold text-gold tabular-nums shrink-0">${fmtR(b.amount)}</span>
-          </button>
-        `).join('')}
-      </div>
-    ` : ''}
   `;
 
   const dayBills = (calFilter === 'all' || calFilter === 'bills') ? state.bills.filter(b => b.due_date === state.calSelected && !b.is_paid) : [];
@@ -1844,23 +1863,11 @@ function renderSettings() {
   document.getElementById('st-avatar').textContent = firstGrapheme(state.name, 'F');
   document.getElementById('st-name').textContent = state.name || 'Пользователь';
   document.getElementById('st-bank').textContent = state.bank;
-  document.getElementById('st-balance').textContent = fmtR(state.balance);
-  document.getElementById('st-payday').textContent = humanDate(state.payday);
-  document.getElementById('st-goal-title').textContent = state.goal?.title || 'Финансовая подушка';
-  document.getElementById('st-goal-sub').textContent = `Отложено: ${fmtR(state.goal?.saved || 0)} из ${fmtR(state.goal?.target || 10000)}`;
   document.getElementById('gas-url-field').value = state.gasUrl;
   const adCb = document.getElementById('auto-delta-toggle'); if (adCb) adCb.checked = localStorage.getItem('fp_auto_delta') !== '0';
 
-  const activeBills = state.bills.filter(b => !b.is_paid);
-  document.getElementById('st-bills-list').innerHTML = activeBills.length
-    ? activeBills.map(b => `
-        <div class="input-surface p-2.5 flex justify-between items-center text-xs">
-          <span>${b.title} (${fmtR(b.amount)})</span>
-          <button type="button" onclick="deleteBill('${b.id}')" class="text-red-400 text-[11px]">Удалить</button>
-        </div>
-      `).join('')
-    : `<div class="text-xs text-sub">Нет запланированных платежей</div>`;
-
+  const syncLabel = document.getElementById('st-sync-label');
+  if (syncLabel) syncLabel.textContent = state.gasUrl ? 'Облако: адрес сервера указан' : 'Облако не подключено';
   const scansList = document.getElementById('saved-scans-list');
   scansList.innerHTML = state.scanHistory.length
     ? state.scanHistory.map(s => `
@@ -3431,7 +3438,7 @@ function submitIncome() {
 }
 
 // ==================== АВТОПИЛОТ, OCR СКРИНШОТОВ СМС, ЖУРНАЛ И ОЧЕРЕДЬ ДОСТАВКИ ====================
-function openAutopilotModal() {
+function openAutopilotModal(section = 'import') {
   document.getElementById('stmt-preview-box').classList.add('hidden');
   document.getElementById('sms-ocr-progress').classList.add('hidden');
   document.getElementById('sms-ocr-result-card').classList.add('hidden');
@@ -3440,8 +3447,13 @@ function openAutopilotModal() {
   if (tokInp) tokInp.value = state.apiToken || '';
   updateSyncQueueUI();
   renderAutopilotLogs();
-  document.getElementById('modal-autopilot').classList.remove('hidden');
+  const modal = document.getElementById('modal-autopilot');
+  modal.classList.remove('hidden');
+  const target = ['import','automation','cloud','logs'].includes(section) ? section : 'import';
+  modal.querySelectorAll('details[id^="ap-section-"]').forEach(group => { group.open = group.id === `ap-section-${target}`; });
   lucide.createIcons();
+  modal.querySelector('.modal-sheet').scrollTop = 0;
+  document.querySelector(`#ap-section-${target} > summary`)?.focus({preventScroll:true});
 }
 
 function updateSyncQueueUI() {

@@ -34,6 +34,7 @@
   let activeSubtab = 'overview';
   let expandedCategory = null;
   let selectedHeatDate = null;
+  let toolsOpen = false;
 
   const COLORS = {
     bg: '#071916', surface: '#0B211D', surface2: '#102B25', border: 'rgba(0,214,195,.16)',
@@ -246,10 +247,7 @@
         <div class="ftx-ap-section-title"><span>Что важно заметить</span><span class="ftx-ap-section-sub">Анализ периода</span></div>
         ${data.insights.map(item => `<div class="ftx-ap-insight"><span class="ftx-ap-insight-dot" style="background:${item.color}"></span><span>${esc(item.text)}</span></div>`).join('')}
       </div>
-      <div class="ftx-ap-actions">
-        <button type="button" class="ftx-ap-btn" data-act="stories">Итоги в Stories</button>
-        <button type="button" class="ftx-ap-btn" data-act="sim">Дерево будущего</button>
-      </div>`;
+`;
   }
 
   function renderCategories(data) {
@@ -350,6 +348,18 @@
     return `${renderWeekdayRhythm(data)}${renderHeatmap(data)}`;
   }
 
+  function renderTools() {
+    return `<details id="analytics-tools" class="section-group card-surface" ${toolsOpen ? 'open' : ''}>
+      <summary><span class="section-icon" aria-hidden="true"><i data-lucide="blocks"></i></span><span><strong>Инструменты</strong><small>Покупки, цены, лимиты и сценарии</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+      <div class="section-body tool-grid">
+        <button type="button" class="section-action" data-tool="purchase"><span><strong>Проверить покупку</strong><small>Как трата повлияет на бюджет</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-tool="prices"><span><strong>Цены по чекам</strong><small>Сравнение ваших покупок</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-tool="limits"><span><strong>Лимиты категорий</strong><small>Настроить бюджет на расходы</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-act="sim"><span><strong>Дерево будущего</strong><small>Сценарии личных финансов</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-act="stories"><span><strong>Итоги в Stories</strong><small>Короткий отчёт за период</small></span><span aria-hidden="true">→</span></button>
+      </div></details>`;
+  }
+
   function findAnalyticsContainer() {
     const selectors = ['#analytics-content', '#analyticsContent', '#view-analytics', '#tab-analytics', '#screen-analytics', '#analytics', '[data-tab="analytics"]'];
     for (const selector of selectors) {
@@ -363,6 +373,8 @@
     const container = targetEl || findAnalyticsContainer();
     if (!container) return;
     injectStyles();
+    const previousTools = container.querySelector('#analytics-tools');
+    if (previousTools) toolsOpen = previousTools.open;
     const period = PERIODS.find(p => p.id === activePeriod) || PERIODS[1];
     const data = analyzeData(period.days);
     let body = '';
@@ -370,7 +382,10 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });
+    const toolActions = { purchase: () => window.openCanIBuyModal?.(), prices: () => window.openPriceTrackerModal?.(), limits: () => window.openCatLimitModal?.() };
+    container.querySelectorAll('[data-tool]').forEach(button => button.addEventListener('click', () => toolActions[button.dataset.tool]?.()));
     container.querySelectorAll('[data-period]').forEach(button => {
       button.addEventListener('click', () => { activePeriod = button.dataset.period; renderProAnalytics(container); });
     });

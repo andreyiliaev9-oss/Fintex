@@ -631,3 +631,51 @@ body .inv-result-list { display: grid; gap: 10px; }
 body .inv-result-list > span { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
 body .inv-result-list b { font-variant-numeric: tabular-nums; }
 @media(max-width:359px) { body .inv-nav button { font-size: 10px; } }
+
+/* Task-based navigation v28: settings configure, calendar plans, analytics explains. */
+body .section-caption { color: var(--text-muted); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .09em; margin: 20px 4px 10px; }
+body .section-group { padding: 0; overflow: hidden; }
+body .section-group > summary { display: flex; align-items: center; gap: 12px; padding: 17px 16px; min-height: 78px; cursor: pointer; list-style: none; }
+body .section-group > summary::-webkit-details-marker { display: none; }
+body .section-group > summary > span:nth-child(2) { flex: 1; min-width: 0; }
+body .section-group summary strong, body .section-action strong { display: block; font-size: 13px; line-height: 1.5; font-weight: 650; color: var(--text-primary); }
+body .section-group summary small, body .section-action small { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; font-weight: 400; color: var(--text-secondary); }
+body .section-icon { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+body .section-icon svg { width: 17px; height: 17px; }
+body .section-chevron { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-muted); transition: transform .2s; }
+body .section-group[open] > summary { border-bottom: 1px solid var(--border-subtle); }
+body .section-group[open] > summary > .section-chevron { transform: rotate(180deg); }
+body .section-group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 18px; }
+body .section-body { padding: 16px; }
+body .section-body > :first-child { margin-top: 0; }
+body .section-body .section-caption { margin-left: 0; }
+body .section-action { display: flex; align-items: center; justify-content: space-between; text-align: left; gap: 14px; width: 100%; min-height: 64px; padding: 12px 2px; color: var(--accent); }
+body .section-action + .section-action { border-top: 1px solid var(--border-subtle); }
+body .section-action > span:first-child { min-width: 0; }
+body .section-action:focus-visible { outline: 2px solid var(--accent); border-radius: 8px; outline-offset: 2px; }
+body .tool-grid { display: grid; grid-template-columns: minmax(0,1fr); }
+body #view-settings { gap: 12px; }
+body #view-settings > .section-group { margin-top: 10px; }
+body #view-settings > .section-caption { margin-top: 26px; }
+body #calendar-plan { margin-top: 16px; margin-bottom: 16px; }
+body #calendar-plan .section-body > .grid:first-child { padding-top: 0; border-top: 0; }
+body #cal-day-section { scroll-margin-top: 16px; }
+body .plan-bill-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+body .plan-bill-row > button:first-child { flex: 1; min-width: 0; text-align: left; min-height: 44px; }
+body .plan-bill-row strong { display: block; color: var(--text-primary); font-size: 12px; overflow-wrap: anywhere; }
+body .plan-bill-row small { display: block; color: var(--planned); font-size: 11px; margin-top: 4px; }
+body .plan-bill-row > button:last-child { font-size: 10px; color: var(--expense); padding: 8px 0 8px 8px; min-height: 44px; }
+body #ap-log-filters { display: flex; flex-wrap: wrap; }
+body #modal-autopilot .section-body > .card-surface, body #modal-autopilot .section-body > .input-surface { padding: 12px; }
+body #gas-url-field { min-width: 0; }
+body #gas-token-field { min-width: 0; width: 100%; }
+@media(max-width:359px) {
+  body .section-group > summary { gap: 10px; padding-inline: 13px; }
+  body .section-body { padding: 13px; }
+  body .section-group summary strong { font-size: 12px; }
+  body .section-group summary small { font-size: 10px; }
+  body #modal-autopilot > .modal-sheet { padding: 16px; }
+  body #ap-section-logs .section-body > .card-surface > div:first-child { flex-wrap: wrap; gap: 10px; }
+}
+/* Outrank the legacy Settings card padding: disclosure rows provide their own. */
+body #view-settings > .section-group { padding: 0; }

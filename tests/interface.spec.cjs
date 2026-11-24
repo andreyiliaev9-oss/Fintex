@@ -66,6 +66,7 @@ test('quick add, balance, reserve and simulator still open; privacy still hides 
   await expect(page.locator('body')).toHaveClass(/stealth-mode/);
   await expect(page.locator('#hero-balance')).toHaveCSS('filter', 'blur(7.5px)');
   await page.evaluate(() => { togglePrivacy(); goTab('analytics'); });
+  await page.locator('#analytics-tools > summary').click();
   await page.locator('[data-act="sim"]').click();
   await expect(page.locator('#modal-life-sim')).toBeVisible();
   await expect(page.locator('#sim-results-box')).not.toBeEmpty();
@@ -83,6 +84,7 @@ test('analytics tabs, periods and stories render with real operations', async ({
     await page.locator(`[data-subtab="${tab}"]`).click();
     await expect(page.locator('.ftx-ap')).not.toBeEmpty();
   }
+  await page.locator('#analytics-tools > summary').click();
   await page.locator('[data-act="stories"]').click();
   await expect(page.locator('.ftx-story-overlay')).toBeVisible();
   expect(errors).toEqual([]);
@@ -590,4 +592,79 @@ test('browser without Web Locks does not silently perform unsafe practice writes
   await page.locator('[name="manual-ack"]').check();await page.getByRole('button',{name:'Подтвердить упражнение',exact:true}).click();
   await expect(page.locator('#inv-message')).toContainText('нет защиты от одновременной записи');
   expect(await page.evaluate(()=>localStorage.getItem('fp_invest_learning_v1'))).toBeNull();
+});
+
+test('settings groups preferences without duplicate finance or investment entries; keyboard disclosure works',async({page})=>{
+  await openApp(page,true);
+  await page.locator('#home-header > div[title="Профиль и настройки"]').click();
+  await expect(page.locator('#view-settings')).toBeVisible();
+  await expect(page.locator('#view-settings [data-invest-open]')).toHaveCount(0);
+  await expect(page.locator('#view-settings #st-bills-list')).toHaveCount(0);
+  await expect(page.locator('#view-settings .section-group[open]')).toHaveCount(0);
+  const appearance=page.locator('#settings-appearance > summary');await appearance.focus();await page.keyboard.press('Enter');
+  await expect(page.locator('#theme-seg')).toBeVisible();
+  await page.locator('#theme-seg').getByRole('button',{name:'Светлая',exact:true}).click();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await page.locator('#settings-advanced > summary').click();
+  await page.locator('#auto-delta-toggle').uncheck();
+  expect(await page.evaluate(()=>localStorage.getItem('fp_auto_delta'))).toBe('0');
+});
+
+test('calendar owns salary, goals and all payments, and a payment opens its day',async({page})=>{
+  await openApp(page,true);
+  await page.evaluate(()=>{state.bills=[{id:'plan-test',title:'Аренда',amount:15000,due_date:TODAY,is_paid:false}];renderAll(false);});
+  await page.locator('[data-nav="calendar"]').click();await page.locator('#calendar-plan > summary').click();
+  await expect(page.locator('#st-bills-list')).toContainText('Аренда');
+  await page.locator('#calendar-plan button[onclick="openPaydayModal()"]' ).click();await expect(page.locator('#modal-payday')).toBeVisible();await page.evaluate(()=>closeModals());
+  await page.locator('#calendar-plan button[onclick="openGoalDetailsModal()"]' ).click();await expect(page.locator('#modal-goal-detail')).toBeVisible();await page.evaluate(()=>closeModals());
+  await page.locator('#calendar-plan button[onclick="openBillModal()"]' ).click();await expect(page.locator('#modal-bill')).toBeVisible();await page.evaluate(()=>closeModals());
+  await page.locator('[data-plan-bill="plan-test"]').click();await expect(page.locator('#calendar-plan')).not.toHaveAttribute('open');
+  await expect(page.locator('#cal-day-bills')).toContainText('Аренда');
+  await expect(page.locator('#cal-day-heading')).toBeFocused();
+  await page.locator('#calendar-plan > summary').click();await page.locator('[data-plan-delete="plan-test"]').click();
+  await expect(page.locator('#st-bills-list')).toContainText('Нет запланированных');
+});
+
+test('import, automation, cloud and diagnostics open only the requested task',async({page})=>{
+  await openApp(page);await page.locator('[data-nav="settings"]').click();await page.locator('#settings-data > summary').click();
+  await page.locator('#settings-data').getByRole('button',{name:/Импорт операций/}).click();
+  await expect(page.locator('#ap-section-import')).toHaveAttribute('open');
+  await expect(page.locator('#modal-autopilot details[open]')).toHaveCount(1);await page.evaluate(()=>closeModals());
+  await page.locator('#settings-data').getByRole('button',{name:/Облачная синхронизация/}).click();
+  await expect(page.locator('#ap-section-cloud')).toHaveAttribute('open');await expect(page.locator('#gas-url-field')).toBeVisible();
+  await expect(page.locator('#gas-token-field')).toHaveAttribute('type','password');await page.evaluate(()=>closeModals());
+  await page.locator('#settings-advanced > summary').click();
+  for(const [name,id] of [['Автоматизация iPhone','automation'],['Диагностика','logs']]) {
+    await page.locator('#settings-advanced').getByRole('button',{name:new RegExp(name)}).click();
+    await expect(page.locator(`#ap-section-${id}`)).toHaveAttribute('open');
+    await expect(page.locator('#modal-autopilot details[open]')).toHaveCount(1);await page.evaluate(()=>closeModals());
+  }
+});
+
+test('analytics tools are grouped, remain open across period changes and open their real dialogs',async({page})=>{
+  await openApp(page,true);await page.locator('[data-nav="analytics"]').click();
+  await expect(page.locator('#view-analytics [data-invest-open]')).toHaveCount(1);
+  await expect(page.locator('#analytics-tools')).not.toHaveAttribute('open');
+  await page.locator('#analytics-tools > summary').click();await page.locator('[data-period="week"]').click();
+  await expect(page.locator('#analytics-tools')).toHaveAttribute('open');
+  for(const [tool,modal] of [['purchase','modal-can-buy'],['prices','modal-price-tracker'],['limits','modal-cat-limit']]) {
+    await page.locator(`[data-tool="${tool}"]`).click();await expect(page.locator(`#${modal}`)).toBeVisible();await page.evaluate(()=>closeModals());
+  }
+});
+
+test('expanded settings and integration groups fit 320px in both themes',async({page})=>{
+  await openApp(page,true);await page.setViewportSize({width:320,height:844});await page.locator('[data-nav="settings"]').click();
+  for(const theme of ['dark','light']) {
+    await page.evaluate(theme=>setTheme(theme),theme);
+    for(const id of ['settings-appearance','settings-notifications','settings-data','settings-receipts','settings-advanced','settings-about']) {
+      await page.locator(`#${id}`).evaluate(el=>{el.open=true;});
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
+    }
+    for(const section of ['import','automation','cloud','logs']) {
+      await page.evaluate(section=>openAutopilotModal(section),section);
+      const size=await page.locator('#modal-autopilot .modal-sheet').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));
+      expect(size.scroll,`${theme}/${section}`).toBeLessThanOrEqual(size.width);
+      await page.evaluate(()=>closeModals());
+    }
+  }
 });
