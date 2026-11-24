@@ -1,0 +1,217 @@
+/* FINTEX Capture lives only inside the open Mini App. No background/overlay APIs. */
+(function(){
+  'use strict';
+  const M=window.FintexCaptureModel;
+  let dialog,fab,busy=false,epoch=0,candidate=null,priorFocus=null,tgBack=null,activeWorker=null;
+  const readArchive=()=>{try{const v=JSON.parse(localStorage.getItem('fp_capture_archive')||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}};
+  const autoEnabled=()=>localStorage.getItem('fp_capture_auto')!=='0';
+  const $=id=>document.getElementById(id);
+  function archive(){return [...readArchive(),...state.scanHistory.filter(s=>s.confirmed).map(s=>({fileHash:s.file_hash,fiscalKey:s.fiscal_key,txId:state.transactions.find(t=>t.scan_id===s.scan_id)?.id}))];}
+  function assess(c){return M.assess(c,{today:TODAY,transactions:state.transactions,archive:archive()});}
+  function status(text){$('capture-status').textContent=text;}
+  function stage(name){
+    dialog.querySelectorAll('[data-capture-stage]').forEach(el=>{el.hidden=el.dataset.captureStage!==name;});
+    dialog.setAttribute('aria-busy',String(name==='processing'));
+  }
+  function releasePreview(){$('capture-preview').removeAttribute('src');}
+  function close(){
+    if(activeWorker){activeWorker.terminate().catch(()=>{});activeWorker=null;}
+    epoch++;busy=false;candidate=null;releasePreview();
+    if(dialog.open)dialog.close();fab.setAttribute('aria-expanded','false');
+    const back=window.Telegram?.WebApp?.BackButton;
+    if(tgBack){try{back?.offClick(tgBack);back?.hide();}catch(_){}tgBack=null;}
+    updateFab();priorFocus?.focus?.({preventScroll:true});
+  }
+  function open(){
+    if(busy||dialog.open)return;
+    priorFocus=document.activeElement;candidate=null;status('');stage('menu');$('capture-auto').checked=autoEnabled();
+    dialog.showModal();fab.setAttribute('aria-expanded','true');
+    const back=window.Telegram?.WebApp?.BackButton;
+    if(back){tgBack=close;try{back.show();back.onClick(tgBack);}catch(_){}}
+    window.lucide?.createIcons();updateFab();
+  }
+  function fail(message){stage('error');$('capture-error-text').textContent=message;status('Ничего не записано.');}
+  function readFile(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('Не удалось прочитать файл. Выберите его ещё раз.'));r.readAsDataURL(file);});}
+  function timeout(promise,ms=90000){let t;return Promise.race([promise,new Promise((_,reject)=>{t=setTimeout(()=>reject(new Error('Распознавание заняло слишком много времени. Попробуйте более чёткое изображение.')),ms);})]).finally(()=>clearTimeout(t));}
+  async function hashFile(file){
+    if(!window.crypto?.subtle)throw new Error('Для проверки дубликатов нужен защищённый HTTPS-доступ.');
+    const hash=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());
+    return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  async function imageData(file){
+    const url=await readFile(file);
+    return new Promise((resolve,reject)=>{
+      const image=new Image();image.onerror=()=>reject(new Error('Изображение не открылось. Попробуйте JPEG или PNG вместо HEIC.'));
+      image.onload=()=>{
+        if(image.naturalWidth*image.naturalHeight>25000000){reject(new Error('Изображение слишком большое. Сделайте скриншот или уменьшите его до 25 Мп.'));return;}
+        const scale=Math.min(1,1600/image.naturalWidth,4200/image.naturalHeight),canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/png'));
+      };image.src=url;
+    });
+  }
+  async function extract(file,id){
+    let dataUrl,text='',confidence=null,nativeText=false;
+    if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
+      const pdfjs=await import('./assets/ocr/pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc=new URL('./assets/ocr/pdf.worker.min.mjs',location.href).href;
+      const pdf=await timeout(pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise);
+      try{
+        if(pdf.numPages!==1)throw new Error('Пока поддерживается один чек на одной странице PDF. Выберите нужную страницу или её скриншот.');
+        const page=await pdf.getPage(1),content=await page.getTextContent();
+        let lastY=null;for(const item of content.items){const y=item.transform?.[5];if(lastY!==null&&Math.abs(y-lastY)>3)text+='\n';text+=item.str+(item.hasEOL?'\n':' ');lastY=y;}
+        nativeText=text.trim().length>25;
+        const base=page.getViewport({scale:1}),scale=Math.min(2,1600/base.width,4200/base.height),viewport=page.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+        await timeout(page.render({canvasContext:canvas.getContext('2d'),viewport}).promise);dataUrl=canvas.toDataURL('image/png');
+      }finally{await pdf.destroy();}
+    }else dataUrl=await timeout(imageData(file));
+    if(id!==epoch)return null;
+    status('Ищем QR и читаем текст…');
+    const prep=await timeout(preprocessReceiptCanvas(dataUrl));
+    if(prep.slices.length>8)throw new Error('Слишком длинное изображение. Обрежьте его до одной операции.');
+    if(!nativeText){
+      if(!window.Tesseract)throw new Error('Движок распознавания не загрузился. Для первой загрузки OCR нужен интернет. Финансовые записи не изменены.');
+      text='';let confidenceSum=0,expired=false,worker;
+      const base=new URL('./assets/ocr/',location.href);
+      try{
+        worker=await timeout(Tesseract.createWorker('rus+eng',1,{
+          workerPath:new URL('worker.min.js',base).href,
+          corePath:new URL('tesseract-core-lstm.wasm.js',base).href,
+          langPath:new URL('lang/',base).href,gzip:true
+        }).then(w=>{if(expired||id!==epoch){w.terminate();throw new Error('Распознавание отменено.');}return w;}));
+        activeWorker=worker;
+        for(let i=0;i<prep.slices.length;i++){
+          if(id!==epoch)return null;
+          status(`Читаем фрагмент ${i+1} из ${prep.slices.length}…`);
+          const result=await timeout(worker.recognize(prep.slices[i]));
+          if(id!==epoch)return null;
+          text+='\n'+(result.data?.text||'');confidenceSum+=Number.isFinite(result.data?.confidence)?Math.max(0,Math.min(100,result.data.confidence)):0;
+        }
+        confidence=confidenceSum/prep.slices.length;
+      }finally{expired=true;if(worker){await worker.terminate().catch(()=>{});if(activeWorker===worker)activeWorker=null;}}
+    }
+    return {text,confidence,qr:parseFiscalQrString(prep.qrRaw),dataUrl,nativeText,slices:prep.slices.length};
+  }
+  function makeCandidate(result,mode,fileHash){
+    const {text,qr,confidence}=result;
+    const receiptLike=qr.found||/кассовый\s*чек|фискальн|\bФН\b|\bИНН\b/i.test(text);
+    const kind=mode==='receipt'||(mode!=='operation'&&receiptLike)?'receipt':'bank';
+    const bank=M.bankFromText(text);
+    if(kind==='bank'){
+      const op=parseBankSmsOrClipboard(text);
+      if(!op)throw new Error('Не удалось выделить одну операцию. Обрежьте изображение до суммы, даты и назначения либо используйте ручной ввод через «+».');
+      const explicitDate=/\b\d{1,2}[./]\d{1,2}[./](?:20)?\d{2}\b|сегодня|вчера/i.test(text);
+      return {...op,raw:text,bank,kind,confidence,fileHash,dateInferred:!explicitDate,uncertain:!detectSmsOperationKind(text)||/(?:покупк|зачислен|списан|перевод).*(?:\n.*)*(?:покупк|зачислен|списан|перевод)/i.test(text),qr};
+    }
+    const data=parseRussianReceiptText(text,qr,(confidence||0)/100),params=new URLSearchParams(qr.raw||'');
+    // Fiscal operation n is seller-facing. Returns and non-sale directions require review.
+    const refund=params.get('n')==='2'||/возврат\s+прихода|чек\s+возврата/i.test(text);
+    const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText;
+    return {kind,raw:text,bank,confidence,fileHash,qr,merchant:data.merchant,amount:data.total,date:data.date,time:data.time,dateInferred:(data.low_confidence_fields||[]).includes('date'),ocrTotal:data.ocr_total,itemsSum:data.items_sum,items:data.items,uncertain,type:refund?'income':'expense',op_kind:refund?'refund':'expense',op_label:refund?'Возврат':'Покупка',category:classifyCategory(data.merchant),fiscalKey:M.fiscalKey(qr),dedup_hash:M.fiscalKey(qr)?'capture_fiscal_'+M.fiscalKey(qr):''};
+  }
+  async function receive(file,mode){
+    if(!file||busy)return;
+    const id=++epoch;busy=true;candidate=null;releasePreview();stage('processing');status('Проверяем файл и дубликаты…');
+    try{
+      if(file.size>15*1024*1024||file.size===0)throw new Error('Выберите непустой файл размером до 15 МБ.');
+      const pdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+      if(!file.type.startsWith('image/')&&!pdf)throw new Error('Поддерживаются изображения и одностраничные PDF-чеки.');
+      if(pdf&&mode!=='receipt')throw new Error('Для PDF используйте «Загрузить чек».');
+      const fileHash=await hashFile(file);if(id!==epoch)return;
+      const duplicate=M.duplicate({fileHash},state.transactions,archive());
+      if(duplicate){stage('done');$('capture-done-title').textContent='Уже учтено';$('capture-done-text').textContent='Это изображение уже записано. Повторная загрузка не изменила баланс.';return;}
+      const result=await extract(file,id);if(id!==epoch||!result)return;
+      const parsed=makeCandidate(result,mode,fileHash);if(id!==epoch)return;
+      candidate=parsed;
+      if(assess(parsed).autoSave&&autoEnabled())save(true);
+      else showReview(result.dataUrl);
+    }catch(error){if(id===epoch)fail(error.message||'Не удалось обработать файл. Попробуйте ещё раз.');}
+    finally{if(id===epoch)busy=false;}
+  }
+  function showReview(dataUrl){
+    stage('review');status('Проверьте поля перед записью.');
+    if(dataUrl){$('capture-preview').src=dataUrl;}
+    $('capture-bank').value=candidate.bank||'';$('capture-merchant').value=candidate.merchant||'';$('capture-amount').value=candidate.amount>0?String(candidate.amount):'';$('capture-date').value=candidate.date||TODAY;$('capture-date').max=TODAY;$('capture-time').value=candidate.time||'';$('capture-kind').value=candidate.op_kind||candidate.type;
+    $('capture-confidence').textContent=Number.isFinite(candidate.confidence)?`Качество текста OCR: ${Math.round(candidate.confidence)}%. Это не вероятность правильной операции.`:'Текст извлечён из PDF. Процент достоверности не придумываем.';
+    refreshReview();$('capture-merchant').focus({preventScroll:true});
+  }
+  function formCandidate(){
+    const kind=$('capture-kind').value,type=['income','refund','transfer_in'].includes(kind)?'income':'expense';
+    const edited={...candidate,bank:$('capture-bank').value.trim(),merchant:$('capture-merchant').value.trim(),amount:FM.parse($('capture-amount').value),date:$('capture-date').value,time:$('capture-time').value,type,op_kind:kind};
+    edited.op_label={income:'Пополнение',refund:'Возврат',transfer_in:'Перевод (вх.)',transfer_out:'Перевод (исх.)',expense:'Покупка',atm:'Наличные'}[kind];
+    edited.category=classifyCategory(edited.merchant);return edited;
+  }
+  function refreshReview(){
+    if(!candidate)return;
+    const c=formCandidate(),policy=assess(c),list=$('capture-reasons');list.replaceChildren();
+    for(const reason of policy.reasons){const li=document.createElement('li');li.textContent=reason;list.append(li);}
+    $('capture-level').textContent=policy.duplicateId?'Дубликат — не записываем':policy.autoSave?'QR и текст совпали':'Нужно подтверждение';
+    $('capture-save').disabled=!policy.canSave;
+    $('capture-transfer-note').hidden=!c.op_kind.startsWith('transfer');
+  }
+  function save(automatic=false){
+    if(!candidate)return;
+    const c=automatic?candidate:formCandidate(),policy=assess(c);
+    if(!policy.canSave||(automatic&&!policy.autoSave)){if(!automatic)refreshReview();return;}
+    // Single synchronous ledger commit, rechecked against current transactions.
+    const fiscal=policy.fiscalKey,hash=fiscal?'capture_fiscal_'+fiscal:computeClientDedupHash(c.date,c.time||'',c.amount,c.type,c.merchant,'');
+    const result=addOrMergeTransactions([{...c,scan_id:'capture_'+c.fileHash,raw:'',dedup_hash:hash,items:(c.items||[]).map(i=>({name:i.name,price:i.total_price??i.price}))}],'FINTEX Capture');
+    if(result.addedCount){
+      const tx=result.added[0];
+      try{localStorage.setItem('fp_capture_archive',JSON.stringify([{fileHash:c.fileHash,fiscalKey:fiscal,txId:tx.id},...readArchive()].slice(0,1000)));}catch(_){}
+      if(c.kind==='receipt')try{upsertScanArchive({scan_id:tx.scan_id,file_hash:c.fileHash,fiscal_key:fiscal,merchant:c.merchant,total:c.amount,date:c.date,confirmed:true});}catch(_){/* Ledger is already saved; auxiliary archive is best-effort. */}
+      if(c.kind==='receipt')for(const item of c.items||[])try{recordProductPrice(item.name,Number(item.unit_price||item.total_price)||0,c.merchant,c.date,item.category);}catch(_){}
+    }
+    candidate=null;stage('done');status('');$('capture-done-title').textContent=result.addedCount?(automatic?'Чек записан автоматически':'Операция записана'):'Уже учтено';
+    $('capture-done-text').textContent=result.addedCount?`${c.op_label||'Покупка'} · ${c.merchant} · ${fmtR(c.amount)}. ${automatic?'QR и итог из текста совпали. Это не проверка чека в ФНС.':'Баланс изменён только на сумму операции, не на распознанный остаток счёта.'}`:'Дубликат отклонён. Баланс не изменён.';
+    renderAll(false);updateSyncQueueUI();window.vibro?.('success');
+  }
+  function updateFab(){
+    if(!fab)return;
+    const home=!$('view-home')?.classList.contains('hidden');
+    const overlay=!!document.querySelector('dialog[open], [id^="modal-"]:not(.hidden), #onboarding-screen:not(.hidden), #returning-splash:not(.hidden)');
+    const hidden=!home||overlay;if(fab.hidden!==hidden)fab.hidden=hidden;
+  }
+  function mount(){
+    fab=document.createElement('button');fab.id='capture-fab';fab.type='button';fab.setAttribute('aria-label','FINTEX Capture — сканировать операцию');fab.setAttribute('aria-haspopup','dialog');fab.setAttribute('aria-controls','capture-dialog');fab.setAttribute('aria-expanded','false');fab.innerHTML='<i data-lucide="scan-line" aria-hidden="true"></i><span>Capture</span>';
+    dialog=document.createElement('dialog');dialog.id='capture-dialog';dialog.setAttribute('aria-labelledby','capture-title');
+    dialog.innerHTML=`<header class="capture-header"><div><span class="capture-kicker">ОДНО ИЗОБРАЖЕНИЕ → ОДНА ОПЕРАЦИЯ</span><h2 id="capture-title">FINTEX <span>Capture</span></h2></div><button type="button" data-capture-close aria-label="Закрыть Capture">×</button></header>
+    <div class="capture-content">
+      <section data-capture-stage="menu"><p class="capture-copy">Передайте изображение — мы найдём сумму, дату и назначение. Сомнительные поля проверим вместе.</p>
+        <div class="capture-actions">
+          <button type="button" data-capture-pick="camera"><i data-lucide="camera"></i><span><strong>Сфотографировать</strong><small>Камера · чек или уведомление</small></span><span aria-hidden="true">↗</span></button>
+          <button type="button" data-capture-pick="screenshot"><i data-lucide="image"></i><span><strong>Выбрать скриншот</strong><small>Изображение из галереи</small></span><span aria-hidden="true">↗</span></button>
+          <button type="button" data-capture-pick="receipt"><i data-lucide="receipt"></i><span><strong>Загрузить чек</strong><small>Фото или одностраничный PDF</small></span><span aria-hidden="true">↗</span></button>
+          <button type="button" data-capture-pick="operation"><i data-lucide="scan-text"></i><span><strong>Распознать операцию</strong><small>Банковское уведомление или скрин</small></span><span aria-hidden="true">↗</span></button>
+        </div>
+        <label class="capture-auto"><input id="capture-auto" type="checkbox"><span>Автоучёт надёжных чеков<small>Только если полный QR и итог из текста совпали. Доходы, переводы и банковские скриншоты — с подтверждением.</small></span></label>
+        <p class="capture-footnote">До 15 МБ · только рубли · без платных сервисов. Обработка в браузере; для первой загрузки OCR нужен интернет. Кнопка работает только внутри открытого FINTEX.</p>
+      </section>
+      <section data-capture-stage="processing" hidden><div class="capture-spinner" aria-hidden="true"></div><h3>Превращаем изображение в запись</h3><p class="capture-copy">Можно отменить: результат не будет сохранён после закрытия.</p><button type="button" class="capture-secondary" data-capture-close>Отменить</button></section>
+      <section data-capture-stage="review" hidden><span id="capture-level" class="capture-level"></span><p id="capture-confidence" class="capture-copy"></p><details class="capture-image"><summary>Посмотреть изображение</summary><img id="capture-preview" alt="Загруженное изображение для проверки"></details>
+        <form id="capture-form"><label>Банк<input id="capture-bank" maxlength="60" placeholder="Не определён"></label><label>Назначение<input id="capture-merchant" maxlength="100" required></label><label>Сумма, ₽<input id="capture-amount" inputmode="decimal" type="text" required></label><div class="capture-fields"><label>Дата<input id="capture-date" type="date" required></label><label>Время<input id="capture-time" type="time"></label></div><label>Вид операции<select id="capture-kind"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer_out">Перевод — исходящий</option><option value="transfer_in">Перевод — входящий</option><option value="refund">Возврат</option><option value="atm">Снятие наличных</option></select></label><p id="capture-transfer-note" class="capture-copy" hidden>Проверьте направление. Перевод между своими счетами не добавляйте как расход или доход общего капитала.</p><ul id="capture-reasons"></ul><button id="capture-save" class="capture-primary" type="submit">Подтвердить и записать</button></form>
+      </section>
+      <section data-capture-stage="done" hidden><div class="capture-success" aria-hidden="true">✓</div><h3 id="capture-done-title"></h3><p id="capture-done-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-close>Готово</button><button type="button" class="capture-secondary" data-capture-again>Добавить ещё</button></section>
+      <section data-capture-stage="error" hidden><h3>Не получилось прочитать</h3><p id="capture-error-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-again>Выбрать другое изображение</button></section>
+      <p id="capture-status" role="status" aria-live="polite"></p>
+    </div>`;
+    document.body.append(fab,dialog);
+    for(const [name,accept,camera] of [['camera','image/*',true],['screenshot','image/*',false],['receipt','image/*,application/pdf',false],['operation','image/*',false]]){
+      const input=document.createElement('input');input.id='capture-file-'+name;input.type='file';input.accept=accept;input.hidden=true;if(camera)input.setAttribute('capture','environment');dialog.append(input);
+      input.addEventListener('change',()=>{const file=input.files?.[0];input.value='';receive(file,name);});
+    }
+    fab.addEventListener('click',open);
+    dialog.addEventListener('click',e=>{
+      if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}
+      if(e.target.closest('[data-capture-close]'))close();
+      if(e.target.closest('[data-capture-again]')){epoch++;busy=false;candidate=null;releasePreview();status('');stage('menu');}
+      const pick=e.target.closest('[data-capture-pick]');if(pick&&!busy)$('capture-file-'+pick.dataset.capturePick).click();
+    });
+    dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+    $('capture-auto').addEventListener('change',e=>localStorage.setItem('fp_capture_auto',e.target.checked?'1':'0'));
+    $('capture-form').addEventListener('input',refreshReview);$('capture-form').addEventListener('submit',e=>{e.preventDefault();if(!busy)save(false);});
+    let scheduled=false;new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;updateFab();});}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','hidden','open']});
+    window.lucide?.createIcons();updateFab();
+  }
+  window.FintexCapture={open,close};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+})();
