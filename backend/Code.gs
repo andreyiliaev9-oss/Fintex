@@ -1,4 +1,4 @@
-/** FINTEX Cloud v6. Deploy Code.gs and Auth.gs, or the combined installer.
+/** FINTEX Cloud v7. Deploy Code.gs, Auth.gs, ReminderModel.gs and Reminders.gs, or the combined installer.
  * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'6.0-telegram',cloud_protocol:2});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'7.0-reminders',cloud_protocol:2,reminders_protocol:1});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -110,12 +110,13 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
-    var allowed=['init','push_tx','set_config'];
+    var allowed=['init','push_tx','set_config','reminders_get','reminders_save','reminders_context'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
     if(allowed.indexOf(action)<0)authError('UNKNOWN_ACTION','Неизвестная команда.');
     var uid=authTelegram(body.init_data);
     if(body.user_id&&String(body.user_id)!==uid)authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
     var db=getDb();
+    if(action.indexOf('reminders_')===0)return reminderAction(db,uid,action,body);
     if(action==='init'&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
     if(action==='set_config') {
       var token=String(body.api_token||'');

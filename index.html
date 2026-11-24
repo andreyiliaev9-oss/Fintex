@@ -16,7 +16,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=44" />
+  <link rel="stylesheet" href="./design-system.css?v=45" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -913,15 +913,7 @@
       </details>
       <details id="settings-notifications" class="section-group card-surface">
         <summary><span class="section-icon" aria-hidden="true"><i data-lucide="bell"></i></span><span><strong>Уведомления</strong><small>Расходы, чеки и напоминания</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
-        <div class="section-body space-y-3">
-        <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
-          <span class="text-xs font-medium text-main">Новые расходы и чеки</span>
-          <input type="checkbox" id="notif-tx" checked onchange="saveNotifPrefs()" class="w-4 h-4 accent-[#00D6C3]" />
-        </label>
-        <label class="flex items-center justify-between input-surface px-3.5 py-2.5 cursor-pointer">
-          <span class="text-xs font-medium text-main">Напоминания о платежах</span>
-          <input type="checkbox" id="notif-bills" checked onchange="saveNotifPrefs()" class="w-4 h-4 accent-[#00D6C3]" />
-        </label></div>
+        <div class="section-body"><div id="fintex-reminders" class="reminder-panel"></div></div>
       </details>
       <p class="section-caption">Данные и подключение</p>
       <details id="settings-data" class="section-group card-surface">
@@ -1867,7 +1859,7 @@
     <span id="toast-msg">Готово</span>
   </div>
 
-  <script src="./scanner.js?v=34"></script>
+  <script src="./scanner.js?v=45"></script>
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./finance-math.js?v=34"></script>
   <script src="./life-cost.js?v=30"></script>
@@ -1888,5 +1880,6 @@
   <script src="./capture.js?v=43"></script>
   <script src="./behavior-model.js?v=44"></script>
   <script src="./behavior.js?v=44"></script>
+  <script src="./reminders.js?v=45"></script>
 </body>
 </html>
