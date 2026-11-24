@@ -951,3 +951,108 @@ test('Sapphire figures are neutral per card surface while financial colours and 
     await expect.poll(() => colour('#hero-balance')).toBe(forest);
   }
 });
+
+async function setTreeFlow(page, expense) {
+  await page.evaluate(expense=>{
+    state.transactions=expense===null?[]:[{id:'tree-income',type:'income',amount:10000,date:TODAY},{id:'tree-expense',type:'expense',amount:expense,date:TODAY}];persistAll();
+  },expense);
+}
+
+test('My tree changes species, not just scale, and savings remain independent of cash flow', async ({ page }) => {
+  await openApp(page);
+  const tree=page.locator('#filely-financial-tree');
+  await expect(tree).toHaveAttribute('data-tree-variant','sapling');
+  await page.evaluate(()=>{state.goal={saved:15000,target:50000,title:'Подушка'};persistAll();});
+  for(const [expense,variant,name] of [[11000,'birch','Берёза'],[9500,'spruce','Ель'],[8000,'maple','Клён'],[5000,'oak','Дуб']]) {
+    await setTreeFlow(page,expense);
+    await expect(tree).toHaveAttribute('data-tree-variant',variant);
+    await expect(tree.locator('.ft-stage')).toHaveText(name);
+    await expect(tree.locator('.ft-img')).toHaveAttribute('src',`./assets/trees/${variant}.svg?v=33`);
+    await expect.poll(()=>tree.locator('.ft-img').evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+    await expect(tree.locator('.ft-saved')).toContainText(/15\s*000/);
+  }
+  await tree.locator('.ft-more').click();
+  await expect(tree.locator('.ft-details')).toBeVisible();
+  await expect(tree.locator('.ft-flow')).toContainText('50%');
+  const before=await page.evaluate(()=>({tx:localStorage.getItem('fp_local_tx'),balance:localStorage.getItem('fp_balance')}));
+  await page.evaluate(()=>{state.goal.saved=50000;persistAll();});
+  await expect(tree.locator('.ft-sub')).toContainText('100%');
+  await expect(tree).toHaveAttribute('data-tree-variant','oak');
+  expect(await page.evaluate(()=>({tx:localStorage.getItem('fp_local_tx'),balance:localStorage.getItem('fp_balance')}))).toEqual(before);
+  await tree.locator('.ft-art-wrap').focus();await page.keyboard.press('Enter');
+  await expect(page.locator('#modal-goal-detail')).toBeVisible();await page.evaluate(()=>closeModals());
+});
+
+test('My tree breeze runs indefinitely without restarting on data refresh and respects motion/visibility', async ({ page }) => {
+  await openApp(page,true);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
+  const tree=page.locator('#filely-financial-tree');await tree.scrollIntoViewIfNeeded();
+  await expect(tree).toHaveAttribute('data-animation-paused','false');
+  const breeze=tree.locator('.ft-art-motion');
+  await expect.poll(()=>breeze.evaluate(el=>getComputedStyle(el).animationIterationCount)).toBe('infinite');
+  await breeze.evaluate(el=>{window.treeAnimation=el.getAnimations()[0];window.treeAnimationTime=window.treeAnimation.currentTime;});
+  await expect.poll(()=>page.evaluate(()=>window.treeAnimation.currentTime>window.treeAnimationTime+150)).toBe(true);
+  await page.evaluate(()=>{FilelyFinancialTree.refresh();FilelyFinancialTree.refresh();});
+  await expect.poll(()=>breeze.evaluate(el=>el.getAnimations()[0]===window.treeAnimation)).toBe(true);
+  await page.locator('[data-nav="calendar"]').click();
+  await expect(tree).toHaveAttribute('data-animation-paused','true');
+  expect(await breeze.evaluate(el=>getComputedStyle(el).animationPlayState)).toBe('paused');
+  await page.locator('[data-nav="home"]').click();await tree.scrollIntoViewIfNeeded();
+  await expect(tree).toHaveAttribute('data-animation-paused','false');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect.poll(()=>breeze.evaluate(el=>el.getAnimations().length)).toBe(0);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});
+  await expect.poll(()=>breeze.evaluate(el=>el.getAnimations().length)).toBe(0);
+});
+
+test('My tree keeps details/focus and hides amounts in Stealth; failed SVG has a visible fallback', async ({ page }) => {
+  await openApp(page,true);
+  const tree=page.locator('#filely-financial-tree');
+  await tree.locator('.ft-more').click();
+  await page.evaluate(()=>{state.goal={saved:12345,target:50000};persistAll();});
+  await expect(tree.locator('.ft-saved')).toContainText(/12\s*345/);
+  await expect(tree.locator('.ft-more')).toBeFocused();
+  await expect(tree.locator('.ft-details')).toBeVisible();
+  await page.evaluate(()=>toggleStealthMode(true));
+  await expect(tree.locator('.ft-saved')).toHaveText('•••••• ₽');
+  await expect(tree.locator('.ft-flow')).toHaveText('Суммы и доля расходов скрыты режимом «Стелс».');
+  await expect(tree.locator('.ft-sub')).toContainText('Суммы скрыты');
+  await page.route('**/assets/trees/birch.svg*',route=>route.abort());
+  await setTreeFlow(page,11000);
+  await expect(tree.locator('.ft-svg-art')).toBeVisible();
+  await expect(tree.locator('.ft-img')).toBeHidden();
+});
+
+test('My tree fits all species at 320px in both styles/modes and survives DOM remount', async ({ page }) => {
+  await openApp(page);
+  await page.setViewportSize({width:320,height:700});
+  const tree=page.locator('#filely-financial-tree');
+  for(const style of ['forest','sapphire']) for(const mode of ['light','dark']) {
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    for(const [expense,variant] of [[null,'sapling'],[11000,'birch'],[9500,'spruce'],[8000,'maple'],[5000,'oak']]) {
+      await setTreeFlow(page,expense);await expect(tree).toHaveAttribute('data-tree-variant',variant);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    }
+  }
+  await page.evaluate(()=>document.getElementById('filely-financial-tree-mount').remove());
+  await expect(tree).toBeAttached();
+  await expect(tree).toHaveAttribute('data-tree-variant','oak');
+  await tree.locator('.ft-topup').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
+});
+
+test('My tree follows another tab and direct storage clearing without changing balances', async ({ page, context }) => {
+  await openApp(page,true);
+  const other=await context.newPage();await localOnly(other);await other.goto('/');
+  await expect(other.locator('#filely-financial-tree')).toHaveAttribute('data-tree-variant','oak');
+  await setTreeFlow(page,9500);
+  const balance=await page.evaluate(()=>localStorage.getItem('fp_balance'));
+  await expect(other.locator('#filely-financial-tree')).toHaveAttribute('data-tree-variant','spruce');
+  await page.evaluate(()=>{document.getElementById('filely-financial-tree-mount').style.display='none';});
+  await expect(page.locator('#filely-financial-tree-mount')).not.toHaveCSS('display','none');
+  await other.evaluate(()=>{localStorage.removeItem('fp_local_tx');FilelyFinancialTree.refresh();});
+  await expect(page.locator('#filely-financial-tree')).toHaveAttribute('data-tree-variant','sapling');
+  expect(await page.evaluate(()=>localStorage.getItem('fp_balance'))).toBe(balance);
+  await other.close();
+});

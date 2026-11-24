@@ -827,3 +827,34 @@ html[data-visual-style='sapphire'] body .balance-forecast:not([data-tone='risk']
 html[data-visual-style='sapphire'] body .daily-budget[data-exhausted='true'] { --budget-number-ink: var(--number-ink); }
 html[data-visual-style='sapphire'] body .daily-budget .money-val,
 html[data-visual-style='sapphire'] body .daily-budget #hero-budget-used { color: var(--budget-number-ink); }
+
+/* My tree · continuous breeze. Transform only, no per-frame JS or filters. */
+body #filely-financial-tree { position: relative; overflow: hidden; }
+body #filely-financial-tree .ft-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+body #filely-financial-tree .ft-title { line-height: 1.2; }
+body #filely-financial-tree .ft-stage { white-space: nowrap; }
+body #filely-financial-tree .ft-body { display: grid; align-items: center; gap: 8px; }
+body #filely-financial-tree .ft-label { font-size: 10px; text-transform: uppercase; }
+body #filely-financial-tree .ft-sub { font-size: 11px; line-height: 1.5; margin-top: 5px; }
+body #filely-financial-tree .ft-bar { margin-top: 11px; overflow: hidden; border-radius: 9px; }
+body #filely-financial-tree .ft-bar[hidden] { display: none; }
+body #filely-financial-tree .ft-bar > span { display: block; height: 100%; border-radius: inherit; transition: width .4s; }
+body #filely-financial-tree .ft-art-wrap { display: grid; place-items: center; position: relative; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; }
+body #filely-financial-tree .ft-art-motion { display: block; width: 100%; height: 140px; transform-origin: 50% 91%; animation: ft-tree-breeze 7s ease-in-out infinite; }
+body #filely-financial-tree .ft-img, body #filely-financial-tree .ft-svg-art { display: block; width: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+body #filely-financial-tree .ft-img[hidden] { display: none; }
+body #filely-financial-tree .ft-aura { position: absolute; width: 100%; height: 100%; pointer-events: none; animation: ft-tree-light 9s ease-in-out infinite; }
+body #filely-financial-tree .ft-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 11px; margin-top: 8px; border-top: 1px solid var(--border-subtle); }
+body #filely-financial-tree .ft-note { font-size: 11px; line-height: 1.6; min-width: 0; }
+body #filely-financial-tree .ft-actions { display: flex; align-items: center; gap: 6px; }
+body #filely-financial-tree :is(.ft-topup, .ft-more) { padding: 8px 10px; font-size: 11px; font-weight: 650; min-height: 44px; }
+body #filely-financial-tree .ft-details { font-size: 11px; line-height: 1.65; border-top: 1px solid var(--border-subtle); margin-top: 12px; padding-top: 12px; }
+body #filely-financial-tree .ft-details p + p { margin-top: 10px; }
+body #filely-financial-tree .ft-details[hidden] { display: none; }
+body #filely-financial-tree[data-animation-paused='true'] :is(.ft-art-motion, .ft-aura) { animation-play-state: paused; }
+@keyframes ft-tree-breeze { 0%, 100% { transform: rotate(-1.5deg) scale(1); } 50% { transform: rotate(1.5deg) scale(1.015); } }
+@keyframes ft-tree-light { 0%, 100% { opacity: .5; transform: scale(.95); } 50% { opacity: .8; transform: scale(1.04); } }
+html.no-motion body #filely-financial-tree :is(.ft-art-motion, .ft-aura) { animation: none !important; }
+@media(prefers-reduced-motion:reduce) { body #filely-financial-tree :is(.ft-art-motion, .ft-aura) { animation: none !important; } }
+
+body #filely-financial-tree .ft-kicker { font-weight: 700; text-transform: uppercase; }
