@@ -5,10 +5,11 @@
   const root = document.documentElement;
   const system = window.matchMedia('(prefers-color-scheme: dark)');
   const modes = ['dark', 'light', 'auto'];
-  const styles = ['forest', 'sapphire'];
+  const styles = ['forest', 'sapphire', 'growth'];
   const backgrounds = {
     forest: {dark: '#061C12', light: '#F4F5E8'},
-    sapphire: {dark: '#153073', light: '#F6F6F6'}
+    sapphire: {dark: '#153073', light: '#F6F6F6'},
+    growth: {dark: '#241E1A', light: '#FAF5ED'}
   };
   const read = (key, fallback, allowed) => {
     try { const value = localStorage.getItem(key); return allowed.includes(value) ? value : (key === 'fp_visual_style' && value === 'lagoon' ? 'sapphire' : fallback); }

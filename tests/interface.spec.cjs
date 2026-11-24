@@ -885,7 +885,7 @@ test('legacy Lagoon preference opens Sapphire without resetting mode or budget',
   const before = await page.evaluate(() => localStorage.getItem('fp_local_tx'));
   await page.locator('[data-nav="settings"]').click();
   await page.locator('#settings-appearance > summary').click();
-  await expect(page.locator('[data-visual-style-choice]')).toHaveCount(2);
+  await expect(page.locator('[data-visual-style-choice]')).toHaveCount(3);
   const sapphire = page.locator('[data-visual-style-choice="sapphire"]');
   await expect(sapphire).toContainText('Сапфир');
   await expect(sapphire).toHaveAttribute('aria-pressed','true');
@@ -1055,4 +1055,63 @@ test('My tree follows another tab and direct storage clearing without changing b
   await expect(page.locator('#filely-financial-tree')).toHaveAttribute('data-tree-variant','sapling');
   expect(await page.evaluate(()=>localStorage.getItem('fp_balance'))).toBe(balance);
   await other.close();
+});
+
+test('Warm Growth is a third persistent choice without changing money or theme mode',async({page})=>{
+  await openApp(page,true);
+  await page.evaluate(()=>setTheme('light'));
+  const before=await page.evaluate(()=>({tx:localStorage.getItem('fp_local_tx'),balance:localStorage.getItem('fp_balance'),mode:localStorage.getItem('fp_theme')}));
+  await page.locator('[data-nav="settings"]').click();
+  await page.locator('#settings-appearance > summary').click();
+  const growth=page.locator('[data-visual-style-choice="growth"]');
+  await growth.focus();await page.keyboard.press('Enter');
+  await expect(growth).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('[data-visual-style-choice][aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','growth');
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#FAF5ED');
+  expect(await page.evaluate(()=>({tx:localStorage.getItem('fp_local_tx'),balance:localStorage.getItem('fp_balance'),mode:localStorage.getItem('fp_theme')}))).toEqual(before);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','growth');
+  await page.evaluate(()=>setTheme('dark'));
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#241E1A');
+  await page.evaluate(()=>setVisualStyle('forest'));
+  await expect(page.locator('html')).toHaveClass(/dark/);
+});
+
+test('Warm Growth contrast, semantic colours and responsive screens',async({page})=>{
+  await openApp(page,true);
+  const contrast=(a,b)=>{
+    const lum=hex=>{const rgb=hex.startsWith('#')?hex.slice(1).match(/../g).map(x=>parseInt(x,16)):hex.match(/[\d.]+/g).slice(0,3).map(Number);return rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;}).reduce((s,x,i)=>s+x*[.2126,.7152,.0722][i],0);};
+    const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+  };
+  for(const mode of ['light','dark']){
+    await page.evaluate(mode=>{setVisualStyle('forest');setTheme(mode);},mode);
+    const semantics=await page.evaluate(()=>{const c=getComputedStyle(document.documentElement);return ['--income','--expense','--danger'].map(x=>c.getPropertyValue(x).trim());});
+    await page.evaluate(()=>setVisualStyle('growth'));
+    const tokens=await page.evaluate(()=>{const c=getComputedStyle(document.documentElement);return Object.fromEntries(['--bg-canvas','--surface-1','--text-primary','--text-secondary','--text-muted','--accent','--accent-ink','--budget-bg','--budget-ink','--income','--expense','--danger'].map(x=>[x,c.getPropertyValue(x).trim()]));});
+    expect(['--income','--expense','--danger'].map(x=>tokens[x])).toEqual(semantics);
+    for(const fg of ['--text-primary','--text-secondary','--text-muted','--accent'])for(const bg of ['--bg-canvas','--surface-1'])expect(contrast(tokens[fg],tokens[bg])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(tokens['--accent-ink'],tokens['--accent'])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(tokens['--budget-ink'],tokens['--budget-bg'])).toBeGreaterThanOrEqual(4.5);
+    for(const width of [320,390,448]){
+      await page.setViewportSize({width,height:844});
+      for(const tab of ['home','calendar','analytics','settings']){
+        await page.locator(`[data-nav="${tab}"]`).click();
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+      }
+      await page.locator('#settings-appearance > summary').evaluate(el=>{el.parentElement.open=true;});
+      await expect(page.locator('[data-visual-style-choice="growth"]')).toBeVisible();
+    }
+  }
+});
+
+test('Warm Growth home preview in both modes',async({page})=>{
+  await openApp(page,true);
+  await page.evaluate(()=>{setVisualStyle('growth');setTheme('light');});
+  await expect(page.locator('body')).toHaveCSS('background-color','rgb(250, 245, 237)');
+  await page.screenshot({path:'docs/growth-light-preview.png'});
+  await page.evaluate(()=>setTheme('dark'));
+  await expect(page.locator('body')).toHaveCSS('background-color','rgb(36, 30, 26)');
+  await page.screenshot({path:'docs/growth-dark-preview.png'});
 });

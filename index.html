@@ -13,10 +13,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <meta name="theme-color" content="#061C12" />
   <meta name="color-scheme" content="dark light" />
-  <script src="./appearance.js?v=31"></script>
+  <script src="./appearance.js?v=40"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=33" />
+  <link rel="stylesheet" href="./design-system.css?v=40" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -889,8 +889,10 @@
           <div class="visual-style-options" role="group" aria-label="Стиль оформления">
             <button type="button" data-visual-style-choice="forest" aria-pressed="true" onclick="setVisualStyle('forest')"><span class="visual-style-swatch swatch-forest" aria-hidden="true"><i></i><i></i><i></i></span><strong>Лес</strong><small>Листва и тёплый свет</small><span class="visual-style-check" aria-hidden="true">✓</span></button>
             <button type="button" data-visual-style-choice="sapphire" aria-pressed="false" onclick="setVisualStyle('sapphire')"><span class="visual-style-swatch swatch-sapphire" aria-hidden="true"><i></i><i></i><i></i></span><strong>Сапфир</strong><small>Белый, голубой и синий</small><span class="visual-style-check" aria-hidden="true">✓</span></button>
+            <button type="button" data-visual-style-choice="growth" aria-pressed="false" onclick="setVisualStyle('growth')"><span class="visual-style-swatch swatch-growth" aria-hidden="true"><i></i><i></i><i></i></span><span class="visual-style-description"><strong>Тёплый рост</strong><small>Кремовый и абрикосовый · в своём темпе</small></span><span class="visual-style-check" aria-hidden="true">✓</span></button>
           </div>
         </fieldset>
+        <p class="appearance-philosophy">Выберите, где вам уютнее. Стиль меняет оформление, но не оценки, расчёты и цвета доходов и расходов.</p>
         <p id="appearance-status" role="status" aria-live="polite"></p>
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-main">Режим</span>
