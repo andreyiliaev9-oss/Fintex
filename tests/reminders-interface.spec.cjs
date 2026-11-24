@@ -68,3 +68,8 @@ test('network failure never claims activation; background activity does not over
   await page.locator('#reminder-save').click();await expect(page.locator('#reminder-status')).toContainText('не подтверждено');
   await page.locator('#reminder-refresh').click();await expect(page.locator('[name="time"]')).toHaveValue('20:30');
 });
+test('invalid unsaved schedule never prevents opting out and opt-out uploads no activity snapshot',async({page})=>{
+  const calls=await open(page,{enabled:true});await page.locator('[name="time"]').fill('');await page.locator('[name="reportTime"]').fill('');
+  await page.locator('[name="enabled"]').uncheck();await page.locator('#reminder-save').click();await expect(page.locator('#reminder-status')).toContainText('выключена на сервере');
+  const save=calls.find(c=>c.action==='reminders_save');expect(save.settings.enabled).toBe(false);expect(save.settings.time).toBe('20:30');expect(save.context).toEqual({});
+});
