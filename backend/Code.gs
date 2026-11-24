@@ -1,5 +1,5 @@
-/** FINTEX Cloud v5. Deploy ALL THREE .gs files; see docs/password-setup.md.
- * API actions require a password session; Shortcut tokens are ingest-only.
+/** FINTEX Cloud v6. Deploy Code.gs and Auth.gs, or the combined installer.
+ * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
 function jsonResponse(obj) {return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}
@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'5.0-auth',auth_protocol:1});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'6.0-telegram',cloud_protocol:2});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -110,12 +110,13 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
-    var allowed=['auth_status','auth_setup','auth_login','auth_change','auth_logout','auth_rotate_webhook','auth_reset_request','auth_reset','init','push_tx','set_config'];
+    var allowed=['init','push_tx','set_config'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
     if(allowed.indexOf(action)<0)authError('UNKNOWN_ACTION','Неизвестная команда.');
+    var uid=authTelegram(body.init_data);
+    if(body.user_id&&String(body.user_id)!==uid)authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
     var db=getDb();
-    if(action.indexOf('auth_')===0)return authDispatch(db,body);
-    var access=authRequire(db,body),uid=access.uid;
+    if(action==='init'&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
     if(action==='set_config') {
       var token=String(body.api_token||'');
       if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token))authError('INVALID_TOKEN','Ключ автоматизации: от 32 до 128 букв, цифр, _ или -.');
@@ -171,13 +172,13 @@ function serverInit(db,uid) {
   }
   var logs=db.logs.getDataRange().getValues(),list=[];
   for(var j=logs.length-1;j>=1&&list.length<40;j--)if(String(logs[j][2])===uid){var l=logs[j];list.push({log_id:String(l[0]),timestamp:String(l[1]),uid:uid,source:String(l[3]),status:String(l[4]),bank:String(l[5]),summary:String(l[6]),raw_preview:'',error_code:String(l[8])});}
-  var result={ok:true,user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
+  var result={ok:true,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
   if(uid===ADMIN_UID)result.admin={total_users:Math.max(0,db.users.getLastRow()-1),total_tx:Math.max(0,db.txs.getLastRow()-1)};
   return result;
 }
 function handleWebhookIngest(uid,token,text) {
-  authProperties();var db=getDb(),u=findUserRow(db.users,uid),auth=authRecord(db,uid,false);
-  if(!/^\d+$/.test(uid)||!u||!auth||!auth.v[2]||!/^\w[\w-]{31,127}$/.test(token)||!authEqual(String(u.values[5]),token))authError('INVALID_TOKEN','Недействительный ключ автоматизации.');
+  authProperties();var db=getDb(),u=findUserRow(db.users,uid);
+  if(!/^\d+$/.test(uid)||!u||!/^\w[\w-]{31,127}$/.test(token)||!authEqual(String(u.values[5]),token))authError('INVALID_TOKEN','Недействительный ключ автоматизации.');
   var parsed=parseIncomingSmsText(text,String(u.values[2]||'Т-Банк'));
   if(!parsed)authError('PARSE_NO_AMOUNT','Не удалось распознать операцию.');
   var known=serverKnown(db,uid);

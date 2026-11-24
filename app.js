@@ -32,7 +32,7 @@ const USER_ID = (() => {
   }
   return guestId;
 })();
-const DEFAULT_GAS_URL = window.FintexAuth.defaultEndpoint;
+const DEFAULT_GAS_URL = window.FintexCloud.defaultEndpoint;
 
 function safeJsonParse(raw, fallback) {
   if (!raw) return fallback;
@@ -331,7 +331,7 @@ let state = {
   bills: safeJsonParse(localStorage.getItem('fp_bills'), [{ id: 'b1', title: 'Яндекс Плюс', amount: 399, due_date: offsetDateISO(4), is_paid: false, is_recurring: true }]),
   scanHistory: safeJsonParse(localStorage.getItem('fp_scan_history'), []),
   priceHistory: safeJsonParse(localStorage.getItem('fp_price_history'), {}),
-  gasUrl: window.FintexAuth.getEndpoint(),
+  gasUrl: window.FintexCloud.getEndpoint(),
   apiToken: localStorage.getItem('fp_api_token') || '',
   syncQueue: safeJsonParse(localStorage.getItem('fp_sync_queue'), []),
   autopilotLogs: safeJsonParse(localStorage.getItem('fp_ap_logs'), []),
@@ -1832,7 +1832,7 @@ function renderSettings() {
   const adCb = document.getElementById('auto-delta-toggle'); if (adCb) adCb.checked = localStorage.getItem('fp_auto_delta') !== '0';
 
   const syncLabel = document.getElementById('st-sync-label');
-  if (syncLabel) syncLabel.textContent = window.FintexAuth.canSync() ? 'Облако: защищённый сеанс активен' : 'Локальные данные · для облака войдите через Telegram';
+  if (syncLabel) syncLabel.textContent = window.FintexCloud.canSync() ? 'Облако: подключение через Telegram' : 'Локальные данные · для облака войдите через Telegram';
   const scansList = document.getElementById('saved-scans-list');
   scansList.innerHTML = state.scanHistory.length
     ? state.scanHistory.map(s => `
@@ -3594,9 +3594,9 @@ renderAll(false);
 
 async function saveSecurityToken() {
   const tok = (document.getElementById('gas-token-field')?.value || '').trim();
-  if (!/^[a-zA-Z0-9_-]{32,128}$/.test(tok)) { toast('Ключ: 32–128 букв, цифр, _ или -. Можно создать его в разделе «Пароль и доступ».'); return; }
+  if (!/^[a-zA-Z0-9_-]{32,128}$/.test(tok)) { toast('Ключ: 32–128 букв, цифр, _ или -. Это ключ iOS-автоматизации, не пароль для входа.'); return; }
   try {
-    await window.FintexAuth.request('set_config',{user_id:USER_ID,api_token:tok});
+    await window.FintexCloud.request('set_config',{user_id:USER_ID,api_token:tok});
     state.apiToken=tok;localStorage.setItem('fp_api_token',tok);vibro('success');toast('Ключ автоматизации сохранён');
   } catch(e) { toast(e.message); }
 }
@@ -3647,13 +3647,13 @@ async function pushTransactionsToBackend(txSubset) {
 }
 
 async function flushSyncQueue() {
-  if (!window.FintexAuth.canSync() || !state.gasUrl || !state.syncQueue.length) {
+  if (!window.FintexCloud.canSync() || !state.gasUrl || !state.syncQueue.length) {
     updateSyncQueueUI();
     return;
   }
   try {
     const batch = state.syncQueue.slice(0, 30);
-    const data = await window.FintexAuth.request('push_tx',{
+    const data = await window.FintexCloud.request('push_tx',{
       user_id:USER_ID,balance:state.balance,
       user:{name:state.name,bank:state.bank,payday:state.payday},transactions:batch
     });
@@ -3669,11 +3669,12 @@ async function flushSyncQueue() {
 }
 
 async function syncWithBackend(notify = false) {
-  if (!window.FintexAuth.canSync() || !state.gasUrl) { if(notify)toast('Для облака войдите через Telegram.'); return; }
+  if (!window.FintexCloud.canSync() || !state.gasUrl) { if(notify)toast('Для облака войдите через Telegram.'); return; }
   await flushSyncQueue();
   try {
-    const data = await window.FintexAuth.request('init',{user_id:USER_ID});
+    const data = await window.FintexCloud.request('init',{user_id:USER_ID});
     if (data.ok && data.user) {
+      if(data.webhook_token){state.apiToken=data.webhook_token;localStorage.setItem('fp_api_token',data.webhook_token);}
       let pulledNew = 0;
       if (Array.isArray(data.transactions) && data.transactions.length) {
         const localIds = new Set(state.transactions.map(t => String(t.id)));
@@ -3757,8 +3758,8 @@ function saveGasUrl() {
   document.getElementById('gas-url-field').value = val;
   state.gasUrl = val;
   localStorage.setItem('fp_api_url', state.gasUrl);
-  toast('Адрес сохранён. Подтвердите вход на сервере.');
-  window.FintexAuth.open();
+  toast('Адрес сохранён. Проверяем синхронизацию.');
+  syncWithBackend(true);
 }
 
 function handleVersionSecretTap() {
@@ -3826,7 +3827,6 @@ function toast(msg) {
   setTimeout(() => el.classList.add('opacity-0'), 2300);
 }
 
-window.addEventListener('fintex:auth-ready', () => { syncWithBackend(false); });
 window.addEventListener('online', () => { flushSyncQueue(); });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { syncWithBackend(false); readClipboardNow(false); }
@@ -4279,3 +4279,6 @@ if (document.readyState === 'loading') {
     renderAll(false);
   });
 }
+
+// Cloud is optional: render local data first, then try Telegram-only sync.
+if (localStorage.getItem('fp_onboarded') === '1') syncWithBackend(false);
