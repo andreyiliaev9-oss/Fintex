@@ -14,9 +14,9 @@ function fixture(){
   const buffer=value=>typeof value==='string'?Buffer.from(value):Buffer.from(value.map?Array.from(value,x=>(x+256)%256):value);
   const signed=buf=>Array.from(buf,x=>x>127?x-256:x);
   let held=false;
-  const ctx={Date:Clock,console,PropertiesService:{getScriptProperties:()=>({getProperty:key=>props.get(key)||null})},
+  const ctx={Date:Clock,console,PropertiesService:{getScriptProperties:()=>({getProperty:key=>props.get(key)||null,setProperty:(key,value)=>props.set(key,value)})},
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss,openById:()=>ss},Session:{getScriptTimeZone:()=> 'UTC'},
-    LockService:{getScriptLock:()=>({tryLock(){held=true;return true;},hasLock:()=>held,releaseLock(){held=false;}})},
+    LockService:{getScriptLock:()=>({tryLock(){held=true;return true;},waitLock(){held=true;},hasLock:()=>held,releaseLock(){held=false;}})},
     Utilities:{getUuid:()=>crypto.randomUUID(),DigestAlgorithm:{SHA_256:'sha256'},
       newBlob:value=>({getBytes:()=>signed(buffer(value)),getDataAsString:()=>buffer(value).toString('utf8')}),
       computeHmacSha256Signature:(value,key)=>signed(crypto.createHmac('sha256',buffer(key)).update(buffer(value)).digest()),
@@ -105,4 +105,15 @@ test('push rejects invalid batches atomically before writes, locks operations an
   assert.equal(push([tx,{...tx,id:'tx_bad',amount:Infinity}]).code,'INVALID_TRANSACTIONS');assert.equal(f.sheets.get('Transactions').data.length,1);
   assert.equal(push([tx,tx]).ok,true);assert.equal(f.sheets.get('Transactions').data.length,2);assert.ok(f.sheets.get('Transactions').data[1][4].startsWith("'="));
   assert.equal(push([tx]).ok,true);assert.equal(f.sheets.get('Transactions').data.length,2);
+});
+
+test('phone setup creates a private 64-hex secret without replacing an existing one',()=>{
+  const f=fixture();f.ctx.console={log:()=>{}};
+  f.props.delete('FINTEX_AUTH_SECRET');
+  f.props.set('FINTEX_BOT_TOKEN','123456:'+ 'x'.repeat(35));
+  f.ctx.createFintexSecret();const secret=f.props.get('FINTEX_AUTH_SECRET');
+  assert.match(secret,/^[a-f0-9]{64}$/);
+  f.ctx.createFintexSecret();assert.equal(f.props.get('FINTEX_AUTH_SECRET'),secret);
+  f.props.delete('FINTEX_AUTH_SECRET');f.props.set('FINTEX_BOT_TOKEN','wrong');
+  assert.throws(()=>f.ctx.createFintexSecret());assert.equal(f.props.has('FINTEX_AUTH_SECRET'),false);
 });

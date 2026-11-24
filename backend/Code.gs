@@ -198,3 +198,64 @@ function setupFintexBackend() {
   if(response.getResponseCode()!==200||!result.ok)throw new Error('Не удалось проверить токен бота. Проверьте FINTEX_BOT_TOKEN.');
   return {ok:true,bot_username:result.result.username};
 }
+
+/** Optional owner-only helper for phone setup. Never exposed by doPost.
+ * HMAC derives a separate secret from the private bot token and unique nonces.
+ * No secret is printed or sent to another service; existing values are preserved.
+ */
+function createFintexSecret() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var p = PropertiesService.getScriptProperties();
+    if (p.getProperty('FINTEX_AUTH_SECRET')) {
+      console.log('Секрет уже есть. Он не изменён.');
+      return;
+    }
+    var token = p.getProperty('FINTEX_BOT_TOKEN');
+    if (!token || !/^\d+:[A-Za-z0-9_-]{30,}$/.test(token)) {
+      throw new Error('Проверьте FINTEX_BOT_TOKEN в свойствах скрипта.');
+    }
+    var data = 'Fintex/auth-secret/v1|' + Utilities.getUuid() + '|' + Utilities.getUuid();
+    var secret = Utilities.computeHmacSha256Signature(data, token)
+      .map(function(b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); }).join('');
+    p.setProperty('FINTEX_AUTH_SECRET', secret);
+    console.log('Готово. Секрет сохранён в свойствах скрипта.');
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Owner-only, explicit fresh database creation. Never exposed by doGet/doPost.
+ * Existing tables and their contents are not modified or deleted.
+ */
+function createFintexDatabase() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    authProperties();
+    var p = PropertiesService.getScriptProperties();
+    var previous = p.getProperty('FINTEX_SS_ID');
+    var created = p.getProperty('FINTEX_CREATED_DB_ID');
+    if (created) {
+      if (created !== previous) {
+        throw new Error('Новая таблица уже создавалась. Настройка подключения после этого изменена; автоматическое переключение остановлено.');
+      }
+      var current = getDb();
+      getOrCreateSheet(current.ss, 'Auth', AUTH_COLUMNS);
+      console.log('Новая таблица уже подключена. Повторно создавать её не нужно.');
+      return;
+    }
+    var ss = SpreadsheetApp.create('FINTEX_Database');
+    getOrCreateSheet(ss, 'Users', ['user_id', 'name', 'bank', 'balance', 'payday', 'api_token', 'updated_at']);
+    getOrCreateSheet(ss, 'Transactions', ['id', 'user_id', 'date', 'time', 'merchant', 'amount', 'category', 'type', 'op_kind', 'source', 'dedup_hash', 'items_json', 'created_at']);
+    getOrCreateSheet(ss, 'Logs', ['log_id', 'timestamp', 'uid', 'source', 'status', 'bank', 'summary', 'raw_preview', 'error_code']);
+    getOrCreateSheet(ss, 'Auth', AUTH_COLUMNS);
+    var settings = {FINTEX_SS_ID: ss.getId(), FINTEX_CREATED_DB_ID: ss.getId()};
+    if (previous) settings.FINTEX_PREVIOUS_SS_ID = previous;
+    p.setProperties(settings);
+    console.log('Готово. Новая таблица создана и подключена. Старая не удалена.');
+  } finally {
+    lock.releaseLock();
+  }
+}
