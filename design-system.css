@@ -865,16 +865,25 @@ body #filely-financial-tree .ft-kicker { font-weight: 700; text-transform: upper
 html[data-visual-style='growth'] {
   --bg-canvas: #faf5ed;
   --surface-1: #fffcf7;
-  --surface-2: #f0e5d7;
-  --surface-raised: #e9dac8;
-  --border-subtle: #dfcebb;
-  --border-active: #a46c45;
+  --surface-2: #e8edf0;
+  --surface-raised: #dce5e9;
+  --border-subtle: #d6dcd8;
+  --border-active: #57768a;
   --text-primary: #332c29;
   --text-secondary: #6f5e53;
   --text-muted: #78675b;
   --accent: #985021;
   --accent-rgb: 152,80,33;
   --accent-2: #985021;
+  --hero-bg: #31526b;
+  --hero-ink: #fbf6ef;
+  --hero-secondary: #dce6ec;
+  --cool: #31526b;
+  --cool-soft: #e1eaf0;
+  --sage-bg: #e5ecdf;
+  --sage-ink: #354c40;
+  --sage-border: #b4c8b5;
+  --progress: #54745d;
   --accent-soft: #f5e2d1;
   --accent-ink: #ffffff;
   --gold: #87601f;
@@ -885,28 +894,37 @@ html[data-visual-style='growth'] {
   --companion-ink: #56351f;
   --tabbar-bg: rgba(250,245,237,.97);
   --surface-wash: linear-gradient(145deg, rgba(233,176,137,.1), transparent 70%);
-  --hero-wash: radial-gradient(ellipse at 100% 0%, rgba(233,176,137,.22), transparent 70%);
-  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(233,176,137,.12), transparent 55%);
+  --hero-wash: none;
+  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(132,163,179,.13), transparent 55%);
   --budget-bg: #f2d7bd;
   --budget-ink: #493326;
-  --budget-empty-bg: #f0e5d7;
+  --budget-empty-bg: #e1eaf0;
   --number-ink: #332c29;
   --shadow-card: 0 8px 28px rgba(79,49,29,.04);
   --shadow-float: 0 12px 40px rgba(79,49,29,.14);
 }
 html.dark[data-visual-style='growth'] {
-  --bg-canvas: #241e1a;
-  --surface-1: #302822;
-  --surface-2: #3c3129;
-  --surface-raised: #493b31;
-  --border-subtle: #5b4839;
-  --border-active: #c59775;
+  --bg-canvas: #1c252b;
+  --surface-1: #28343b;
+  --surface-2: #32424b;
+  --surface-raised: #3d515b;
+  --border-subtle: #4b6068;
+  --border-active: #9ab9c8;
   --text-primary: #faf0e5;
-  --text-secondary: #d8c5b3;
-  --text-muted: #c6ad98;
+  --text-secondary: #d1dce0;
+  --text-muted: #b5c6cc;
   --accent: #efb58d;
   --accent-rgb: 239,181,141;
   --accent-2: #efb58d;
+  --hero-bg: #2b485e;
+  --hero-ink: #fbf6ef;
+  --hero-secondary: #dce6ec;
+  --cool: #bdd8e5;
+  --cool-soft: #334e60;
+  --sage-bg: #293f37;
+  --sage-ink: #e1eddf;
+  --sage-border: #587563;
+  --progress: #abc6a9;
   --accent-soft: #4c3628;
   --accent-ink: #35271f;
   --gold: #e4c68e;
@@ -915,33 +933,61 @@ html.dark[data-visual-style='growth'] {
   --companion-soft: #4c3628;
   --companion-border: #9a7253;
   --companion-ink: #35271f;
-  --tabbar-bg: rgba(36,30,26,.97);
+  --tabbar-bg: rgba(28,37,43,.97);
   --surface-wash: linear-gradient(145deg, rgba(233,176,137,.04), transparent 70%);
-  --hero-wash: radial-gradient(ellipse at 100% 0%, rgba(233,176,137,.1), transparent 70%);
-  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(233,176,137,.07), transparent 55%);
+  --hero-wash: none;
+  --canvas-wash: radial-gradient(ellipse at 100% 0%, rgba(132,163,179,.08), transparent 55%);
   --budget-bg: #e7bb95;
   --budget-ink: #35271f;
-  --budget-empty-bg: #3c3129;
+  --budget-empty-bg: #e1eaf0;
   --number-ink: #faf0e5;
   --shadow-card: 0 8px 28px rgba(16,10,6,.12);
   --shadow-float: 0 12px 40px rgba(16,10,6,.38);
 }
+/* Independent colour roles, not a tint applied to the entire interface. */
+html[data-visual-style='growth'] body #hero-balance-card {
+  background: var(--hero-bg);
+  --text-primary: var(--hero-ink);
+  --number-ink: var(--hero-ink);
+  --text-secondary: var(--hero-secondary);
+  --text-muted: var(--hero-secondary);
+  --border-subtle: rgba(220,230,236,.26);
+  --accent: #ffcfab;
+  --companion: #ffcfab;
+  --companion-soft: rgba(255,207,171,.1);
+  --companion-border: rgba(255,207,171,.5);
+  --gold: #ffda9e;
+  --danger: #ffb4ad;
+}
+html[data-visual-style='growth'] body #filely-financial-tree {
+  background: var(--sage-bg);
+  border-color: var(--sage-border);
+  --text-primary: var(--sage-ink);
+  --text-secondary: var(--sage-ink);
+  --border-subtle: var(--sage-border);
+  --gold: var(--sage-ink);
+}
+html[data-visual-style='growth'] body #filely-financial-tree .ft-stage { background: var(--surface-1); color: var(--sage-ink); }
+html[data-visual-style='growth'] body #filely-financial-tree .ft-bar > span { background: var(--progress); }
+html[data-visual-style='growth'] body #filely-financial-tree .ft-bar { background: var(--sage-border); }
+html[data-visual-style='growth'] body .section-icon:not(.companion-icon) { background: var(--cool-soft); color: var(--cool); }
+html[data-visual-style='growth'] body .work-header { background: var(--cool-soft); }
+html[data-visual-style='growth'] body .ftx-ap-section-title { color: var(--cool); }
 html[data-visual-style='growth'] body #hero-balance-card::before { background-image: url('./assets/growth-arcs.svg'); opacity: .18; }
-html[data-visual-style='growth'] body #nav-active-pill { background: var(--accent-soft); border: 1px solid var(--companion-border); box-shadow: none; }
-html[data-visual-style='growth'] body .nav-tab.is-active-tab { color: var(--accent); }
+html[data-visual-style='growth'] body #nav-active-pill { background: var(--cool-soft); border: 1px solid var(--border-active); box-shadow: none; }
+html[data-visual-style='growth'] body .nav-tab.is-active-tab { color: var(--cool); }
 html[data-visual-style='growth'] body .daily-budget { background: var(--budget-bg); }
-html[data-visual-style='growth'] body .daily-budget[data-exhausted='true'] { background: var(--budget-empty-bg); }
+html[data-visual-style='growth'] body .daily-budget[data-exhausted='true'] { background: var(--budget-empty-bg); color: #314959; --text-primary: #314959; }
 html[data-visual-style='growth'] body .daily-budget-icon { color: var(--budget-ink); }
 html[data-visual-style='growth'] body .daily-budget[data-exhausted='true'] .daily-budget-icon { color: var(--text-primary); }
 html[data-visual-style='growth'] body .daily-budget-track { background: rgba(73,51,38,.16); }
-html[data-visual-style='growth'] body #filely-financial-tree .ft-bar > span { background: var(--accent); }
 html[data-visual-style='growth'] body :is(#hero-balance, #hero-reserved, #hero-free-pool, #st-balance, #work-result, #cb-work-time) { color: var(--number-ink); }
 html[data-visual-style='growth'] body .sprout-light { background: radial-gradient(ellipse at 53% 40%, rgba(233,176,137,.15), transparent 54%); }
 html[data-visual-style='growth'] body .work-dialog::backdrop { background: rgba(36,30,26,.78); }
-body .swatch-growth { background: #faf5ed; border: 1px solid #dfcebb; }
-body .swatch-growth i { background: #e9b089; }
-body .swatch-growth i:first-child { background: #493326; }
-body .swatch-growth i:last-child { background: #d3b99d; }
+body .swatch-growth { background: #faf5ed; border: 1px solid #d6dcd8; grid-template-columns: 1fr 1fr; gap: 5px; }
+body .swatch-growth i { background: #e9b089; width: 100%; height: 100%; }
+body .swatch-growth i:first-child { background: #31526b; grid-column: 1 / -1; width: 100%; height: 24px; }
+body .swatch-growth i:last-child { background: #a8bda0; width: 100%; height: 100%; }
 body .visual-style-options > [data-visual-style-choice='growth'] { grid-column: 1 / -1; display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 10px; align-items: center; }
 body [data-visual-style-choice='growth'] .visual-style-swatch { height: 70px; }
 body [data-visual-style-choice='growth'] .visual-style-check { right: 12px; bottom: auto; top: 10px; }
