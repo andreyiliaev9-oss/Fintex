@@ -270,3 +270,104 @@ test('home operation arrivals share the animation without replaying existing row
   expect(appeared).toEqual(['home-new']);
   await expect(page.locator('#tx-feed [data-operation-row="home-new"] .money-val')).toHaveClass(/operation-expense/);
 });
+
+async function enableSprout(page) {
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
+}
+
+test('sprout grows for five seconds, is private, modal and restores interaction after exit', async ({page}) => {
+  await openApp(page, true); await enableSprout(page);
+  await page.clock.install();
+  await page.locator('#hdr-plus-btn').focus();
+  await page.evaluate(()=>replayMotionSplash());
+  const stage = page.locator('#returning-splash');
+  await expect(stage).toBeVisible();
+  await expect(stage).toHaveAttribute('role','dialog');
+  await expect(page.locator('#sprout-skip')).toBeFocused();
+  expect(await page.locator('main').evaluate(el=>el.inert)).toBe(true);
+  await expect(stage).not.toContainText(/₽|Банк|резерв|Андрей|загруз/i);
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#sprout-skip')).toBeFocused();
+  await page.clock.runFor(4400);
+  await expect(stage).toBeVisible();
+  await expect(stage).not.toHaveClass(/is-leaving/);
+  await page.clock.runFor(700);
+  await expect(stage).toBeHidden();
+  expect(await page.locator('main').evaluate(el=>el.inert)).toBe(false);
+  await expect(page.locator('#hdr-plus-btn')).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('overflow','hidden');
+});
+
+test('sprout skip, touch area, Escape and repeat launches clear old timers', async ({page}) => {
+  await openApp(page); await enableSprout(page); await page.clock.install();
+  for (const action of ['button','background','escape']) {
+    await page.evaluate(()=>replayMotionSplash());
+    if (action === 'button') await page.locator('#sprout-skip').click();
+    if (action === 'background') await page.locator('#sprout-tagline').click({force:true});
+    if (action === 'escape') await page.keyboard.press('Escape');
+    await page.clock.runFor(450);
+    await expect(page.locator('#returning-splash')).toBeHidden();
+  }
+  await page.evaluate(()=>replayMotionSplash());
+  await page.clock.runFor(3000);
+  await page.evaluate(()=>replayMotionSplash());
+  await page.clock.runFor(2200);
+  await expect(page.locator('#returning-splash')).toBeVisible();
+  await page.clock.runFor(3000);
+  await expect(page.locator('#returning-splash')).toBeHidden();
+});
+
+test('sprout skips when motion is disabled and exits immediately on preference changes', async ({page}) => {
+  await openApp(page);
+  await page.evaluate(()=>replayMotionSplash());
+  await expect(page.locator('#returning-splash')).toBeHidden();
+  await enableSprout(page);
+  await page.evaluate(()=>replayMotionSplash());
+  await expect(page.locator('#returning-splash')).toBeVisible();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(page.locator('#returning-splash')).toBeHidden();
+  await page.evaluate(()=>replayMotionSplash());
+  await expect(page.locator('#returning-splash')).toBeHidden();
+  await enableSprout(page);
+  await page.evaluate(()=>{replayMotionSplash();localStorage.setItem('fp_motion','0');applyMotionPref();});
+  await expect(page.locator('#returning-splash')).toBeHidden();
+  expect(await page.locator('main').evaluate(el=>el.inert)).toBe(false);
+});
+
+test('returning users see sprout on entry; first-time users keep onboarding', async ({page}) => {
+  await localOnly(page);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.addInitScript(()=>{localStorage.setItem('fp_onboarded','1');localStorage.setItem('fp_name','Андрей');localStorage.setItem('fp_motion','1');});
+  await page.goto('/');
+  await expect(page.locator('#returning-splash')).toBeVisible();
+  await page.locator('#sprout-skip').click();
+  await expect(page.locator('#returning-splash')).toBeHidden();
+  await page.evaluate(()=>{localStorage.removeItem('fp_onboarded');localStorage.removeItem('fp_name');});
+  // Remove the seed init script by using a separate page in a fresh context.
+  const fresh = await page.context().browser().newContext();
+  const first = await fresh.newPage(); await localOnly(first); await first.goto('http://127.0.0.1:3100/');
+  await expect(first.locator('#onboarding-screen')).toBeVisible();
+  await expect(first.locator('#returning-splash')).toBeHidden();
+  await fresh.close();
+});
+
+test('sprout artwork actually resolves to visible leaves and type in both themes and small viewports', async ({page}) => {
+  await openApp(page); await enableSprout(page);
+  for (const [width,height] of [[320,568],[390,844],[448,844]]) {
+    await page.setViewportSize({width,height});
+    for (const theme of ['dark','light']) {
+      await page.evaluate(theme=>{setTheme(theme);replayMotionSplash();},theme);
+      await page.locator('#returning-splash').evaluate(stage=>{
+        stage.getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=4100;});
+      });
+      for (const selector of ['.sprout-left','.sprout-right','#sprout-title','#sprout-tagline']) {
+        await expect(page.locator(selector)).toHaveCSS('opacity','1');
+      }
+      const bounds=await page.locator('#sprout-title').boundingBox();
+      expect(bounds.y).toBeGreaterThan(0); expect(bounds.y+bounds.height).toBeLessThan(height);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
+      await page.evaluate(()=>FintexEntrance.dismiss(true));
+    }
+  }
+});

@@ -333,12 +333,6 @@ body .card-surface::before { display: none; }
 body #filely-financial-tree .ft-img { filter: drop-shadow(0 10px 16px rgba(88,150,43,.22)) !important; }
 body #view-settings input[type='checkbox'] { accent-color: var(--accent); }
 html:not(.dark) body #theme-seg .seg-item:not(.text-sub) { color: white; }
-body #returning-splash.fintex-luxury-stage { background: var(--bg-canvas) !important; }
-body #returning-splash canvas, body #returning-splash .fintex-aurora { display: none; }
-body #returning-splash .fintex-squircle-shell { background: var(--accent-soft); box-shadow: none; animation: none; }
-body #returning-splash .fintex-squircle-core { background: var(--surface-1); box-shadow: none; }
-body #returning-splash .fintex-capsule-in { background: var(--surface-1); box-shadow: none; border-color: var(--border-subtle); }
-html:not(.dark) body #returning-splash .text-white { color: var(--text-primary); }
 body .ftx-story-overlay { background: var(--bg-canvas); color: var(--text-primary); }
 body .ftx-story-card { background: var(--surface-1); border-color: var(--border-subtle); box-shadow: var(--shadow-card); border-radius: var(--radius-card); }
 body .ftx-story-kicker { color: var(--accent); }
@@ -459,3 +453,67 @@ body .cal-upcoming > summary:focus-visible { outline: 2px solid var(--accent); o
   body .cal-legend { gap: 7px; font-size: 9px; }
   body .cal-operation { gap: 8px; padding-inline: 11px; }
 }
+
+/* Sprout entrance: a five-second growth sequence, not a loading indicator. */
+body #returning-splash.sprout-stage {
+  --leaf-light: #d5ee99;
+  --leaf-deep: #54995b;
+  --stem-deep: #507745;
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: max(24px, env(safe-area-inset-top)) 26px max(28px, env(safe-area-inset-bottom));
+  overflow: hidden; isolation: isolate; cursor: pointer;
+  background: var(--bg-canvas); color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+body #returning-splash.sprout-stage.hidden { display: none; }
+html:not(.dark) body #returning-splash { --leaf-light: #91bb4f; --leaf-deep: #2c7338; --stem-deep: #6e883d; }
+body .sprout-light { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 53% 40%, rgba(155,194,82,.18), transparent 54%), radial-gradient(ellipse at 95% 0%, rgba(233,199,109,.09), transparent 52%); }
+body .sprout-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+body .sprout-top > span { font-size: 9px; font-weight: 600; letter-spacing: .2em; color: var(--text-muted); }
+body #sprout-skip { min-height: 44px; padding: 8px 0 8px 12px; font-size: 11px; color: var(--text-secondary); border-radius: 8px; }
+body #sprout-skip > span { margin-left: 7px; color: var(--accent); }
+body #sprout-skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+body .sprout-scene { width: 100%; max-width: 340px; margin: auto; text-align: center; padding-bottom: 30px; }
+body .sprout-art { width: min(280px, 76vw); margin: 0 auto -8px; }
+body .sprout-art svg { display: block; width: 100%; overflow: visible; }
+body .sprout-leaf-light { stop-color: var(--leaf-light); }
+body .sprout-leaf-deep { stop-color: var(--leaf-deep); }
+body .sprout-stem-deep { stop-color: var(--stem-deep); }
+body .sprout-soil-glow { fill: var(--accent); opacity: .1; }
+body .sprout-ground { stroke: var(--gold); stroke-width: 1; stroke-linecap: round; opacity: .5; fill: none; }
+body .sprout-stem { stroke: url(#sprout-stem-colour); stroke-width: 4; stroke-linecap: round; fill: none; }
+body .sprout-vein { stroke: var(--bg-canvas); stroke-width: 1; stroke-linecap: round; opacity: .25; }
+body .sprout-dew { fill: #f7f5cf; opacity: .8; }
+body #sprout-title { font-size: clamp(48px, 15vw, 62px); line-height: 1.1; font-weight: 550; letter-spacing: -.065em; margin: 0; }
+body #sprout-title > span { color: var(--accent); }
+body #sprout-tagline { margin: 16px 0 0; color: var(--text-secondary); font-size: 14px; font-weight: 400; letter-spacing: .015em; }
+body .sprout-rule { width: 28px; height: 1px; background: var(--gold); opacity: .65; margin: 26px auto 0; }
+body .sprout-hint { text-align: center; color: var(--text-muted); font-size: 10px; letter-spacing: .04em; margin: 0; }
+@keyframes sproutDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes sproutLeaf { from { opacity: 0; transform: rotate(var(--leaf-turn)) scale(.08); } to { opacity: 1; transform: rotate(0deg) scale(1); } }
+@keyframes sproutAppear { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sproutLight { from { opacity: .2; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes sproutExit { to { opacity: 0; } }
+body .is-growing .sprout-light { animation: sproutLight 3.6s ease-out both; }
+body .is-growing .sprout-ground { stroke-dasharray: 1; animation: sproutDraw .9s .1s ease-out both; }
+body .is-growing .sprout-stem { stroke-dasharray: 1; animation: sproutDraw 1.6s .35s cubic-bezier(.3,0,.25,1) both; }
+body .is-growing .sprout-left { --leaf-turn: 32deg; transform-origin: 143px 171px; animation: sproutLeaf 1.35s 1.15s cubic-bezier(.2,.6,.2,1) both; }
+body .is-growing .sprout-right { --leaf-turn: -24deg; transform-origin: 145px 147px; animation: sproutLeaf 1.5s 1.7s cubic-bezier(.2,.6,.2,1) both; }
+body .is-growing .sprout-dew { animation: sproutAppear .9s 2.9s both; }
+body .is-growing #sprout-title { animation: sproutAppear 1s 2.3s both; }
+body .is-growing #sprout-tagline { animation: sproutAppear 1s 2.85s both; }
+body .is-growing .sprout-rule { animation: sproutAppear .8s 3.2s both; }
+body .is-growing .sprout-hint { animation: sproutAppear .8s .7s both; }
+body #returning-splash.is-leaving { pointer-events: none; animation: sproutExit .4s ease-out both; }
+@media(max-height:600px) {
+  body .sprout-art { width: min(180px, 36vh); }
+  body .sprout-scene { padding-bottom: 0; }
+  body #sprout-title { font-size: 40px; }
+  body #sprout-tagline { margin-top: 10px; }
+  body .sprout-rule { margin-top: 14px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body #returning-splash * { animation: none !important; }
+}
+html.no-motion body #returning-splash * { animation: none !important; }
