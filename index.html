@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>FINTEX — Личные финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./assets/utilities.css?v=24" />
+  <link rel="stylesheet" href="./assets/utilities.css?v=25" />
   <script src="./assets/icons.js?v=21"></script>
   <!-- Бесплатные автономные движки распознавания в браузере (QR + OCR + PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -15,7 +15,7 @@
   <meta name="color-scheme" content="dark light" />
   <link rel="preload" as="image" href="./financial_tree_art.png?v=3" />
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=24" />
+  <link rel="stylesheet" href="./design-system.css?v=25" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -178,39 +178,37 @@
     </div>
   </div>
 
-  <!-- ФЛАГМАНСКИЙ МОУШЕН-ЭКРАН ПРИВЕТСТВИЯ ПРИ ВХОДЕ (cosmic_intro.js) -->
-  <div id="returning-splash" onclick="dismissReturningSplash()" class="fixed inset-0 z-50 bg-[#040B0A] flex flex-col items-center justify-between px-6 py-9 text-center text-white hidden cursor-pointer overflow-hidden">
-    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 50% 36%, rgba(0,214,195,0.16) 0%, rgba(242,198,93,0.06) 40%, transparent 72%);"></div>
-
-    <div class="w-full flex items-center justify-between relative z-10">
-      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md">
-        <span class="w-1.5 h-1.5 rounded-full bg-[#00D6C3] shadow-[0_0_8px_#00D6C3]"></span>
-        <span class="text-[10px] font-extrabold tracking-[0.26em] text-brand">FINTEX</span>
-      </div>
-      <span id="ret-bank-pill" class="text-[10px] font-semibold px-3 py-1 rounded-full bg-white/[0.04] border border-[#00D6C3]/25 text-sub">Т-Банк</span>
-    </div>
-
-    <div class="my-auto flex flex-col items-center relative z-10">
-      <div class="relative w-24 h-24 rounded-[28px] bg-[#071916] border border-[#00D6C3]/50 flex items-center justify-center mb-7 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85),0_0_42px_rgba(0,214,195,0.34)]">
-        <svg class="w-11 h-11" viewBox="0 0 40 40" fill="none">
-          <path d="M12 10H29M12 10V30M12 20H24" stroke="#00D6C3" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="29" cy="20" r="2.6" fill="#F2C65D" />
+  <!-- Living Forest entrance. Decorative SVG, no personal or financial data. -->
+  <div id="returning-splash" class="sprout-stage hidden" role="dialog" aria-modal="true" aria-labelledby="sprout-title" aria-describedby="sprout-tagline" tabindex="-1">
+    <div class="sprout-light" aria-hidden="true"></div>
+    <div class="sprout-top"><span>ЛИЧНЫЕ ФИНАНСЫ</span><button id="sprout-skip" type="button">Пропустить <span aria-hidden="true">↗</span></button></div>
+    <div class="sprout-scene">
+      <div class="sprout-art" aria-hidden="true">
+        <svg viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sprout-leaf-left" x1="66" y1="117" x2="148" y2="172" gradientUnits="userSpaceOnUse"><stop class="sprout-leaf-light"/><stop offset="1" class="sprout-leaf-deep"/></linearGradient>
+            <linearGradient id="sprout-leaf-right" x1="214" y1="66" x2="142" y2="155" gradientUnits="userSpaceOnUse"><stop class="sprout-leaf-light"/><stop offset="1" class="sprout-leaf-deep"/></linearGradient>
+            <linearGradient id="sprout-stem-colour" x1="140" y1="99" x2="140" y2="229" gradientUnits="userSpaceOnUse"><stop class="sprout-leaf-light"/><stop offset="1" class="sprout-stem-deep"/></linearGradient>
+          </defs>
+          <ellipse class="sprout-soil-glow" cx="140" cy="232" rx="61" ry="8"/>
+          <path class="sprout-ground" d="M86 232 Q140 224 194 232" pathLength="1"/>
+          <path class="sprout-stem" d="M140 230 C137 203 148 186 143 163 C138 144 147 123 160 105" pathLength="1"/>
+          <g class="sprout-left">
+            <path d="M143 171 C103 176 70 148 64 114 C104 108 142 128 143 171Z" fill="url(#sprout-leaf-left)"/>
+            <path class="sprout-vein" d="M142 170 C120 145 98 132 78 124"/>
+          </g>
+          <g class="sprout-right">
+            <path d="M145 147 C139 104 163 71 214 61 C217 104 193 144 145 147Z" fill="url(#sprout-leaf-right)"/>
+            <path class="sprout-vein" d="M146 145 C163 120 181 96 201 76"/>
+          </g>
+          <circle class="sprout-dew" cx="192" cy="87" r="3"/>
         </svg>
       </div>
-
-      <div id="ret-greeting" class="text-2xl font-extrabold tracking-tight text-white">С возвращением!</div>
-      <div id="ret-sub" class="text-xs font-medium text-brand tracking-wide mt-1.5">Личный финансовый автопилот</div>
-
-      <div class="mt-6 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-[#00D6C3]/25 flex items-center gap-2.5">
-        <span class="w-2 h-2 rounded-full bg-[#00D6C3] animate-ping"></span>
-        <span class="text-[11px] text-sub">Доступно сегодня:</span>
-        <span id="ret-daily-preview" class="text-xs font-extrabold text-white tabular-nums">0 ₽</span>
-      </div>
+      <h1 id="sprout-title">Fintex<span aria-hidden="true">.</span></h1>
+      <p id="sprout-tagline">Расти в своём темпе</p>
+      <div class="sprout-rule" aria-hidden="true"></div>
     </div>
-
-    <div class="relative z-10 text-[10px] text-sub/60 tracking-wider uppercase">
-      Коснитесь или смахните вверх
-    </div>
+    <p class="sprout-hint">Коснитесь, чтобы продолжить</p>
   </div>
 
   <!-- ==================== 2. ШАПКА ГЛАВНОГО ЭКРАНА ==================== -->
@@ -938,7 +936,7 @@
         </div>
         <div class="flex flex-wrap gap-3 pt-1">
           <button type="button" onclick="replayMotionSplash()" class="text-[11px] text-brand font-semibold">
-            Запустить моушен-заставку входа
+            Посмотреть заставку «Росток»
           </button>
           <button type="button" onclick="replayFullOnboarding()" class="text-[11px] text-sub font-semibold">
             Онбординг первого входа
@@ -1819,14 +1817,14 @@
   </div>
 
   <script src="./scanner.js?v=19"></script>
-  <script src="./app.js?v=24"></script>
+  <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
+  <script src="./app.js?v=25"></script>
   <script src="./extensions.js?v=22"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=19" data-fintex-mod="sim_ui.js"></script>
   <script src="./sim_charts.js?v=19" data-fintex-mod="sim_charts.js"></script>
   <script src="./sim_pro.js?v=19" data-fintex-mod="sim_pro.js"></script>
-  <script src="./cosmic_intro.js?v=19" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./stories_recap.js?v=19" data-fintex-mod="stories_recap.js"></script>
   <script src="./financial_tree.js?v=21"></script>
 </body>

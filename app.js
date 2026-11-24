@@ -404,6 +404,7 @@ function applyMotionPref() {
   const cb = document.getElementById('motion-toggle');
   if (cb) cb.checked = enabled;
   if (!enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) stopOperationReveals();
+  window.dispatchEvent(new Event('fintex:motionchange'));
 }
 
 function toggleMotionPref() {
@@ -422,53 +423,18 @@ function initOnboardingFlow() {
     document.getElementById('setup-payday').value = state.payday;
     document.getElementById('onboarding-screen').classList.remove('hidden');
     renderOnboardingStep();
-  } else if (typeof window.launchLuxuryEntrance === 'function') {
-    window.launchLuxuryEntrance(2750);
   } else {
-    const m = calcMetrics();
-    const splash = document.getElementById('returning-splash');
-    if (splash) {
-      splash.classList.remove('hidden', 'splash-exit-active');
-      const gEl = document.getElementById('ret-greeting');
-      const bEl = document.getElementById('ret-bank-pill');
-      const dEl = document.getElementById('ret-daily-preview');
-      if (gEl) gEl.textContent = `${greetingWord()}, ${state.name}!`;
-      if (bEl) bEl.textContent = state.bank;
-      if (dEl) dEl.textContent = fmtR(m.dailyLeft);
-      setTimeout(dismissReturningSplash, 1650);
-    }
+    window.launchSproutEntrance?.();
   }
   lucide.createIcons();
 }
 
 function dismissReturningSplash() {
-  const splash = document.getElementById('returning-splash');
-  if (!splash || splash.classList.contains('hidden') || splash.classList.contains('splash-exit-active')) return;
-  vibro('light');
-  splash.classList.add('splash-exit-active');
-  renderAll(true);
-  setTimeout(() => {
-    splash.classList.add('hidden');
-    splash.classList.remove('splash-exit-active');
-  }, 460);
+  window.FintexEntrance?.dismiss();
 }
 
 function replayMotionSplash() {
-  if (typeof window.launchLuxuryEntrance === 'function') {
-    window.launchLuxuryEntrance(2850);
-    return;
-  }
-  const m = calcMetrics();
-  const splash = document.getElementById('returning-splash');
-  if (!splash) return;
-  splash.classList.remove('hidden', 'splash-exit-active');
-  const gEl = document.getElementById('ret-greeting');
-  const bEl = document.getElementById('ret-bank-pill');
-  const dEl = document.getElementById('ret-daily-preview');
-  if (gEl) gEl.textContent = `${greetingWord()}, ${state.name || 'Друг'}!`;
-  if (bEl) bEl.textContent = state.bank;
-  if (dEl) dEl.textContent = fmtR(m.dailyLeft);
-  setTimeout(dismissReturningSplash, 1650);
+  window.launchSproutEntrance?.();
 }
 
 function replayFullOnboarding() {
