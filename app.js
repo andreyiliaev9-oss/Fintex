@@ -32,7 +32,7 @@ const USER_ID = (() => {
   }
   return guestId;
 })();
-const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw2Q0L7sKq0QrOQtffRS3oRpq22nrWZ8b9ErM8aWSuF4I9qMLz4f_N7mVu_F6m8-6j6/exec';
+const DEFAULT_GAS_URL = window.FintexAuth.defaultEndpoint;
 
 function safeJsonParse(raw, fallback) {
   if (!raw) return fallback;
@@ -331,7 +331,7 @@ let state = {
   bills: safeJsonParse(localStorage.getItem('fp_bills'), [{ id: 'b1', title: 'Яндекс Плюс', amount: 399, due_date: offsetDateISO(4), is_paid: false, is_recurring: true }]),
   scanHistory: safeJsonParse(localStorage.getItem('fp_scan_history'), []),
   priceHistory: safeJsonParse(localStorage.getItem('fp_price_history'), {}),
-  gasUrl: ((localStorage.getItem('fp_api_url') && localStorage.getItem('fp_api_url') !== 'https://script.google.com/macros/s/AKfycbz_gCZDuLK2Ghkoapf_arMFYu63_9VK7wC8GZUoYn-J3WPqmg7TFRvfKgjJ9KqNXq3F/exec') ? localStorage.getItem('fp_api_url') : DEFAULT_GAS_URL).replace(/\/dev(\?.*)?$/, '/exec$1'),
+  gasUrl: window.FintexAuth.getEndpoint(),
   apiToken: localStorage.getItem('fp_api_token') || '',
   syncQueue: safeJsonParse(localStorage.getItem('fp_sync_queue'), []),
   autopilotLogs: safeJsonParse(localStorage.getItem('fp_ap_logs'), []),
@@ -1709,16 +1709,16 @@ function renderAnalytics() {
   const intel = detectSubscriptionsAndAnomalies();
   document.getElementById('an-detective-list').innerHTML = intel.anomalies.map(a => `
     <div class="input-surface p-3 space-y-1">
-      <div class="text-xs font-bold text-main">${a.title}</div>
-      <div class="text-[11px] text-sub">${a.desc}</div>
+      <div class="text-xs font-bold text-main">${escapeHtml(a.title)}</div>
+      <div class="text-[11px] text-sub">${escapeHtml(a.desc)}</div>
     </div>
   `).join('');
 
   document.getElementById('an-subs-summary').textContent = `За месяц: ${fmtR(intel.monthlySubs)} · За год: ${fmtR(intel.annualSubs)}`;
   document.getElementById('an-subs-list').innerHTML = intel.subsList.length
     ? intel.subsList.map(s => `
-        <div onclick="openSubscriptionGuide('${s.title.replace(/'/g, '')}', ${s.amount * 12}, '${s.id}')" class="input-surface p-2.5 flex justify-between text-xs cursor-pointer">
-          <div><div class="font-semibold text-main">${s.title}</div><div class="text-[10px] text-sub">${s.source}</div></div>
+        <div onclick="openSubscriptionGuide(${escapeHtml(JSON.stringify(s.title))}, ${s.amount * 12}, ${escapeHtml(JSON.stringify(s.id))})" class="input-surface p-2.5 flex justify-between text-xs cursor-pointer">
+          <div><div class="font-semibold text-main">${escapeHtml(s.title)}</div><div class="text-[10px] text-sub">${escapeHtml(s.source)}</div></div>
           <div class="text-right"><div class="font-bold text-gold">${fmtR(s.amount)}</div><div class="text-[10px] text-red-400">Отменить →</div></div>
         </div>
       `).join('')
@@ -1832,13 +1832,13 @@ function renderSettings() {
   const adCb = document.getElementById('auto-delta-toggle'); if (adCb) adCb.checked = localStorage.getItem('fp_auto_delta') !== '0';
 
   const syncLabel = document.getElementById('st-sync-label');
-  if (syncLabel) syncLabel.textContent = state.gasUrl ? 'Облако: адрес сервера указан' : 'Облако не подключено';
+  if (syncLabel) syncLabel.textContent = window.FintexAuth.canSync() ? 'Облако: защищённый сеанс активен' : 'Локальные данные · для облака войдите через Telegram';
   const scansList = document.getElementById('saved-scans-list');
   scansList.innerHTML = state.scanHistory.length
     ? state.scanHistory.map(s => `
         <div class="input-surface p-2.5 flex items-center justify-between text-xs">
           <div class="min-w-0">
-            <div class="font-semibold text-main truncate">${s.merchant} · ${fmtR(s.total || 0)}</div>
+            <div class="font-semibold text-main truncate">${escapeHtml(s.merchant)} · ${fmtR(s.total || 0)}</div>
             <div class="text-[10px] text-sub">${s.date} · ${s.confirmed ? 'Подтверждён' : 'Черновик'}</div>
           </div>
           <button type="button" onclick="reprocessCurrentScan('${s.scan_id}')" class="px-2.5 py-1 rounded-lg btn-teal-soft text-[11px] font-semibold">Повторить</button>
@@ -2327,7 +2327,7 @@ function parseVoiceDraftText() {
       <div class="flex items-center gap-2.5 min-w-0">
         ${merchantBadge(it.merchant, it.category, 'expense')}
         <div class="min-w-0">
-          <div class="font-bold text-main truncate">${it.merchant}</div>
+          <div class="font-bold text-main truncate">${escapeHtml(it.merchant)}</div>
           <div class="text-[10px] text-sub">${(CATS[it.category] || CATS.other).name}</div>
         </div>
       </div>
@@ -2597,7 +2597,7 @@ function saveGoalSettings() {
 function openTodayDetailModal() {
   const list = state.transactions.filter(t => t.date === TODAY && t.type === 'expense');
   document.getElementById('today-modal-list').innerHTML = list.length
-    ? list.map(t => `<div class="p-3 flex justify-between text-xs"><span>${t.merchant}</span><span class="font-bold">-${fmtR(t.amount)}</span></div>`).join('')
+    ? list.map(t => `<div class="p-3 flex justify-between text-xs"><span>${escapeHtml(t.merchant)}</span><span class="font-bold">-${fmtR(t.amount)}</span></div>`).join('')
     : `<div class="p-4 text-center text-xs text-sub">Сегодня трат не было</div>`;
   document.getElementById('modal-today').classList.remove('hidden');
 }
@@ -2618,8 +2618,8 @@ function openTxModal(id) {
           <div class="flex items-center gap-2 min-w-0">
             ${getProductIconBadge(it.name, t.category)}
             <div class="min-w-0">
-              <div class="text-main font-medium truncate">${it.name}</div>
-              ${cmp ? `<div class="text-[9px] ${cmp.diff > 0 ? 'text-red-400' : cmp.diff < 0 ? 'text-brand' : 'text-sub'}">${cmp.label}</div>` : ''}
+              <div class="text-main font-medium truncate">${escapeHtml(it.name)}</div>
+              ${cmp ? `<div class="text-[9px] ${cmp.diff > 0 ? 'text-red-400' : cmp.diff < 0 ? 'text-brand' : 'text-sub'}">${escapeHtml(cmp.label)}</div>` : ''}
             </div>
           </div>
           <span class="text-main font-bold tabular-nums shrink-0">${fmtR(it.price)}</span>
@@ -3499,11 +3499,11 @@ function renderAutopilotLogs() {
     return `
       <div class="input-surface p-2.5 space-y-1">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeCls}">${l.status}${l.error_code ? ` · ${l.error_code}` : ''}</span>
-          <span class="text-[9px] text-dim tabular-nums">${l.bank || ''} · ${timeShort}</span>
+          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeCls}">${escapeHtml(l.status)}${l.error_code ? ` · ${escapeHtml(l.error_code)}` : ''}</span>
+          <span class="text-[9px] text-dim tabular-nums">${escapeHtml(l.bank || '')} · ${escapeHtml(timeShort)}</span>
         </div>
-        <div class="text-main font-medium leading-snug">${l.summary}</div>
-        ${l.raw_preview ? `<div class="text-[9px] text-dim font-mono truncate">${l.raw_preview}</div>` : ''}
+        <div class="text-main font-medium leading-snug">${escapeHtml(l.summary)}</div>
+        ${l.raw_preview ? `<div class="text-[9px] text-dim font-mono truncate">${escapeHtml(l.raw_preview)}</div>` : ''}
       </div>
     `;
   }).join('');
@@ -3594,19 +3594,11 @@ renderAll(false);
 
 async function saveSecurityToken() {
   const tok = (document.getElementById('gas-token-field')?.value || '').trim();
-  state.apiToken = tok;
-  localStorage.setItem('fp_api_token', tok);
-  vibro('success');
-  if (state.gasUrl) {
-    try {
-      await fetch(state.gasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'set_config', user_id: USER_ID, token: tok, api_token: tok })
-      });
-    } catch (e) {}
-  }
-  toast(tok ? 'Секретный token сохранён' : 'Токен очищен');
+  if (!/^[a-zA-Z0-9_-]{32,128}$/.test(tok)) { toast('Ключ: 32–128 букв, цифр, _ или -. Можно создать его в разделе «Пароль и доступ».'); return; }
+  try {
+    await window.FintexAuth.request('set_config',{user_id:USER_ID,api_token:tok});
+    state.apiToken=tok;localStorage.setItem('fp_api_token',tok);vibro('success');toast('Ключ автоматизации сохранён');
+  } catch(e) { toast(e.message); }
 }
 
 async function handleStatementFile(e) {
@@ -3617,7 +3609,7 @@ async function handleStatementFile(e) {
   state.pendingImport = parsed;
   document.getElementById('stmt-preview-box').classList.remove('hidden');
   document.getElementById('stmt-preview-title').textContent = `${file.name} (${parsed.length} опер.)`;
-  document.getElementById('stmt-preview-list').innerHTML = parsed.slice(0, 10).map(it => `<div class="flex justify-between"><span>${it.merchant}</span><span>${fmtR(it.amount)}</span></div>`).join('');
+  document.getElementById('stmt-preview-list').innerHTML = parsed.slice(0, 10).map(it => `<div class="flex justify-between"><span>${escapeHtml(it.merchant)}</span><span>${fmtR(it.amount)}</span></div>`).join('');
   e.target.value = '';
 }
 
@@ -3655,27 +3647,18 @@ async function pushTransactionsToBackend(txSubset) {
 }
 
 async function flushSyncQueue() {
-  if (!state.gasUrl || !state.syncQueue.length) {
+  if (!window.FintexAuth.canSync() || !state.gasUrl || !state.syncQueue.length) {
     updateSyncQueueUI();
     return;
   }
   try {
     const batch = state.syncQueue.slice(0, 30);
-    const res = await fetch(state.gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'push_tx',
-        user_id: USER_ID,
-        token: state.apiToken || '',
-        balance: state.balance,
-        user: { name: state.name, bank: state.bank, payday: state.payday },
-        transactions: batch
-      })
+    const data = await window.FintexAuth.request('push_tx',{
+      user_id:USER_ID,balance:state.balance,
+      user:{name:state.name,bank:state.bank,payday:state.payday},transactions:batch
     });
-    const data = await res.json();
     if (data && data.ok) {
-      const ackSet = new Set((data.ack_ids || batch.map(b => b.id)).map(String));
+      const ackSet = new Set((Array.isArray(data.ack_ids) ? data.ack_ids : []).map(String));
       state.syncQueue = state.syncQueue.filter(item => !ackSet.has(String(item.id)));
       localStorage.setItem('fp_sync_queue', JSON.stringify(state.syncQueue));
       updateSyncQueueUI();
@@ -3686,15 +3669,10 @@ async function flushSyncQueue() {
 }
 
 async function syncWithBackend(notify = false) {
-  if (!state.gasUrl) return;
+  if (!window.FintexAuth.canSync() || !state.gasUrl) { if(notify)toast('Для облака войдите через Telegram.'); return; }
   await flushSyncQueue();
   try {
-    const res = await fetch(state.gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'init', user_id: USER_ID, token: state.apiToken || '' })
-    });
-    const data = await res.json();
+    const data = await window.FintexAuth.request('init',{user_id:USER_ID});
     if (data.ok && data.user) {
       let pulledNew = 0;
       if (Array.isArray(data.transactions) && data.transactions.length) {
@@ -3705,6 +3683,7 @@ async function syncWithBackend(notify = false) {
         );
         if (freshRemote.length) {
           freshRemote.forEach(rt => {
+            if(!/^[a-zA-Z0-9_-]{1,150}$/.test(String(rt.id||''))) return;
             const amount=FM.money(rt.amount), date=FM.txKey(rt);
             if (amount<=0 || !date || date>TODAY || (rt.currency && !['RUB','₽','РУБ'].includes(String(rt.currency).toUpperCase()))) return;
             if(localIds.has(String(rt.id)) || (rt.dedup_hash && localHashes.has(String(rt.dedup_hash)))) return;
@@ -3778,8 +3757,8 @@ function saveGasUrl() {
   document.getElementById('gas-url-field').value = val;
   state.gasUrl = val;
   localStorage.setItem('fp_api_url', state.gasUrl);
-  toast('URL (/exec) сохранён, синхронизируем...');
-  syncWithBackend(true);
+  toast('Адрес сохранён. Подтвердите вход на сервере.');
+  window.FintexAuth.open();
 }
 
 function handleVersionSecretTap() {
@@ -3847,6 +3826,7 @@ function toast(msg) {
   setTimeout(() => el.classList.add('opacity-0'), 2300);
 }
 
+window.addEventListener('fintex:auth-ready', () => { syncWithBackend(false); });
 window.addEventListener('online', () => { flushSyncQueue(); });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { syncWithBackend(false); readClipboardNow(false); }
