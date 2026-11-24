@@ -3,6 +3,7 @@
  * Файл: app.js
  * ============================================================================ */
 
+const FM = window.FintexMath;
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
@@ -65,12 +66,7 @@ function offsetDateISO(days) {
   d.setDate(d.getDate() + days);
   return localDateISO(d);
 }
-function nextMonthISO(iso) {
-  const [y, m, d] = (iso || TODAY).split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setMonth(dt.getMonth() + 1);
-  return localDateISO(dt);
-}
+function nextMonthISO(iso) { return FM.nextMonth(iso || TODAY) || FM.nextMonth(TODAY); }
 
 function getTodayISO() { return offsetDateISO(0); }
 function getYesterdayISO() { return offsetDateISO(-1); }
@@ -79,7 +75,7 @@ Object.defineProperty(window, 'YESTERDAY', { get: getYesterdayISO, configurable:
 
 function fmtN(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 function fmtR(n, prefix = '') {
-  return `${prefix}${fmtN(n)} ₽`;
+  return `${prefix}${FM.money(n).toLocaleString('ru-RU', {maximumFractionDigits:2})} ₽`;
 }
 
 function greetingWord() {
@@ -100,25 +96,21 @@ function humanDate(iso) {
   return `${parseInt(p[2], 10)} ${mNames[parseInt(p[1], 10) - 1]}`;
 }
 
-function daysLeft(iso) {
-  if (!iso) return 12;
-  const t = new Date(iso + 'T00:00:00');
-  const n = new Date(TODAY + 'T00:00:00');
-  return Math.max(1, Math.ceil((t - n) / 86400000));
-}
+function daysLeft(iso) { return FM.daysUntil(iso, TODAY); }
 
 // ==================== БАРАБАННЫЙ СЧЁТЧИК ЦИФР (ODOMETER ROLL) ====================
 function animateCounter(el, target, fromZero = false) {
   if (!el) return;
-  const num = Math.max(0, Math.round(Number(target) || 0));
+  const num = FM.money(target);
   const prevVal = fromZero ? 0 : Number(el.dataset.val || 0);
   el.dataset.val = num;
   const motionOn = localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const formatted = fmtN(num);
   el.setAttribute('aria-label', `${formatted} ₽`);
 
-  if (!motionOn || prevVal === num) {
-    el.textContent = `${formatted} ₽`;
+  if (!motionOn || prevVal === num || num < 0 || !Number.isInteger(num)) {
+    el.setAttribute('aria-label', fmtR(num));
+    el.textContent = fmtR(num);
     return;
   }
 
@@ -329,7 +321,7 @@ function getProductIconBadge(itemName, catId = 'other') {
 let state = {
   name: (localStorage.getItem('fp_name') || '').trim(),
   bank: localStorage.getItem('fp_bank') || 'Т-Банк',
-  balance: Number(localStorage.getItem('fp_balance') || '22200'),
+  balance: FM.money(localStorage.getItem('fp_balance') ?? '22200'),
   payday: localStorage.getItem('fp_payday') || offsetDateISO(12),
   goal: safeJsonParse(localStorage.getItem('fp_goal'), { title: 'Финансовая подушка', saved: 0, target: 10000 }),
   catLimits: safeJsonParse(localStorage.getItem('fp_cat_limits'), {}),
@@ -505,7 +497,7 @@ function pickBank(btn, bank) {
 function computeClientDedupHash(dateIso, timeStr, amount, type, merchant, rawSig = '') {
   const normMerch = String(merchant || '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '').slice(0, 24);
   const normSig = String(rawSig || '').toLowerCase().replace(/\s+/g, '').slice(0, 64);
-  const base = `${USER_ID}|${dateIso}|${timeStr || '00:00'}|${Math.round(amount)}|${type}|${normMerch}|${normSig}`;
+  const base = `${USER_ID}|${dateIso}|${timeStr || '00:00'}|${FM.minor(amount)}|${type}|${normMerch}|${normSig}`;
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < base.length; i++) {
@@ -538,24 +530,29 @@ function addOrMergeTransactions(incomingList, sourceName) {
   let addedCount = 0;
   let mergedCount = 0;
   let balanceDelta = 0;
+  const added = [];
   const nowTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
 
   incomingList.forEach((item, idx) => {
-    const amt = Math.abs(Number(item.amount)) || 0;
+    if (!item || (item.currency && !['RUB','₽','РУБ'].includes(String(item.currency).toUpperCase()))) return;
+    const amt = Math.abs(FM.money(item.amount));
     if (amt <= 0) return;
     const type = item.type === 'income' ? 'income' : 'expense';
     const opKind = item.op_kind || type;
     const opLabel = item.op_label || (type === 'income' ? 'Пополнение' : 'Покупка');
     const date = item.date || TODAY;
+    if (FM.ordinal(date) === null || date > TODAY) { toast('Операция должна иметь корректную дату не позднее сегодня. Для будущих трат используйте платежи.'); return; }
     const time = item.time || nowTime;
     const merchant = normalizeMerchantName(item.merchant || 'Операция');
     const cat = CATS[item.category] ? item.category : classifyCategory(merchant);
-    const dedupHash = item.dedup_hash || computeClientDedupHash(date, time, amt, type, merchant, item.raw || item.scan_id || '');
+    const intentional = ['Вручную','Повтор','Пополнение','Подушка','Голос'].includes(sourceName);
+    const token = window.crypto?.randomUUID?.() || `${Date.now()}_${Math.random()}`;
+    const dedupHash = item.dedup_hash || computeClientDedupHash(date, time, amt, type, merchant, intentional ? token : item.raw || item.scan_id || '');
 
-    const existing = state.transactions.find(t =>
+    const existing = (!intentional || item.dedup_hash) && state.transactions.find(t =>
       (t.dedup_hash && t.dedup_hash === dedupHash) ||
-      (t.date === date && (t.time || '') === time && Math.abs(t.amount - amt) <= 1 && t.type === type && t.merchant.toLowerCase() === merchant.toLowerCase()) ||
-      (item.items && item.items.length > 0 && t.date === date && Math.abs(t.amount - amt) <= 1 && t.type === type)
+      (t.date === date && (t.time || '') === time && FM.minor(t.amount) === FM.minor(amt) && t.type === type && t.merchant.toLowerCase() === merchant.toLowerCase()) ||
+      (item.items && item.items.length > 0 && item.time && t.time === item.time && t.merchant.toLowerCase() === merchant.toLowerCase() && t.date === date && FM.minor(t.amount) === FM.minor(amt) && t.type === type)
     );
 
     if (existing) {
@@ -568,8 +565,8 @@ function addOrMergeTransactions(incomingList, sourceName) {
       appendLocalAutopilotLog('DUPLICATE', item.bank || state.bank, `Дубль отклонён: ${merchant} (${fmtR(amt)})`, item.raw || '', 'DUPLICATE_HASH');
     } else {
       addedCount++;
-      state.transactions.unshift({
-        id: 'tx_' + Date.now() + '_' + idx,
+      const transaction = {
+        id: 'tx_' + token,
         scan_id: item.scan_id || '',
         dedup_hash: dedupHash,
         merchant,
@@ -581,15 +578,18 @@ function addOrMergeTransactions(incomingList, sourceName) {
         source: sourceName,
         date,
         time,
-        items: item.items || []
-      });
-      balanceDelta += (type === 'income' ? amt : -amt);
+        items: item.items || [],
+        goal_withdrawal: sourceName==='Подушка' ? amt : 0
+      };
+      state.transactions.unshift(transaction);
+      added.push(transaction);
+      balanceDelta = FM.add(balanceDelta, type === 'income' ? amt : -amt);
       appendLocalAutopilotLog('OK', item.bank || state.bank, `${opLabel}: ${merchant} ${type === 'income' ? '+' : '-'}${fmtR(amt)} (${time})`, item.raw || '', '');
     }
   });
 
   if (addedCount > 0) {
-    state.balance = Math.max(0, state.balance + balanceDelta);
+    state.balance = FM.add(state.balance, balanceDelta);
     const card = document.getElementById('hero-balance-card');
     if (card) { card.classList.remove('hero-pulse-update'); void card.offsetWidth; card.classList.add('hero-pulse-update'); }
   }
@@ -599,43 +599,20 @@ function addOrMergeTransactions(incomingList, sourceName) {
   }
   persistAll();
   if (addedCount > 0) {
-    pushTransactionsToBackend(state.transactions.slice(0, addedCount));
-    try { window.FINTEX_EXT?.onTransactionsAdded?.(state.transactions.slice(0, addedCount)); } catch (e) {}
+    pushTransactionsToBackend(added);
+    try { window.FINTEX_EXT?.onTransactionsAdded?.(added); } catch (e) {}
   }
   return { addedCount, mergedCount };
 }
 
 // ==================== БЮДЖЕТ, РЕЙТИНГ, ДЕТЕКТИВ, КАЛЕНДАРЬ И АНАЛИТИКА ====================
-function calcMetrics() {
-  const expenses = state.transactions.filter(t => t.type === 'expense');
-  const todaySpent = expenses.filter(t => t.date === TODAY).reduce((s, t) => s + t.amount, 0);
-  const billsReserved = state.bills.filter(b => !b.is_paid).reduce((s, b) => s + Number(b.amount || 0), 0);
-  const goalReserved = Math.max(0, Number(state.goal?.saved) || 0);
-  const reserved = billsReserved + goalReserved;
-  const freePool = Math.max(0, state.balance - reserved);
-  const days = daysLeft(state.payday);
-  const dailyCap = Math.max(1, Math.round((freePool + todaySpent) / days));
-  const dailyLeft = Math.max(0, dailyCap - todaySpent);
-  const pct = Math.min(100, Math.round((todaySpent / dailyCap) * 100));
-
-  const hasData = expenses.length > 0;
-  const cutoff30 = offsetDateISO(-30);
-  const recentExpenses = expenses.filter(t => t.date >= cutoff30);
-  const sourceExpenses = recentExpenses.length ? recentExpenses : expenses;
-  const earliestDate = sourceExpenses.reduce((minD, t) => (t.date && t.date < minD ? t.date : minD), TODAY);
-  const elapsedDays = Math.min(30, Math.max(1, Math.round((new Date(TODAY + 'T00:00:00') - new Date(earliestDate + 'T00:00:00')) / 86400000) + 1));
-  const totalSpent = sourceExpenses.reduce((s, t) => s + t.amount, 0);
-  const dailyBurn = hasData ? Math.round(totalSpent / elapsedDays) : 0;
-  const forecastBalance = hasData ? Math.round(state.balance - billsReserved - (dailyBurn * days)) : null;
-
-  return { todaySpent, billsReserved, goalReserved, reserved, freePool, days, dailyCap, dailyLeft, pct, hasData, dailyBurn, forecastBalance };
-}
+function calcMetrics() { return FM.metrics(state, TODAY); }
 
 function calcDetailedRating() {
   const m = calcMetrics();
-  const expenses = state.transactions.filter(t => t.type === 'expense');
-  const gSaved = Number(state.goal?.saved) || 0;
-  const gTarget = Math.max(1, Number(state.goal?.target) || 10000);
+  const expenses = FM.transactions(state.transactions,null,TODAY).filter(t => t.type === 'expense');
+  const gSaved = Math.max(0, FM.money(state.goal?.saved));
+  const gTarget = Math.max(0.01, FM.money(state.goal?.target) || 10000);
 
   if (!expenses.length && gSaved === 0) {
     return {
@@ -644,13 +621,13 @@ function calcDetailedRating() {
         { name: 'Контроль расходов', weight: 25, score: 0, tip: 'Добавьте первую операцию' },
         { name: 'Финансовая подушка', weight: 25, score: 0, tip: 'Отложите первые 500 ₽ в цель' },
         { name: 'Обязательства', weight: 20, score: 0, tip: 'Укажите обязательные платежи' },
-        { name: 'Регулярность накоплений', weight: 20, score: 0, tip: 'Пополняйте подушку еженедельно' },
+        { name: 'Запас накоплений', weight: 20, score: 0, tip: 'Пополняйте подушку еженедельно' },
         { name: 'Стабильность бюджета', weight: 10, score: 0, tip: 'Статистика появится после начала учёта' }
       ]
     };
   }
 
-  const paceRatio = m.dailyCap > 0 ? Math.max(0, 1 - (m.todaySpent / (m.dailyCap * 1.35))) : 0.7;
+  const paceRatio = m.dailyCap > 0 ? Math.max(0, 1 - (m.todaySpent / (m.dailyCap * 1.35))) : 0;
   const f1 = Math.min(25, Math.round(paceRatio * 25));
   const f2 = Math.min(25, Math.round((gSaved / gTarget) * 25));
   const debtRatio = state.balance > 0 ? Math.min(1, m.billsReserved / state.balance) : 0.6;
@@ -666,17 +643,17 @@ function calcDetailedRating() {
       { name: 'Контроль расходов', weight: 25, score: f1, tip: f1 >= 20 ? 'Траты в рамках дневной нормы' : 'Соблюдайте лимит на день' },
       { name: 'Финансовая подушка', weight: 25, score: f2, tip: f2 >= 20 ? 'Отличный запас прочности' : `Пополните подушку на ${fmtN(Math.max(500, gTarget - gSaved))} ₽` },
       { name: 'Обязательства', weight: 20, score: f3, tip: f3 >= 15 ? 'Низкая нагрузка обязательных списаний' : 'Высокая доля регулярных платежей' },
-      { name: 'Регулярность накоплений', weight: 20, score: f4, tip: gSaved > 0 ? 'Резерв сформирован' : 'Откладывайте с каждого поступления' },
+      { name: 'Запас накоплений', weight: 20, score: f4, tip: gSaved > 0 ? 'Резерв сформирован' : 'Откладывайте с каждого поступления' },
       { name: 'Стабильность бюджета', weight: 10, score: f5, tip: m.freePool > 0 ? 'Свободный остаток защищён' : 'Свободный остаток исчерпан' }
     ]
   };
 }
 
 function detectSubscriptionsAndAnomalies() {
-  const expenses = state.transactions.filter(t => t.type === 'expense');
+  const expenses = FM.transactions(state.transactions,FM.shift(TODAY,-29),TODAY).filter(t => t.type === 'expense');
   const subsMap = {};
-  state.bills.filter(b => !b.is_paid).forEach(b => {
-    subsMap[b.title.toLowerCase()] = { id: b.id, title: b.title, amount: Number(b.amount) || 0, source: 'Плановый платёж' };
+  state.bills.filter(b => !b.is_paid && b.is_recurring).forEach(b => {
+    subsMap[b.title.toLowerCase()] = { id: b.id, title: b.title, amount: Math.max(0,FM.money(b.amount)), source: 'Плановый платёж' };
   });
 
   const merchFreq = {};
@@ -690,14 +667,14 @@ function detectSubscriptionsAndAnomalies() {
   Object.entries(merchFreq).forEach(([key, info]) => {
     const isKnownSub = info.cat === 'subs' || /плюс|кинопоиск|spotify|ivi|okko|wink|icloud|telegram|мтс|билайн|мегафон|теле2|интернет/i.test(key);
     if ((isKnownSub || info.count >= 2) && !subsMap[key]) {
-      const avgAmt = Math.round(info.amounts.reduce((a, b) => a + b, 0) / info.amounts.length);
+      const avgAmt = FM.money(FM.sum(info.amounts) / info.amounts.length);
       subsMap[key] = { id: 'auto_' + key, title: info.title, amount: avgAmt, source: 'Найдено автопилотом' };
     }
   });
 
   const subsList = Object.values(subsMap);
-  const monthlySubs = subsList.reduce((s, x) => s + x.amount, 0);
-  const annualSubs = monthlySubs * 12;
+  const monthlySubs = FM.sum(subsList,x=>x.amount);
+  const annualSubs = FM.money(monthlySubs * 12);
 
   const anomalies = [];
   if (!expenses.length) {
@@ -713,8 +690,8 @@ function detectSubscriptionsAndAnomalies() {
     });
 
     const byCat = {};
-    expenses.forEach(t => byCat[t.category] = (byCat[t.category] || 0) + t.amount);
-    const totalSpent = expenses.reduce((s, t) => s + t.amount, 0);
+    expenses.forEach(t => byCat[t.category] = FM.add(byCat[t.category],t.amount));
+    const totalSpent = FM.sum(expenses,t=>t.amount);
     Object.entries(byCat).forEach(([catId, amt]) => {
       const share = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
       if (share >= 55 && expenses.length >= 2) {
@@ -787,7 +764,7 @@ function renderAll(animateFromZero = false) {
   document.getElementById('hero-reserved').textContent = fmtR(m.reserved);
   document.getElementById('hero-free-pool').textContent = fmtR(m.freePool);
   document.getElementById('hero-payday-date').textContent = humanDate(state.payday);
-  document.getElementById('feed-today-sum').textContent = fmtR(m.todaySpent);
+  document.getElementById('feed-today-sum').textContent = fmtR(m.totalTodaySpent);
 
   const explainEl = document.getElementById('hero-limit-explain');
   explainEl.textContent = m.freePool === 0
@@ -796,7 +773,7 @@ function renderAll(animateFromZero = false) {
 
   renderBalanceCardFeedback(m, hasAnomaly);
 
-  document.getElementById('sources-explicit-text').textContent = `Банк (${state.bank}) · Чеки OCR · Выписки CSV/PDF`;
+  document.getElementById('sources-explicit-text').textContent = `Банк (${state.bank}) · Чеки OCR · Импорт CSV/TXT`;
   const cardBrandLbl = document.getElementById('hero-card-brand-lbl');
   if (cardBrandLbl) cardBrandLbl.textContent = `FINTEX · ${String(state.bank || 'КАРТА').toUpperCase()}`;
 
@@ -814,8 +791,8 @@ function renderAll(animateFromZero = false) {
   if (freePctEl) freePctEl.textContent = `${freePct}%`;
 
   // Подушка
-  const gSaved = Number(state.goal?.saved) || 0;
-  const gTarget = Math.max(1, Number(state.goal?.target) || 10000);
+  const gSaved = Math.max(0, FM.money(state.goal?.saved));
+  const gTarget = Math.max(0.01, FM.money(state.goal?.target) || 10000);
   const gPct = Math.min(100, Math.round((gSaved / gTarget) * 100));
   const gRem = Math.max(0, gTarget - gSaved);
   document.getElementById('goal-title-label').textContent = state.goal?.title || 'Финансовая подушка';
@@ -1126,7 +1103,7 @@ function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
 
   const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  const rows = state.transactions.filter(t => {
+  const rows = FM.transactions(state.transactions).filter(t => {
     if (q && !t.merchant.toLowerCase().includes(q) && !String(t.amount).includes(q)) return false;
     return true;
   });
@@ -1170,8 +1147,8 @@ function renderHome() {
 
   feed.innerHTML = Array.from(groupsMap.entries()).map(([dateKey, dayItems]) => {
     const hdr = formatFeedDayHeader(dateKey);
-    const dayInc = dayItems.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
-    const dayExp = dayItems.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const dayInc = FM.sum(dayItems.filter(t => t.type === 'income'),t=>t.amount);
+    const dayExp = FM.sum(dayItems.filter(t => t.type === 'expense'),t=>t.amount);
 
     const dayTotalsHtml = `
       <div class="flex items-center gap-2 shrink-0">
@@ -1441,7 +1418,7 @@ function openAddModalForDate(iso) {
 }
 
 function formatCompactCalAmt(amount, sign = '') {
-  const val = Math.round(Number(amount) || 0);
+  const val = FM.money(amount);
   if (val <= 0) return '';
   if (val < 1000) return `${sign}${val}`;
   if (val < 1000000) return `${sign}${(val / 1000).toFixed(val < 10000 ? 1 : 0).replace(/\.0$/, '')}к`;
@@ -1490,6 +1467,7 @@ function renderCalendarPlan() {
 
 function renderCalendar(forceReveal = false) {
   renderCalendarPlan();
+  const calendarTxs = FM.transactions(state.transactions,null,TODAY);
   const focusedCalDate = document.activeElement?.dataset.calDate;
   const mNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const calFilter = state.calFilter || 'all';
@@ -1502,9 +1480,9 @@ function renderCalendar(forceReveal = false) {
   const todayBtn = document.getElementById('cal-today-btn');
   if (todayBtn) todayBtn.classList.toggle('hidden', !isAwayFromToday);
 
-  const monthTxs = state.transactions.filter(t => t.date && t.date.startsWith(monthPrefix));
-  const monthInc = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
-  const monthExp = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+  const monthTxs = calendarTxs.filter(t => t.date && t.date.startsWith(monthPrefix));
+  const monthInc = FM.sum(monthTxs.filter(t => t.type === 'income'),t=>t.amount);
+  const monthExp = FM.sum(monthTxs.filter(t => t.type === 'expense'),t=>t.amount);
   const monthNet = monthInc - monthExp;
 
   const incEl = document.getElementById('cal-month-inc');
@@ -1542,14 +1520,14 @@ function renderCalendar(forceReveal = false) {
 
   const spendMap = {};
   const incomeMap = {};
-  state.transactions.forEach(t => {
+  calendarTxs.forEach(t => {
     if (!t.date) return;
     if (t.type === 'income') incomeMap[t.date] = (incomeMap[t.date] || 0) + Number(t.amount || 0);
     else spendMap[t.date] = (spendMap[t.date] || 0) + Number(t.amount || 0);
   });
 
   const billMap = {};
-  state.bills.filter(b => !b.is_paid).forEach(b => {
+  state.bills.filter(b => !b.is_paid && b.is_recurring).forEach(b => {
     if (!billMap[b.due_date]) billMap[b.due_date] = [];
     billMap[b.due_date].push(b);
   });
@@ -1580,7 +1558,7 @@ function renderCalendar(forceReveal = false) {
     const dayExp = spendMap[iso] || 0;
     const dayInc = incomeMap[iso] || 0;
     const dayBills = billMap[iso] || [];
-    const billsSum = dayBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+    const billsSum = FM.sum(dayBills,b=>b.amount);
 
     if (iso <= TODAY && dayExp === 0) zeroSpendDays++;
 
@@ -1668,13 +1646,13 @@ function renderCalendar(forceReveal = false) {
     </div>
   `).join('');
 
-  let dayTxs = state.transactions.filter(t => t.date === state.calSelected);
+  let dayTxs = calendarTxs.filter(t => t.date === state.calSelected);
   if (calFilter === 'expense') dayTxs = dayTxs.filter(t => t.type === 'expense');
   if (calFilter === 'income') dayTxs = dayTxs.filter(t => t.type === 'income');
   if (calFilter === 'bills') dayTxs = [];
 
-  const dayExpSum = dayTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
-  const dayIncSum = dayTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
+  const dayExpSum = FM.sum(dayTxs.filter(t => t.type === 'expense'),t=>t.amount);
+  const dayIncSum = FM.sum(dayTxs.filter(t => t.type === 'income'),t=>t.amount);
 
   document.getElementById('cal-day-heading').textContent = formatCalDayFullHeading(state.calSelected);
   const totalBadges = [];
@@ -1747,16 +1725,16 @@ function renderAnalytics() {
     : `<div class="text-xs text-sub">Подписок пока не обнаружено</div>`;
 
   const daysSpan = state.analyticsMode === 'cycle' ? 14 : 30;
-  const cutoff = offsetDateISO(-daysSpan);
-  const expenses = state.transactions.filter(t => t.type === 'expense' && t.date >= cutoff);
-  const total = expenses.reduce((s, t) => s + t.amount, 0);
+  const cutoff = FM.shift(TODAY,1-daysSpan);
+  const expenses = FM.transactions(state.transactions,cutoff,TODAY).filter(t => t.type === 'expense');
+  const total = FM.sum(expenses,t=>t.amount);
   document.getElementById('an-chart-headline').textContent = `${fmtR(total)} за ${daysSpan} дн.`;
   document.getElementById('an-total-spent').textContent = fmtR(total);
   document.getElementById('donut-center-val').textContent = fmtR(total);
 
   // График + данные для тактильного скраббинга
   const dayMap = {};
-  expenses.forEach(t => dayMap[t.date] = (dayMap[t.date] || 0) + t.amount);
+  expenses.forEach(t => dayMap[t.date] = FM.add(dayMap[t.date],t.amount));
   const pts = [];
   for (let i = 6; i >= 0; i--) {
     const dIso = offsetDateISO(-i);
@@ -1782,7 +1760,7 @@ function renderAnalytics() {
 
   // Круговая диаграмма
   const byCat = {};
-  expenses.forEach(t => byCat[t.category] = (byCat[t.category] || 0) + t.amount);
+  expenses.forEach(t => byCat[t.category] = FM.add(byCat[t.category],t.amount));
   const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   const donutEl = document.getElementById('donut-segments');
   const circ = 2 * Math.PI * 38;
@@ -2029,6 +2007,10 @@ function wordsToNumbersRu(text) {
   let inNumber = false;
 
   for (const tok of tokens) {
+    if (/^\d+[.,]\d{1,2}$/.test(tok)) {
+      if (inNumber) out.push(String(totalAcc+curAcc));
+      totalAcc=0; curAcc=0; inNumber=false; out.push(tok.replace(',','.')); continue;
+    }
     const cleanTok = tok.replace(/[.,!?]/g, '');
     if (/^\d+$/.test(cleanTok)) {
       if (inNumber) {
@@ -2058,14 +2040,12 @@ function wordsToNumbersRu(text) {
 
 function parseSpokenRussianExpenses(rawSpeech) {
   const normalized = wordsToNumbersRu(rawSpeech);
-  const segments = normalized.split(/[,;]+|\s+и\s+(?=[а-яa-z])/i).map(s => s.trim()).filter(Boolean);
+  const segments = FM.parseExpenses(normalized);
   const items = [];
 
-  segments.forEach(seg => {
-    const numM = seg.match(/(\d[\d\s]*)/);
-    if (!numM) return;
-    const amount = Math.round(Number(numM[1].replace(/\s+/g, '')));
-    if (!amount || amount <= 0) return;
+  segments.forEach(parsed => {
+    const seg = parsed.merchant;
+    const amount = parsed.amount;
 
     // Ищем известный бренд или очищаем глаголы/предлоги
     let merchant = '';
@@ -2077,7 +2057,6 @@ function parseSpokenRussianExpenses(rawSpeech) {
     }
     if (!merchant) {
       merchant = seg
-        .replace(numM[0], '')
         .replace(/\b(рублей|рубль|рубля|руб|р|на|за|в|во|купил|купила|потратил|потратила|оплатил|оплатила|заправился|заправилась|сходил|сходила)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -2195,7 +2174,7 @@ function renderCategoryGraph() {
   const nodesBox = document.getElementById('cat-graph-nodes');
   if (!nodesBox) return;
 
-  const expenses = state.transactions.filter(t => t.type === 'expense');
+  const expenses = FM.transactions(state.transactions,null,TODAY).filter(t => t.type === 'expense');
   const byCat = {};
   Object.keys(CATS).forEach(cid => { byCat[cid] = []; });
   expenses.forEach(t => {
@@ -2212,7 +2191,7 @@ function renderCategoryGraph() {
 
   nodesBox.innerHTML = displayCats.map(c => {
     const list = byCat[c.id] || [];
-    const sum = list.reduce((s, x) => s + x.amount, 0);
+    const sum = FM.sum(list,x=>x.amount);
     const sel = c.id === selectedGraphCatId;
     return `
       <button type="button" onclick="selectCategoryGraphNode('${c.id}')" class="cat-node-btn ${sel ? 'is-selected' : ''} input-surface px-3 py-2 rounded-xl border border-white/10 flex items-center gap-2 shrink-0 text-left">
@@ -2227,7 +2206,7 @@ function renderCategoryGraph() {
 
   const curCat = CATS[selectedGraphCatId] || CATS.food;
   const curList = byCat[curCat.id] || [];
-  const curTotal = curList.reduce((s, x) => s + x.amount, 0);
+  const curTotal = FM.sum(curList,x=>x.amount);
 
   document.getElementById('cg-selected-title').textContent = `${curCat.name} (${curList.length} связей)`;
   document.getElementById('cg-selected-total').textContent = fmtR(curTotal);
@@ -2357,14 +2336,14 @@ function parseVoiceDraftText() {
   `).join('');
 
   btn.classList.remove('hidden');
-  btn.textContent = `Записать (${parsedVoiceItems.length} опер. на ${fmtR(parsedVoiceItems.reduce((s, x) => s + x.amount, 0))})`;
+  btn.textContent = `Записать (${parsedVoiceItems.length} опер. на ${fmtR(FM.sum(parsedVoiceItems,x=>x.amount))})`;
   lucide.createIcons();
 }
 
 function commitVoiceExpenses() {
   if (!parsedVoiceItems.length) return;
   stopVoiceRecognition();
-  const total = parsedVoiceItems.reduce((s, x) => s + x.amount, 0);
+  const total = FM.sum(parsedVoiceItems,x=>x.amount);
   addOrMergeTransactions(parsedVoiceItems, 'Голос');
   parsedVoiceItems = [];
   closeModals();
@@ -2386,7 +2365,7 @@ function exportToIosCalendar() {
     'METHOD:PUBLISH'
   ];
 
-  state.bills.filter(b => !b.is_paid).forEach(b => {
+  state.bills.filter(b => !b.is_paid && b.is_recurring).forEach(b => {
     const dtStart = (b.due_date || TODAY).replace(/-/g, '');
     lines.push('BEGIN:VEVENT');
     lines.push(`UID:fintex-bill-${b.id}@fintex.app`);
@@ -2481,7 +2460,7 @@ function openCanIBuyModal() {
 }
 function calculateCanIBuy() {
   window.FintexWorkTime?.refreshPurchase();
-  const amt = Math.max(0, Number(document.getElementById('cb-amount').value) || 0);
+  const amt = Math.max(0, FM.parse(document.getElementById('cb-amount').value) || 0);
   const m = calcMetrics();
   if (amt <= 0) {
     document.getElementById('cb-verdict-title').textContent = 'Введите стоимость покупки';
@@ -2492,11 +2471,11 @@ function calculateCanIBuy() {
     return;
   }
   const after = m.freePool - amt;
-  document.getElementById('cb-verdict-title').textContent = after >= 0 ? 'Покупка безопасна' : 'Риск дефицита бюджета';
+  document.getElementById('cb-verdict-title').textContent = after >= 0 ? 'В пределах свободной суммы' : 'Риск дефицита бюджета';
   document.getElementById('cb-enough').textContent = after >= 0 ? 'Да, хватит' : `Не хватает ${fmtR(Math.abs(after))}`;
   document.getElementById('cb-cushion').textContent = after >= 0 ? 'Не пострадает' : 'Придётся затронуть подушку';
-  document.getElementById('cb-economy-days').textContent = `${Math.ceil(amt / Math.max(1, m.dailyCap))} дн.`;
-  document.getElementById('cb-safe-date').textContent = after >= 0 ? 'Сегодня' : humanDate(state.payday);
+  document.getElementById('cb-economy-days').textContent = m.dailyCap > 0 ? `${Math.ceil(amt / m.dailyCap)} дн.` : 'Нет дневного бюджета';
+  document.getElementById('cb-safe-date').textContent = after >= 0 ? 'В пределах остатка' : 'После пополнения — дата неизвестна';
 
   clearTimeout(window._cbHapticTimer);
   window._cbHapticTimer = setTimeout(() => {
@@ -2506,7 +2485,7 @@ function calculateCanIBuy() {
   }, 180);
 }
 function commitCanIBuy() {
-  const amt = Math.max(0, Number(document.getElementById('cb-amount').value) || 0);
+  const amt = Math.max(0, FM.parse(document.getElementById('cb-amount').value) || 0);
   const title = document.getElementById('cb-title').value.trim() || 'Покупка';
   if (amt <= 0) return;
   addOrMergeTransactions([{ merchant: title, amount: amt, category: classifyCategory(title), type: 'expense', date: TODAY }], 'Вручную');
@@ -2528,13 +2507,14 @@ function openForecastExplainModal() {
     <div class="flex justify-between"><span>Резерв и подушка:</span><strong class="text-gold">-${fmtR(m.reserved)}</strong></div>
     <div class="flex justify-between pt-1 border-t divider-line"><span>Свободно:</span><strong class="text-brand">${fmtR(m.freePool)}</strong></div>
     <div class="flex justify-between"><span>Норма (${m.days} дн.):</span><strong>${fmtR(m.dailyCap)} / день</strong></div>
+    <p class="text-xs text-sub">Дневной бюджет: (свободные деньги + сегодняшние повседневные траты) / дни до зарплаты, с округлением вниз до копейки. Платежи зарезервированы отдельно и в обычные траты не входят. Прогноз — оценка по доступной истории, не гарантия.</p>
   `;
   document.getElementById('modal-forecast-info').classList.remove('hidden');
 }
 
 function openGoalDetailsModal() {
   const saved = Number(state.goal?.saved) || 0;
-  const target = Math.max(1, Number(state.goal?.target) || 10000);
+  const target = Math.max(0.01, FM.money(state.goal?.target) || 10000);
   const pct = Math.min(100, Math.round((saved / target) * 100));
   document.getElementById('gd-title').textContent = state.goal?.title || 'Финансовая подушка';
   document.getElementById('gd-saved').textContent = fmtR(saved);
@@ -2546,9 +2526,11 @@ function openGoalDetailsModal() {
 }
 
 function quickTopupGoal(amt) {
-  const prev = Number(state.goal.saved) || 0;
-  const target = Math.max(1, Number(state.goal.target) || 10000);
-  state.goal.saved = prev + amt;
+  amt = FM.money(amt);
+  if (amt <= 0 || amt > calcMetrics().freePool) { toast('Недостаточно свободных денег для пополнения подушки'); return; }
+  const prev = FM.money(state.goal.saved);
+  const target = Math.max(0.01, FM.money(state.goal.target) || 10000);
+  state.goal.saved = FM.add(prev, amt);
   persistAll();
   openGoalDetailsModal();
   updateSyncQueueUI();
@@ -2561,14 +2543,16 @@ function quickTopupGoal(amt) {
 }
 
 function withdrawFromGoal(amt, spendDirectly = false) {
-  const saved = Math.max(0, Number(state.goal?.saved) || 0);
+  const saved = Math.max(0, FM.money(state.goal?.saved));
   if (saved <= 0) {
     vibro('error');
     toast('В финансовой подушке пока 0 ₽');
     return;
   }
-  const take = Math.min(saved, Math.max(1, Math.round(Number(amt) || 0)));
-  state.goal.saved = saved - take;
+  const requested = FM.money(amt);
+  if (requested <= 0) { toast('Укажите положительную сумму'); return; }
+  const take = Math.min(saved, requested);
+  state.goal.saved = FM.add(saved, -take);
   if (spendDirectly) {
     addOrMergeTransactions([{
       merchant: `Из подушки (${state.goal?.title || 'Резерв'})`,
@@ -2592,7 +2576,7 @@ function withdrawFromGoal(amt, spendDirectly = false) {
 
 function transferCustomGoal(spendDirectly = false) {
   const inp = document.getElementById('inp-goal-transfer-amt');
-  const val = Math.round(Number(inp?.value) || 0);
+  const val = FM.parse(inp?.value) || 0;
   if (val <= 0) {
     vibro('error');
     toast('Укажите сумму перевода');
@@ -2603,8 +2587,10 @@ function transferCustomGoal(spendDirectly = false) {
 }
 
 function saveGoalSettings() {
+  const target=FM.parse(document.getElementById('inp-goal-target').value);
+  if (target===null || target<=0) { toast('Укажите положительную сумму цели, не больше двух знаков после запятой'); return; }
   state.goal.title = document.getElementById('inp-goal-title').value.trim() || 'Финансовая подушка';
-  state.goal.target = Math.max(100, Number(document.getElementById('inp-goal-target').value) || 10000);
+  state.goal.target = target;
   persistAll(); closeModals(); renderAll(false); toast('Цель обновлена');
 }
 
@@ -2669,12 +2655,13 @@ let lastDeletedTxsBackup = [];
 
 function undoLastTxDelete() {
   if (!Array.isArray(lastDeletedTxsBackup) || !lastDeletedTxsBackup.length) return;
-  lastDeletedTxsBackup.forEach(t => {
-    state.balance = t.type === 'income'
-      ? state.balance + Number(t.amount || 0)
-      : Math.max(0, state.balance - Number(t.amount || 0));
+  // Restore dependent bill cycles oldest first, regardless of feed ordering.
+  [...lastDeletedTxsBackup].sort((a,b)=>String(a.bill_after?.last_paid_date||a.date).localeCompare(String(b.bill_after?.last_paid_date||b.date))).forEach(t => {
     if (!state.transactions.some(x => x.id === t.id)) {
+      state.balance = FM.add(state.balance, t.type === 'income' ? t.amount : -t.amount);
       state.transactions.push(t);
+      if(t.goal_withdrawal) state.goal.saved=FM.add(state.goal.saved,-t.goal_withdrawal);
+      if (t.bill_after) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].due_date===t.bill_before?.due_date && state.bills[i].last_paid_tx_id===t.bill_before?.last_paid_tx_id) state.bills[i]={...t.bill_after}; }
     }
   });
   lastDeletedTxsBackup = [];
@@ -2689,10 +2676,10 @@ function deleteTxsBatch(ids) {
   const removed = state.transactions.filter(x => idSet.has(x.id));
   if (!removed.length) return;
   lastDeletedTxsBackup = removed.map(x => ({ ...x }));
-  removed.forEach(t => {
-    state.balance = t.type === 'income'
-      ? Math.max(0, state.balance - Number(t.amount || 0))
-      : state.balance + Number(t.amount || 0);
+  [...removed].sort((a,b)=>String(b.bill_after?.last_paid_date||b.date).localeCompare(String(a.bill_after?.last_paid_date||a.date))).forEach(t => {
+    state.balance = FM.add(state.balance, t.type === 'income' ? -t.amount : t.amount);
+    if(t.goal_withdrawal) state.goal.saved=FM.add(state.goal.saved,t.goal_withdrawal);
+    if (t.bill_before) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].last_paid_tx_id===t.id) state.bills[i]={...t.bill_before}; }
   });
   state.transactions = state.transactions.filter(x => !idSet.has(x.id));
   if (Array.isArray(state.selectedTxIds)) {
@@ -2804,8 +2791,8 @@ async function handleBalanceScreenshot(e) {
     const candidates = [];
     matches.forEach(m => {
       const clean = m[1].replace(/[\s ]+/g, '').replace(',', '.');
-      const val = Math.round(parseFloat(clean));
-      if (!isNaN(val) && val >= 0 && val < 50000000 && !candidates.includes(val)) {
+      const val = FM.parse(clean);
+      if (val!==null && val >= 0 && val < 50000000 && !candidates.includes(val)) {
         candidates.push(val);
       }
     });
@@ -2861,12 +2848,12 @@ function selectDetectedBalance(screenVal) {
 }
 
 function applyReconcile() {
-  const nextVal = Math.max(0, Number(document.getElementById('inp-reconcile').value) || 0);
-  const manualDiff = nextVal - state.balance;
-  const effectiveDiff = pendingBalanceDiff !== 0 ? pendingBalanceDiff : manualDiff;
+  const nextVal = FM.parse(document.getElementById('inp-reconcile').value);
+  if (nextVal === null) { toast('Укажите корректный остаток'); return; }
+  const effectiveDiff = FM.add(nextVal, -state.balance);
   const autoDeltaEnabled = localStorage.getItem('fp_auto_delta') !== '0';
   const wrapVisible = !document.getElementById('bal-log-diff-wrap').classList.contains('hidden');
-  const shouldLogExpense = effectiveDiff < -1 && (
+  const shouldLogExpense = effectiveDiff < 0 && (
     wrapVisible ? document.getElementById('bal-log-diff-chk').checked : autoDeltaEnabled
   );
 
@@ -2994,7 +2981,7 @@ function parseBankSmsOrClipboard(rawText) {
   if (/t=\d{8}T\d{4}&s=[\d.]+/i.test(txt)) {
     const qr = parseFiscalQrString(txt);
     if (qr.found && qr.sum > 0) {
-      const amt = Math.round(qr.sum);
+      const amt = FM.money(qr.sum);
       const merch = `Чек по QR (ФН ${qr.fn})`;
       const dIso = qr.date || dtInfo.date;
       const tStr = qr.time || dtInfo.time;
@@ -3022,14 +3009,14 @@ function parseBankSmsOrClipboard(rawText) {
                    mainPart.match(/(?:покупк[а-я]*|оплат[а-я]*|списан[а-я]*|перевод|зачислен[а-я]*|возврат|снятие)\s+(\d[\d\s]{0,9}(?:[.,]\d{1,2})?)/i);
 
   if (!amtMatch) return null;
-  const amount = Math.round(Math.abs(parseFloat(amtMatch[1].replace(/\s+/g, '').replace(',', '.'))));
+  const amount = FM.money(Math.abs(Number(amtMatch[1].replace(/\s+/g, '').replace(',', '.'))));
   if (!amount || amount <= 0 || amount > 10000000) return null;
 
   // Извлекаем остаток на карте после операции, если он указан в СМС
   let cardBalance = null;
   const balMatch = txt.match(/(?:баланс|доступно|остаток)[:\s]*(\d[\d\s]{0,12}(?:[.,]\d{1,2})?)\s*(?:₽|руб\.?|RUB|RUR|\bр\b)?/i);
   if (balMatch) {
-    const bVal = Math.round(parseFloat(balMatch[1].replace(/\s+/g, '').replace(',', '.')));
+    const bVal = FM.money(Number(balMatch[1].replace(/\s+/g, '').replace(',', '.')));
     if (!isNaN(bVal) && bVal >= 0) cardBalance = bVal;
   }
 
@@ -3348,9 +3335,10 @@ function closeModals() {
 
 function openPaydayModal() { document.getElementById('inp-next-payday').value = nextMonthISO(TODAY); document.getElementById('modal-payday').classList.remove('hidden'); }
 function applyNewCycle() {
-  const sal = Math.max(0, Number(document.getElementById('inp-salary').value) || 0);
+  const sal = Math.max(0, FM.parse(document.getElementById('inp-salary').value) || 0);
   const nextD = document.getElementById('inp-next-payday').value || nextMonthISO(TODAY);
-  state.balance += sal; state.payday = nextD;
+  if(FM.ordinal(nextD)===null || nextD<=TODAY) { toast('Укажите будущую дату следующей зарплаты'); return; }
+  state.balance = FM.add(state.balance, sal); state.payday = nextD;
   if (sal > 0) state.transactions.unshift({ id: 'sal_' + Date.now(), merchant: 'Зарплата', amount: sal, category: 'other', type: 'income', source: 'Пополнение', date: TODAY, items: [] });
   persistAll(); closeModals(); renderAll(false); toast('Новый цикл запущен');
 }
@@ -3358,20 +3346,30 @@ function applyNewCycle() {
 function openBillModal() { document.getElementById('inp-bill-date').value = offsetDateISO(5); document.getElementById('modal-bill').classList.remove('hidden'); }
 function saveNewBill() {
   const title = document.getElementById('inp-bill-title').value.trim();
-  const amount = Math.abs(Number(document.getElementById('inp-bill-amt').value)) || 0;
+  const amount = FM.parse(document.getElementById('inp-bill-amt').value);
   const due_date = document.getElementById('inp-bill-date').value || offsetDateISO(5);
-  if (!title || amount <= 0) return;
+  if (!title || amount===null || amount <= 0 || FM.ordinal(due_date)===null) return;
   state.bills.push({ id: 'b_' + Date.now(), title, amount, due_date, is_paid: false, is_recurring: true });
   persistAll(); closeModals(); renderAll(false); toast('Платёж добавлен');
 }
 function payBill(id) {
   const b = state.bills.find(x => x.id === id);
-  if (!b) return;
-  b.due_date = nextMonthISO(b.due_date);
-  state.balance = Math.max(0, state.balance - b.amount);
-  state.transactions.unshift({ id: 'txb_' + Date.now(), merchant: b.title, amount: b.amount, category: 'subs', type: 'expense', source: 'Платёж', date: TODAY, items: [] });
+  if (!b || b.is_paid) return;
+  if (b.last_paid_date === TODAY) { toast('Этот платёж уже отмечен сегодня'); return; }
+  const amount = Math.max(0, FM.money(b.amount));
+  if (!amount) return;
+  const before={...b};
+  const txId='txb_'+(window.crypto?.randomUUID?.() || `${Date.now()}_${Math.random()}`);
+  if (b.is_recurring) {
+    b.recurrence_day = b.recurrence_day || Number(b.due_date.slice(-2));
+    b.due_date = FM.nextMonth(b.due_date,b.recurrence_day) || nextMonthISO(TODAY);
+  } else b.is_paid = true;
+  b.last_paid_date=TODAY; b.last_paid_tx_id=txId;
+  state.balance = FM.add(state.balance, -amount);
+  state.transactions.unshift({id:txId,merchant:b.title,amount,category:'subs',type:'expense',source:'Платёж',date:TODAY,items:[],bill_id:id,bill_before:before,bill_after:{...b}});
   persistAll(); renderAll(false); toast('Оплачено');
 }
+
 function deleteBill(id) { state.bills = state.bills.filter(x => x.id !== id); persistAll(); renderAll(false); }
 
 function openAddModal() {
@@ -3395,19 +3393,9 @@ function submitExpense() {
   const txt = document.getElementById('inp-expense-text').value.trim();
   if (!txt) return;
   const targetDate = document.getElementById('inp-add-date')?.value || TODAY;
-  const chunks = txt.split(/[,;\n]+|\s+и\s+(?=[а-яa-z])/i).map(s => s.trim()).filter(Boolean);
-  const parsed = [];
-  chunks.forEach(ch => {
-    const m = ch.match(/(\d[\d\s]*)/);
-    if (!m) return;
-    const amt = Math.round(Number(m[1].replace(/\s+/g, '')));
-    if (!amt || amt <= 0) return;
-    let title = ch.replace(m[0], '').replace(/₽|руб\.?/gi, '').trim() || 'Покупка';
-    title = title.charAt(0).toUpperCase() + title.slice(1);
-    parsed.push({ merchant: title, amount: amt, category: classifyCategory(title), type: 'expense', date: targetDate });
-  });
+  const parsed = FM.parseExpenses(txt).map(item => ({...item, category:classifyCategory(item.merchant), type:'expense', date:targetDate}));
   if (!parsed.length) return;
-  const totalAmt = parsed.reduce((s, x) => s + x.amount, 0);
+  const totalAmt = FM.sum(parsed,x=>x.amount);
   addOrMergeTransactions(parsed, 'Вручную');
   document.getElementById('inp-expense-text').value = '';
   document.getElementById('live-expense-preview').innerHTML = '';
@@ -3416,7 +3404,7 @@ function submitExpense() {
 }
 function submitIncome() {
   const title = document.getElementById('inp-inc-title').value.trim() || 'Пополнение';
-  const amt = Math.abs(Number(document.getElementById('inp-inc-amt').value)) || 0;
+  const amt = Math.max(0, FM.parse(document.getElementById('inp-inc-amt').value) || 0);
   if (amt <= 0) return;
   const targetDate = document.getElementById('inp-add-date')?.value || TODAY;
   addOrMergeTransactions([{ merchant: title, amount: amt, category: 'other', type: 'income', date: targetDate }], 'Пополнение');
@@ -3625,16 +3613,7 @@ async function handleStatementFile(e) {
   const file = e.target.files?.[0];
   if (!file) return;
   const text = await file.text();
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const parsed = [];
-  lines.forEach(line => {
-    const m = line.match(/(-?\d[\d\s]*[.,]?\d*)\s*(?:₽|RUB|руб)?/i);
-    if (!m) return;
-    const val = parseFloat(m[1].replace(/\s+/g, '').replace(',', '.'));
-    if (!val) return;
-    const title = line.replace(m[0], '').replace(/[;\t"]/g, ' ').trim().slice(0, 36) || 'Операция из выписки';
-    parsed.push({ merchant: title, amount: Math.round(Math.abs(val)), type: val > 0 && /^\+/.test(m[1].trim()) ? 'income' : 'expense', date: TODAY, category: classifyCategory(title) });
-  });
+  const parsed = FM.parseStatement(text,TODAY).map(t=>({...t,category:classifyCategory(t.merchant)}));
   state.pendingImport = parsed;
   document.getElementById('stmt-preview-box').classList.remove('hidden');
   document.getElementById('stmt-preview-title').textContent = `${file.name} (${parsed.length} опер.)`;
@@ -3726,6 +3705,10 @@ async function syncWithBackend(notify = false) {
         );
         if (freshRemote.length) {
           freshRemote.forEach(rt => {
+            const amount=FM.money(rt.amount), date=FM.txKey(rt);
+            if (amount<=0 || !date || date>TODAY || (rt.currency && !['RUB','₽','РУБ'].includes(String(rt.currency).toUpperCase()))) return;
+            if(localIds.has(String(rt.id)) || (rt.dedup_hash && localHashes.has(String(rt.dedup_hash)))) return;
+            localIds.add(String(rt.id)); if(rt.dedup_hash)localHashes.add(String(rt.dedup_hash));
             const opKind = rt.op_kind || rt.type || 'expense';
             const opLabels = { refund: 'Возврат', transfer_in: 'Перевод (вх.)', income: 'Пополнение', transfer_out: 'Перевод СБП', atm: 'Наличные', expense: 'Покупка' };
             state.transactions.unshift({
@@ -3733,13 +3716,13 @@ async function syncWithBackend(notify = false) {
               scan_id: '',
               dedup_hash: String(rt.dedup_hash || ''),
               merchant: rt.merchant || 'Автопилот',
-              amount: Math.abs(Number(rt.amount)) || 0,
+              amount,
               category: CATS[rt.category] ? rt.category : classifyCategory(rt.merchant),
               type: rt.type === 'income' ? 'income' : 'expense',
               op_kind: opKind,
               op_label: opLabels[opKind] || (rt.type === 'income' ? 'Пополнение' : 'Покупка'),
               source: rt.source || 'iPhone / Облако',
-              date: rt.date || TODAY,
+              date,
               time: rt.time || '',
               items: Array.isArray(rt.items) ? rt.items : []
             });
@@ -3760,8 +3743,8 @@ async function syncWithBackend(notify = false) {
         renderAutopilotLogs();
       }
 
-      if (typeof data.user.balance === 'number' && data.user.balance > 0 && pulledNew > 0) {
-        state.balance = data.user.balance;
+      if (typeof data.user.balance === 'number' && Number.isFinite(data.user.balance) && pulledNew > 0) {
+        state.balance = FM.money(data.user.balance);
       }
 
       const now = new Date();
@@ -4010,18 +3993,7 @@ function onLiveExpenseInput() {
     return;
   }
 
-  const chunks = raw.split(/[,;\n]+|\s+и\s+(?=[а-яa-z])/i).map(s => s.trim()).filter(Boolean);
-  const recognized = [];
-  chunks.forEach(ch => {
-    const numM = ch.match(/(\d[\d\s]*)/);
-    const amt = numM ? Math.round(Number(numM[1].replace(/\s+/g, ''))) : 0;
-    let title = numM ? ch.replace(numM[0], '').replace(/₽|руб\.?/gi, '').trim() : ch;
-    if (!title && amt > 0) title = 'Покупка';
-    if (title.length >= 2) {
-      title = title.charAt(0).toUpperCase() + title.slice(1);
-      recognized.push({ title, amt, cat: classifyCategory(title) });
-    }
-  });
+  const recognized = FM.parseExpenses(raw).map(item=>({title:item.merchant,amt:item.amount,cat:classifyCategory(item.merchant)}));
 
   const sig = recognized.map(r => `${r.title}:${r.cat}`).join('|');
   if (sig && sig !== lastLiveBrandSig) {
@@ -4161,7 +4133,7 @@ function renderActivityHeatmap() {
   const startIso = localDateISO(startMonday);
 
   // Агрегируем расходы по дням за последние 12 недель
-  const expenses = state.transactions.filter(t => t.type === 'expense' && t.date >= startIso && t.date <= TODAY);
+  const expenses = FM.transactions(state.transactions,startIso,TODAY).filter(t => t.type === 'expense');
   const dayStats = {};
   const weekdayTotals = [0, 0, 0, 0, 0, 0, 0]; // Пн..Вс
 
@@ -4169,14 +4141,14 @@ function renderActivityHeatmap() {
     if (!dayStats[t.date]) {
       dayStats[t.date] = { sum: 0, txCount: 0, categories: new Set() };
     }
-    dayStats[t.date].sum += t.amount;
+    dayStats[t.date].sum = FM.add(dayStats[t.date].sum,t.amount);
     dayStats[t.date].txCount += 1;
     dayStats[t.date].categories.add(t.category || 'other');
 
     const [yy, mm, dd] = t.date.split('-').map(Number);
     const dt = new Date(yy, mm - 1, dd);
     const wdIdx = dt.getDay() === 0 ? 6 : dt.getDay() - 1;
-    weekdayTotals[wdIdx] += t.amount;
+    weekdayTotals[wdIdx] = FM.add(weekdayTotals[wdIdx],t.amount);
   });
 
   const dataMap = {};
@@ -4233,7 +4205,7 @@ function renderActivityHeatmap() {
   document.getElementById('hm-stat-peakday').textContent = maxWdVal > 0 ? fullWeekdays[peakWdIdx] : 'Нет данных';
 
   const avgCheck = expenses.length > 0
-    ? Math.round(expenses.reduce((s, t) => s + t.amount, 0) / expenses.length)
+    ? Math.round(FM.sum(expenses,t=>t.amount) / expenses.length)
     : 0;
   document.getElementById('hm-stat-avgcheck').textContent = fmtR(avgCheck);
 
@@ -4327,16 +4299,3 @@ if (document.readyState === 'loading') {
     renderAll(false);
   });
 }
-
-// ==================== АВТОПОДКЛЮЧЕНИЕ МОДУЛЕЙ LIFE SIMULATOR ====================
-(function bootstrapLifeSimulatorModules() {
-  const mods = ['sim_engine.js', 'sim_ui.js', 'sim_charts.js', 'sim_pro.js'];
-  mods.forEach((src) => {
-    if (document.querySelector(`script[data-fintex-mod="${src}"]`)) return;
-    const s = document.createElement('script');
-    s.src = `./${src}?v=5`;
-    s.dataset.fintexMod = src;
-    s.async = false;
-    document.body.appendChild(s);
-  });
-})();

@@ -248,7 +248,7 @@
   }
 
   function formatMoney(num, currency) {
-    return `${Math.round(num).toLocaleString('ru-RU')} ${currency}`;
+    return `${window.FintexMath.money(num).toLocaleString('ru-RU',{maximumFractionDigits:2})} ${currency}`;
   }
 
   function buildSlides() {
@@ -262,11 +262,7 @@
     const allTxs = st.transactions || [];
     const hasNegativeAmounts = allTxs.some((t) => Number(t.amount) < 0);
 
-    const monthTxs = allTxs.filter((t) => {
-      const d = parseTxDate(t);
-      if (!d) return true;
-      return d.getFullYear() === curYear && d.getMonth() === curMonth;
-    });
+    const monthTxs = window.FintexMath.transactions(allTxs, `${curYear}-${String(curMonth+1).padStart(2,'0')}-01`, window.FintexMath.key(now));
 
     let spent = 0;
     let income = 0;
@@ -291,9 +287,9 @@
       }
 
       if (isInc) {
-        income += amt;
+        income = window.FintexMath.add(income,amt);
       } else {
-        spent += amt;
+        spent = window.FintexMath.add(spent,amt);
         const d = parseTxDate(t);
         if (d) {
           activeDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
@@ -302,8 +298,8 @@
           t.merchant || t.shop || t.store || t.title || t.name || t.note || resolveCategoryName(t.category)
         ).trim();
         const cat = resolveCategoryName(t.category);
-        byShop[shop] = (byShop[shop] || 0) + amt;
-        byCat[cat] = (byCat[cat] || 0) + amt;
+        byShop[shop] = window.FintexMath.add(byShop[shop],amt);
+        byCat[cat] = window.FintexMath.add(byCat[cat],amt);
       }
     });
 
@@ -311,11 +307,11 @@
     const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
     const passedDays = Math.max(1, now.getDate());
     const zeroSpendDays = Math.max(0, passedDays - activeDays.size);
-    const netFlow = income - spent;
+    const netFlow = window.FintexMath.add(income,-spent);
 
     const goalObj = st.goal && typeof st.goal === 'object' ? st.goal : {};
     const goalTitle = String(goalObj.title || 'Финансовая подушка');
-    const goalTarget = Math.max(1, Number(goalObj.target || 10000));
+    const goalTarget = Math.max(0.01, window.FintexMath.money(goalObj.target) || 10000);
     const goalSaved = Math.max(0, Number(goalObj.saved ?? 0));
     const goalPct = Math.min(100, Math.round((goalSaved / goalTarget) * 100));
 
