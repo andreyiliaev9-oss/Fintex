@@ -669,22 +669,22 @@ test('expanded settings and integration groups fit 320px in both themes',async({
   }
 });
 
-test('Lagoon selection is keyboard accessible, independent from mode, and survives reload', async ({ page }) => {
+test('Sapphire selection is keyboard accessible, independent from mode, and survives reload', async ({ page }) => {
   await openApp(page, true);
   await page.locator('[data-nav="settings"]').click();
   await page.locator('#settings-appearance > summary').click();
-  const lagoon = page.locator('[data-visual-style-choice="lagoon"]');
-  await lagoon.focus(); await page.keyboard.press('Enter');
-  await expect(lagoon).toHaveAttribute('aria-pressed','true');
-  await expect(page.locator('html')).toHaveAttribute('data-visual-style','lagoon');
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#06232D');
+  const sapphire = page.locator('[data-visual-style-choice="sapphire"]');
+  await sapphire.focus(); await page.keyboard.press('Enter');
+  await expect(sapphire).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','sapphire');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#153073');
   await page.locator('#theme-seg button').nth(1).click();
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#F0F7F5');
-  await expect(lagoon).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#F6F6F6');
+  await expect(sapphire).toHaveAttribute('aria-pressed','true');
   const before = await page.evaluate(() => localStorage.getItem('fp_local_tx'));
   await page.reload();
   await page.waitForFunction(() => !!window.FintexAnalyticsPro);
-  await expect(page.locator('html')).toHaveAttribute('data-visual-style','lagoon');
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','sapphire');
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   expect(await page.evaluate(() => localStorage.getItem('fp_local_tx'))).toBe(before);
   await page.evaluate(() => setVisualStyle('forest'));
@@ -692,14 +692,14 @@ test('Lagoon selection is keyboard accessible, independent from mode, and surviv
   await expect(page.locator('#theme-seg button').nth(1)).toHaveAttribute('aria-pressed','true');
 });
 
-test('Lagoon keeps semantic money colours and fits every tab and appearance controls at 320px', async ({ page }) => {
+test('Sapphire keeps semantic money colours and fits every tab and appearance controls at 320px', async ({ page }) => {
   await openApp(page, true);
   await page.setViewportSize({width:320,height:844});
   const semantic = () => page.evaluate(() => ['--income','--expense','--planned'].map(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim()));
   for (const mode of ['dark','light']) {
     await page.evaluate(mode => {setTheme(mode);setVisualStyle('forest');},mode);
     const forest = await semantic();
-    await page.evaluate(() => setVisualStyle('lagoon'));
+    await page.evaluate(() => setVisualStyle('sapphire'));
     expect(await semantic()).toEqual(forest);
     for (const tab of ['home','calendar','analytics','settings']) {
       await page.locator(`[data-nav="${tab}"]`).click();
@@ -711,9 +711,9 @@ test('Lagoon keeps semantic money colours and fits every tab and appearance cont
       waves:getComputedStyle(document.querySelector('#hero-balance-card'),'::before').backgroundImage,
       filter:getComputedStyle(document.querySelector('.ft-img')).filter
     }));
-    expect(visual.bg).toBe(mode === 'dark' ? 'rgb(14, 54, 65)' : 'rgb(252, 251, 243)');
-    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(mode === 'dark' ? 'rgb(6, 35, 45)' : 'rgb(240, 247, 245)');
-    expect(visual.waves).toContain('lagoon-ripples.svg');
+    expect(visual.bg).toBe(mode === 'dark' ? 'rgb(27, 58, 123)' : 'rgb(255, 255, 255)');
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(mode === 'dark' ? 'rgb(21, 48, 115)' : 'rgb(246, 246, 246)');
+    expect(visual.waves).toContain('sapphire-bands.svg');
     expect(visual.filter).not.toMatch(/saturate\(0\./);
   }
 });
@@ -721,23 +721,23 @@ test('Lagoon keeps semantic money colours and fits every tab and appearance cont
 test('auto mode follows device changes without losing selected style', async ({ page }) => {
   await page.emulateMedia({colorScheme:'light'});
   await openApp(page);
-  await page.evaluate(() => {setVisualStyle('lagoon');setTheme('auto');});
+  await page.evaluate(() => {setVisualStyle('sapphire');setTheme('auto');});
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await page.emulateMedia({colorScheme:'dark'});
   await expect(page.locator('html')).toHaveClass(/dark/);
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#06232D');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#153073');
   await page.evaluate(() => setTheme('light'));
   await page.emulateMedia({colorScheme:'light'});
   await page.emulateMedia({colorScheme:'dark'});
   await expect(page.locator('html')).not.toHaveClass(/dark/);
-  await expect(page.locator('html')).toHaveAttribute('data-visual-style','lagoon');
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','sapphire');
 });
 
 test('appearance synchronizes between tabs and rejects unknown saved choices', async ({ page, context }) => {
   await openApp(page);
   const other = await context.newPage(); await localOnly(other); await other.goto('/');
-  await page.evaluate(() => {setVisualStyle('lagoon');setTheme('light');});
-  await expect(other.locator('html')).toHaveAttribute('data-visual-style','lagoon');
+  await page.evaluate(() => {setVisualStyle('sapphire');setTheme('light');});
+  await expect(other.locator('html')).toHaveAttribute('data-visual-style','sapphire');
   await expect(other.locator('html')).not.toHaveClass(/dark/);
   await page.evaluate(() => {localStorage.setItem('fp_visual_style','unknown');localStorage.setItem('fp_theme','invalid');});
   await expect(other.locator('html')).toHaveAttribute('data-visual-style','forest');
@@ -755,12 +755,12 @@ test('Telegram auto mode and header colours follow both appearance settings', as
       onEvent(name,fn){window.telegramThemeEvents[name]=fn;}}};
   });
   await openApp(page);
-  await page.evaluate(() => {setTheme('auto');setVisualStyle('lagoon');});
+  await page.evaluate(() => {setTheme('auto');setVisualStyle('sapphire');});
   await expect(page.locator('html')).not.toHaveClass(/dark/);
-  expect(await page.evaluate(() => window.telegramColours)).toEqual({background:'#F0F7F5',header:'#F0F7F5'});
+  expect(await page.evaluate(() => window.telegramColours)).toEqual({background:'#F6F6F6',header:'#F6F6F6'});
   await page.evaluate(() => {Telegram.WebApp.colorScheme='dark';window.telegramThemeEvents.themeChanged();});
   await expect(page.locator('html')).toHaveClass(/dark/);
-  expect(await page.evaluate(() => window.telegramColours)).toEqual({background:'#06232D',header:'#06232D'});
+  expect(await page.evaluate(() => window.telegramColours)).toEqual({background:'#153073',header:'#153073'});
 });
 
 async function openWorkCalculator(page) {
@@ -843,7 +843,7 @@ test('work calculator fits 320px and short screens in both styles and modes with
   await page.locator('[data-nav="settings"]').click();
   await page.locator('#settings-work-time > summary').click();
   await page.locator('[data-work-open="settings"]').click();
-  for (const style of ['forest','lagoon']) for (const mode of ['dark','light']) {
+  for (const style of ['forest','sapphire']) for (const mode of ['dark','light']) {
     await page.evaluate(({style,mode}) => {setVisualStyle(style);setTheme(mode);}, {style,mode});
     const sizes = await page.locator('#life-cost-dialog').evaluate(el => ({width:el.getBoundingClientRect().width,scroll:el.scrollWidth,client:el.clientWidth,height:el.getBoundingClientRect().height}));
     expect(sizes.width).toBeLessThanOrEqual(320);expect(sizes.scroll).toBeLessThanOrEqual(sizes.client);expect(sizes.height).toBeLessThanOrEqual(568);
@@ -870,5 +870,54 @@ test('forest apricot companion is distinct from semantic financial colours', asy
     expect(palette.companion).toBe(mode==='dark'?'#efb184':'#955029');
     for(const token of ['expense','income','planned','accent']) expect(palette.companion).not.toBe(palette[token]);
     await expect.poll(() => page.locator('.balance-account-icon').evaluate(el => getComputedStyle(el).color)).toBe(mode==='dark'?'rgb(239, 177, 132)':'rgb(149, 80, 41)');
+  }
+});
+
+test('legacy Lagoon preference opens Sapphire without resetting mode or budget', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('fp_visual_style','lagoon');
+    localStorage.setItem('fp_theme','light');
+  });
+  await openApp(page,true);
+  await expect(page.locator('html')).toHaveAttribute('data-visual-style','sapphire');
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#F6F6F6');
+  const before = await page.evaluate(() => localStorage.getItem('fp_local_tx'));
+  await page.locator('[data-nav="settings"]').click();
+  await page.locator('#settings-appearance > summary').click();
+  await expect(page.locator('[data-visual-style-choice]')).toHaveCount(2);
+  const sapphire = page.locator('[data-visual-style-choice="sapphire"]');
+  await expect(sapphire).toContainText('Сапфир');
+  await expect(sapphire).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#settings-appearance')).not.toContainText('Лагуна');
+  await sapphire.click();
+  expect(await page.evaluate(() => localStorage.getItem('fp_visual_style'))).toBe('sapphire');
+  expect(await page.evaluate(() => localStorage.getItem('fp_local_tx'))).toBe(before);
+});
+
+test('Sapphire uses the reference colours with readable controls and no Lagoon decoration', async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => setVisualStyle('sapphire'));
+  const contrast = (a,b) => {
+    const luminance = rgb => rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+    const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+  };
+  for(const mode of ['light','dark']) {
+    await page.evaluate(mode=>setTheme(mode),mode);
+    const palette=await page.evaluate(() => {
+      const css=getComputedStyle(document.documentElement),rgb=s=>s.match(/\d+/g).slice(0,3).map(Number);
+      const colours = selector => {const s=getComputedStyle(document.querySelector(selector));return {text:rgb(s.color),bg:rgb(s.backgroundColor)};};
+      return {canvas:css.getPropertyValue('--bg-canvas').trim(),surface:css.getPropertyValue('--surface-2').trim(),accent:css.getPropertyValue('--accent').trim(),budget:colours('.daily-budget'),nav:colours('.nav-tab.is-active-tab'),swatch:getComputedStyle(document.querySelector('.swatch-sapphire')).backgroundImage};
+    });
+    expect(palette.canvas).toBe(mode==='light'?'#f6f6f6':'#153073');
+    expect(palette.surface).toBe(mode==='light'?'#d7e3ef':'#244784');
+    expect(palette.accent).toBe(mode==='light'?'#1f57a1':'#d7e3ef');
+    expect(contrast(palette.budget.text,palette.budget.bg)).toBeGreaterThan(4.5);
+    // Active tab text overlays the independent blue sliding pill.
+    expect(contrast(palette.nav.text,[31,87,161])).toBeGreaterThan(4.5);
+    expect(palette.swatch).toContain('rgb(246, 246, 246)');
+    expect(palette.swatch).toContain('rgb(215, 227, 239)');
+    expect(palette.swatch).toContain('rgb(31, 87, 161)');
+    expect(palette.swatch).toContain('rgb(21, 48, 115)');
   }
 });
