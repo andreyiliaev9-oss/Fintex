@@ -403,6 +403,7 @@ function applyMotionPref() {
   document.documentElement.classList.toggle('no-motion', !enabled);
   const cb = document.getElementById('motion-toggle');
   if (cb) cb.checked = enabled;
+  if (!enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) stopOperationReveals();
 }
 
 function toggleMotionPref() {
@@ -1108,6 +1109,66 @@ function organizeSimplifiedLayout() {
   }
 }
 
+// Stagger new rows only; a background sync must not replay the whole history.
+const operationRevealState = new WeakMap();
+const operationRevealObservers = new Set();
+function animateOperationRows(container, context, force = false) {
+  if (!container) return;
+  const previous = operationRevealState.get(container);
+  if (previous?.observer) {
+    previous.observer.disconnect();
+    operationRevealObservers.delete(previous.observer);
+  }
+  if (!container.getClientRects().length) return;
+  const rows = Array.from(container.querySelectorAll('[data-operation-row]'));
+  const record = { context, ids: new Set(rows.map(row => row.dataset.operationRow)), pendingIds: new Set(), observer: null };
+  operationRevealState.set(container, record);
+  const motionAllowed = () => localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!motionAllowed()) return;
+  const reveal = force || !previous || previous.context !== context
+    ? rows : rows.filter(row => !previous.ids.has(row.dataset.operationRow) || previous.pendingIds?.has(row.dataset.operationRow));
+  const play = (row, index) => {
+    if (!motionAllowed() || !row.isConnected || typeof row.animate !== 'function') return;
+    row.getAnimations().filter(animation => animation.id === 'fintex-operation-reveal').forEach(animation => animation.cancel());
+    record.pendingIds.delete(row.dataset.operationRow);
+    const animation = row.animate([
+      { opacity: 0, transform: 'translateY(12px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], { duration: 380, delay: Math.min(index * 65, 260), easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+    animation.id = 'fintex-operation-reveal';
+  };
+  // Rows below the calendar grid should animate when scrolled into view, not offscreen.
+  let pending = 0;
+  if (typeof IntersectionObserver === 'function') {
+    const observer = new IntersectionObserver(entries => {
+      entries.filter(entry => entry.isIntersecting).forEach(entry => {
+        play(entry.target, reveal.indexOf(entry.target));
+        observer.unobserve(entry.target);
+        pending--;
+      });
+      if (pending === 0) { observer.disconnect(); operationRevealObservers.delete(observer); }
+    }, { threshold: .08, rootMargin: '0px 0px -90px 0px' });
+    record.observer = observer;
+    reveal.forEach((row, index) => {
+      const box = row.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < window.innerHeight - 90) play(row, index);
+      else { pending++; record.pendingIds.add(row.dataset.operationRow); observer.observe(row); }
+    });
+    if (pending) operationRevealObservers.add(observer);
+    else observer.disconnect();
+  } else reveal.forEach(play);
+}
+function stopOperationReveals() {
+  operationRevealObservers.forEach(observer => observer.disconnect());
+  operationRevealObservers.clear();
+  document.querySelectorAll('[data-operation-row]').forEach(row => {
+    row.getAnimations?.().filter(animation => animation.id === 'fintex-operation-reveal').forEach(animation => animation.cancel());
+  });
+}
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', event => {
+  if (event.matches) stopOperationReveals();
+});
+
 function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
 
@@ -1154,7 +1215,6 @@ function renderHome() {
     groupsMap.get(key).push(t);
   });
 
-  let globalRowIdx = 0;
   feed.innerHTML = Array.from(groupsMap.entries()).map(([dateKey, dayItems]) => {
     const hdr = formatFeedDayHeader(dateKey);
     const dayInc = dayItems.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -1163,14 +1223,11 @@ function renderHome() {
     const dayTotalsHtml = `
       <div class="flex items-center gap-2 shrink-0">
         ${dayInc > 0 ? `<span class="text-xs font-bold text-emerald-400 tabular-nums">${fmtR(dayInc, '+')}</span>` : ''}
-        ${dayExp > 0 ? `<span class="text-xs font-bold text-sub tabular-nums">${fmtR(dayExp, '−')}</span>` : ''}
+        ${dayExp > 0 ? `<span class="text-xs font-bold operation-expense tabular-nums">${fmtR(dayExp, '−')}</span>` : ''}
       </div>
     `;
 
     const itemsHtml = dayItems.map(t => {
-      const staggerDelay = Math.min(globalRowIdx * 70, 900);
-      const puzzleDirClass = globalRowIdx % 2 === 0 ? 'puzzle-row-left' : 'puzzle-row-right';
-      globalRowIdx++;
 
       const dispMerchant = normalizeMerchantName(t.merchant);
       const dispCatId = CATS[t.category] && t.category !== 'other' ? t.category : classifyCategory(dispMerchant);
@@ -1187,8 +1244,8 @@ function renderHome() {
         : 'border-l-[3px] border-rose-400/75';
 
       const amountCls = inc
-        ? 'text-emerald-400'
-        : 'text-main';
+        ? 'operation-income'
+        : 'operation-expense';
 
       const isSelectMode = Boolean(state.txSelectMode);
       const isSelected = Array.isArray(state.selectedTxIds) && state.selectedTxIds.includes(t.id);
@@ -1200,7 +1257,7 @@ function renderHome() {
         : '';
 
       return `
-        <div data-tx-id="${t.id}" style="animation-delay: ${staggerDelay}ms;" class="tx-swipe-wrap border-b border-white/[0.06] last:border-b-0 ${puzzleDirClass} ${t._justMerged ? 'tx-merge-flash' : ''} ${isSelected ? 'tx-row-selected' : ''}">
+        <div data-tx-id="${t.id}" data-operation-row="${escapeHtml(t.id)}" data-operation-type="${inc ? 'income' : 'expense'}" class="tx-swipe-wrap border-b border-white/[0.06] last:border-b-0 ${t._justMerged ? 'tx-merge-flash' : ''} ${isSelected ? 'tx-row-selected' : ''}">
           <div class="tx-swipe-actions">
             <button type="button" onclick="event.stopPropagation(); repeatTxById('${t.id}')" class="bg-[#00D6C3]/20 text-brand text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5">
               <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Повтор</span>
@@ -1252,6 +1309,7 @@ function renderHome() {
   }
 
   if (typeof renderBatchActionDock === 'function') renderBatchActionDock(visibleRows);
+  animateOperationRows(feed, 'home');
   lucide.createIcons();
 }
 
@@ -1399,8 +1457,10 @@ function swipeWheel(e, el) {
 
 function setCalFilter(mode) {
   vibro('selection');
+  const restoreFocus = document.activeElement?.hasAttribute('data-cal-filter');
   state.calFilter = mode;
   renderCalendar();
+  if (restoreFocus) document.querySelector(`[data-cal-filter="${mode}"]`)?.focus({ preventScroll: true });
 }
 
 function jumpCalToday() {
@@ -1431,8 +1491,9 @@ function formatCompactCalAmt(amount, sign = '') {
   const val = Math.round(Number(amount) || 0);
   if (val <= 0) return '';
   if (val < 1000) return `${sign}${val}`;
-  if (val < 10000) return `${sign}${(val / 1000).toFixed(1).replace(/\.0$/, '')}к`;
-  return `${sign}${Math.round(val / 1000)}к`;
+  if (val < 1000000) return `${sign}${(val / 1000).toFixed(val < 10000 ? 1 : 0).replace(/\.0$/, '')}к`;
+  if (val < 1000000000) return `${sign}${(val / 1000000).toFixed(val < 10000000 ? 1 : 0).replace(/\.0$/, '')}м`;
+  return `${sign}${(val / 1000000000).toFixed(1).replace(/\.0$/, '')}млрд`;
 }
 
 function formatCalDayFullHeading(iso) {
@@ -1446,7 +1507,8 @@ function formatCalDayFullHeading(iso) {
   return `${wDays[dt.getDay()]}, ${d} ${mShort[m - 1]}`;
 }
 
-function renderCalendar() {
+function renderCalendar(forceReveal = false) {
+  const focusedCalDate = document.activeElement?.dataset.calDate;
   const mNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const calFilter = state.calFilter || 'all';
   const monthPrefix = `${state.calYear}-${String(state.calMonth + 1).padStart(2, '0')}`;
@@ -1470,7 +1532,7 @@ function renderCalendar() {
   if (expEl) expEl.textContent = `−${fmtR(monthExp)}`;
   if (netEl) {
     netEl.textContent = monthNet > 0 ? `+${fmtR(monthNet)}` : (monthNet < 0 ? `−${fmtR(Math.abs(monthNet))}` : '0 ₽');
-    netEl.className = `text-xs font-extrabold tabular-nums mt-0.5 ${monthNet > 0 ? 'text-emerald-400' : (monthNet < 0 ? 'text-rose-400' : 'text-main')}`;
+    netEl.className = `cal-summary-value ${monthNet > 0 ? 'cal-income' : monthNet < 0 ? 'cal-expense' : 'text-main'}`;
   }
 
   const m = calcMetrics();
@@ -1486,13 +1548,13 @@ function renderCalendar() {
   if (filterStrip) {
     const filters = [
       { id: 'all', label: 'Все' },
-      { id: 'expense', label: '↓ Расходы' },
-      { id: 'income', label: '↑ Доходы' },
-      { id: 'bills', label: '★ Платежи' }
+      { id: 'expense', label: '− Расходы' },
+      { id: 'income', label: '+ Доходы' },
+      { id: 'bills', label: 'Платежи' }
     ];
     filterStrip.innerHTML = filters.map(f => {
       const active = calFilter === f.id;
-      return `<button type="button" onclick="setCalFilter('${f.id}')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 tap ${active ? 'btn-turquoise' : 'input-surface text-sub'}">${f.label}</button>`;
+      return `<button type="button" onclick="setCalFilter('${f.id}')" data-cal-filter="${f.id}" aria-pressed="${active}" class="cal-filter ${active ? 'is-active' : ''}">${f.label}</button>`;
     }).join('');
   }
 
@@ -1524,7 +1586,7 @@ function renderCalendar() {
   for (let i = offset - 1; i >= 0; i--) {
     const dayNum = prevMonthDays - i;
     const prevIso = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-    html += `<button type="button" onclick="pickCalDayFromAdjacent('${prevIso}')" class="h-[52px] rounded-xl flex flex-col items-center justify-center text-[11px] text-dim/40 hover:bg-white/[0.03] tabular-nums tap"><span>${dayNum}</span><span class="h-2.5"></span></button>`;
+    html += `<button type="button" onclick="pickCalDayFromAdjacent('${prevIso}')" class="cal-day is-adjacent"><span class="cal-day-number">${dayNum}</span></button>`;
   }
 
   for (let d = 1; d <= totalDays; d++) {
@@ -1544,51 +1606,28 @@ function renderCalendar() {
     const showInc = (calFilter === 'all' || calFilter === 'income') && dayInc > 0;
     const showBill = (calFilter === 'all' || calFilter === 'bills') && billsSum > 0;
 
-    let cls = 'relative h-[52px] rounded-xl flex flex-col items-center justify-between py-1.5 px-0.5 tabular-nums cursor-pointer tap transition-all ';
-    if (sel) {
-      cls += 'btn-turquoise shadow-[0_6px_16px_rgba(0,214,195,0.35)] ';
-    } else if (pay) {
-      cls += 'border border-[#F2C65D]/75 bg-[#F2C65D]/[0.14] text-main font-bold ';
-    } else if (showExp && dayExp > m.dailyCap * 2) {
-      cls += 'bg-rose-500/[0.13] border border-rose-400/35 text-main ';
-    } else if (showExp && dayExp > m.dailyCap) {
-      cls += 'bg-[#00D6C3]/[0.16] border border-[#00D6C3]/35 text-main ';
-    } else if (showExp) {
-      cls += 'bg-[#00D6C3]/[0.08] border border-[#00D6C3]/20 text-main ';
-    } else if (showInc) {
-      cls += 'bg-emerald-500/[0.12] border border-emerald-400/30 text-main ';
-    } else if (iso < TODAY && dayExp === 0 && calFilter === 'all') {
-      cls += 'bg-emerald-500/[0.04] border border-emerald-400/10 text-sub ';
-    } else {
-      cls += 'input-surface text-main ';
-    }
-
-    if (isToday && !sel) {
-      cls += 'ring-1 ring-[#00D6C3] font-extrabold ';
-    }
-
-    let cornerDot = '';
-    if (showBill && (showExp || showInc)) {
-      cornerDot = `<span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${sel ? 'bg-[#041311]' : 'bg-[#F2C65D]'}"></span>`;
-    } else if (showInc && showExp) {
-      cornerDot = `<span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${sel ? 'bg-[#041311]' : 'bg-emerald-400'}"></span>`;
-    }
-
-    let subLabel = '<span class="h-2.5"></span>';
-    if (showInc && (!showExp || calFilter === 'income')) {
-      subLabel = `<span class="text-[9px] font-extrabold leading-none ${sel ? 'text-[#041311]' : 'text-emerald-400'}">${formatCompactCalAmt(dayInc, '+')}</span>`;
-    } else if (showExp) {
-      const expColor = sel ? 'text-[#041311]' : (dayExp > m.dailyCap * 2 ? 'text-rose-300' : 'text-brand');
-      subLabel = `<span class="text-[9px] font-extrabold leading-none ${expColor}">${formatCompactCalAmt(dayExp, '−')}</span>`;
-    } else if (showBill) {
-      subLabel = `<span class="text-[9px] font-extrabold leading-none ${sel ? 'text-[#041311]' : 'text-gold'}">${formatCompactCalAmt(billsSum, '')}₽</span>`;
-    } else if (pay) {
-      subLabel = `<span class="text-[8px] font-extrabold uppercase leading-none ${sel ? 'text-[#041311]' : 'text-gold'}">ЗП</span>`;
-    } else if (iso < TODAY && dayExp === 0 && calFilter === 'all') {
-      subLabel = `<span class="w-1 h-1 rounded-full ${sel ? 'bg-[#041311]' : 'bg-emerald-400/50'}"></span>`;
-    }
-
-    html += `<button type="button" onclick="pickCalDay('${iso}')" class="${cls}">${cornerDot}<span class="text-xs leading-none ${sel ? 'font-extrabold' : 'font-semibold'}">${d}</span>${subLabel}</button>`;
+    const classes = ['cal-day'];
+    if (sel) classes.push('is-selected');
+    if (isToday) classes.push('is-today');
+    if (showExp) classes.push('has-expense');
+    if (showInc) classes.push('has-income');
+    if (showBill || pay) classes.push('has-planned');
+    const labels = [];
+    if (showExp) labels.push(`<span class="cal-amount cal-expense money-val">${formatCompactCalAmt(dayExp, '−')}</span>`);
+    if (showInc) labels.push(`<span class="cal-amount cal-income money-val">${formatCompactCalAmt(dayInc, '+')}</span>`);
+    if (showBill && !showExp && !showInc) labels.push(`<span class="cal-amount cal-planned money-val">${formatCompactCalAmt(billsSum)}₽</span>`);
+    if (pay && !showExp && !showInc && !showBill) labels.push('<span class="cal-payday-label">ЗП</span>');
+    const description = [`${d} ${mNames[state.calMonth]} ${state.calYear}`];
+    if (showExp) description.push(`Расходы ${fmtR(dayExp)}`);
+    if (showInc) description.push(`Доходы ${fmtR(dayInc)}`);
+    if (showBill) description.push(`Платежи ${fmtR(billsSum)}`);
+    if (pay) description.push('День зарплаты');
+    if (isToday) description.push('Сегодня');
+    html += `<button type="button" data-cal-date="${iso}" onclick="pickCalDay('${iso}')" class="${classes.join(' ')}" aria-label="${escapeHtml(description.join('. '))}" aria-pressed="${sel}" ${isToday ? 'aria-current="date"' : ''}>
+      <span class="cal-day-number">${d}</span>
+      <span class="cal-day-amounts">${labels.join('')}</span>
+      ${showBill && (showExp || showInc) ? '<span class="cal-bill-dot" aria-hidden="true"></span>' : ''}
+    </button>`;
   }
 
   const totalCells = offset + totalDays;
@@ -1597,10 +1636,11 @@ function renderCalendar() {
   const nextMonth = state.calMonth === 11 ? 1 : state.calMonth + 2;
   for (let d = 1; d <= trailing; d++) {
     const nextIso = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    html += `<button type="button" onclick="pickCalDayFromAdjacent('${nextIso}')" class="h-[52px] rounded-xl flex flex-col items-center justify-center text-[11px] text-dim/40 hover:bg-white/[0.03] tabular-nums tap"><span>${d}</span><span class="h-2.5"></span></button>`;
+    html += `<button type="button" onclick="pickCalDayFromAdjacent('${nextIso}')" class="cal-day is-adjacent"><span class="cal-day-number">${d}</span></button>`;
   }
 
   document.getElementById('cal-cells').innerHTML = html;
+  if (focusedCalDate) document.querySelector(`[data-cal-date="${focusedCalDate}"]`)?.focus({ preventScroll: true });
   document.getElementById('cal-period-summary').textContent = `Операций: ${monthTxs.length} · Без трат: ${zeroSpendDays} дн.`;
 
   const payDays = daysLeft(state.payday);
@@ -1640,7 +1680,7 @@ function renderCalendar() {
     ` : ''}
   `;
 
-  const dayBills = state.bills.filter(b => b.due_date === state.calSelected && !b.is_paid);
+  const dayBills = (calFilter === 'all' || calFilter === 'bills') ? state.bills.filter(b => b.due_date === state.calSelected && !b.is_paid) : [];
   document.getElementById('cal-day-bills').innerHTML = dayBills.map(b => `
     <div class="card-surface p-3 flex justify-between items-center gap-2 border border-[#F2C65D]/35">
       <div class="flex items-center gap-2.5 min-w-0">
@@ -1659,52 +1699,31 @@ function renderCalendar() {
   let dayTxs = state.transactions.filter(t => t.date === state.calSelected);
   if (calFilter === 'expense') dayTxs = dayTxs.filter(t => t.type === 'expense');
   if (calFilter === 'income') dayTxs = dayTxs.filter(t => t.type === 'income');
+  if (calFilter === 'bills') dayTxs = [];
 
   const dayExpSum = dayTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
   const dayIncSum = dayTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
 
   document.getElementById('cal-day-heading').textContent = formatCalDayFullHeading(state.calSelected);
   const totalBadges = [];
-  if (dayIncSum > 0) totalBadges.push(`<span class="text-emerald-400">+${fmtR(dayIncSum)}</span>`);
-  if (dayExpSum > 0) totalBadges.push(`<span class="text-rose-400">−${fmtR(dayExpSum)}</span>`);
+  if (dayIncSum > 0) totalBadges.push(`<span class="cal-income money-val">+${fmtR(dayIncSum)}</span>`);
+  if (dayExpSum > 0) totalBadges.push(`<span class="cal-expense money-val">−${fmtR(dayExpSum)}</span>`);
   document.getElementById('cal-day-total').innerHTML = totalBadges.length ? totalBadges.join(' · ') : '0 ₽';
 
+  document.getElementById('cal-day-count').textContent = `Операции: ${dayTxs.length}${dayBills.length ? ` · Платежи: ${dayBills.length}` : ''}`;
   document.getElementById('cal-day-txs').innerHTML = dayTxs.length
     ? dayTxs.map(t => {
-        const isInc = t.type === 'income';
-        const dispMerchant = t.merchant || 'Операция';
-        const dispCatId = t.category || 'other';
-        const catName = isInc ? 'Пополнение' : (CATS[dispCatId]?.name || 'Прочее');
-        const timePart = t.time ? ` · ${t.time}` : '';
-        const typeBadge = isInc
-          ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">↑ Доход</span>`
-          : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/12 text-rose-400">↓ Расход</span>`;
-        const amountPill = isInc
-          ? `<span class="money-val text-xs font-extrabold tabular-nums shrink-0 px-2 py-1 rounded-lg text-emerald-400 bg-emerald-500/12 border border-emerald-400/25">+${fmtR(t.amount)}</span>`
-          : `<span class="money-val text-xs font-extrabold tabular-nums shrink-0 px-2 py-1 rounded-lg text-rose-400 bg-rose-500/10 border border-rose-400/20">−${fmtR(t.amount)}</span>`;
-
-        return `
-          <div onclick="openTxModal('${t.id}')" class="p-3.5 flex items-center justify-between gap-2.5 cursor-pointer hover:bg-white/[0.02] tap">
-            <div class="flex items-center gap-3 min-w-0">
-              ${merchantBadge(dispMerchant, dispCatId, t.type)}
-              <div class="min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-sm font-bold text-main truncate">${escapeHtml(dispMerchant)}</span>
-                  ${typeBadge}
-                </div>
-                <div class="text-[11px] text-sub truncate mt-0.5">${catName}${timePart}</div>
-              </div>
-            </div>
-            ${amountPill}
-          </div>
-        `;
+        const income = t.type === 'income';
+        const catName = income ? 'Пополнение' : (CATS[t.category]?.name || 'Прочее');
+        return `<button type="button" data-operation-row="${escapeHtml(t.id)}" data-operation-type="${income ? 'income' : 'expense'}" class="cal-operation">
+          <span class="cal-operation-icon" aria-hidden="true"><i data-lucide="${income ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i></span>
+          <span class="cal-operation-copy"><span class="cal-operation-title">${escapeHtml(t.merchant || 'Операция')}</span><span class="cal-operation-meta">${escapeHtml(catName)}${t.time ? ` · ${escapeHtml(t.time)}` : ''}</span></span>
+          <span class="cal-operation-amount money-val ${income ? 'cal-income' : 'cal-expense'}">${fmtR(t.amount, income ? '+' : '−')}</span>
+        </button>`;
       }).join('')
-    : `<div class="p-5 text-center space-y-2">
-         <div class="text-xs text-sub">Нет операций за выбранную дату</div>
-         <button type="button" onclick="openAddModalForDate('${state.calSelected}')" class="px-3.5 py-1.5 rounded-xl btn-teal-soft text-xs font-semibold tap">
-           + Добавить операцию за ${humanDate(state.calSelected).toLowerCase()}
-         </button>
-       </div>`;
+    : `<div class="cal-empty"><i data-lucide="${calFilter === 'bills' ? 'calendar-check' : 'leaf'}" class="w-6 h-6" aria-hidden="true"></i><p>${calFilter === 'bills' ? (dayBills.length ? 'Платежи на этот день показаны выше' : 'На этот день платежей нет') : 'В этот день пока нет операций'}</p><button type="button" onclick="openAddModalForDate('${state.calSelected}')" class="btn-teal-soft">+ Добавить операцию</button></div>`;
+  document.querySelectorAll('#cal-day-txs [data-operation-row]').forEach(row => row.addEventListener('click', () => openTxModal(row.dataset.operationRow)));
+  animateOperationRows(document.getElementById('cal-day-txs'), `${state.calSelected}:${calFilter}`, forceReveal);
 
   if (window.lucide) lucide.createIcons();
 }
@@ -2467,7 +2486,15 @@ function exportToIosCalendar() {
 }
 function setFilter(id) { vibro('selection'); state.filterCat = id; renderHome(); }
 function toggleSearch() { document.getElementById('search-bar-wrap').classList.toggle('hidden'); }
-function shiftCalMonth(d) { state.calMonth += d; if (state.calMonth < 0) { state.calMonth = 11; state.calYear--; } else if (state.calMonth > 11) { state.calMonth = 0; state.calYear++; } renderCalendar(); }
+function shiftCalMonth(d) {
+  const next = new Date(state.calYear, state.calMonth + d, 1);
+  const day = Number((state.calSelected || TODAY).slice(8, 10)) || 1;
+  state.calYear = next.getFullYear();
+  state.calMonth = next.getMonth();
+  const lastDay = new Date(state.calYear, state.calMonth + 1, 0).getDate();
+  state.calSelected = localDateISO(new Date(state.calYear, state.calMonth, Math.min(day, lastDay)));
+  renderCalendar();
+}
 function pickCalDay(iso) { state.calSelected = iso; renderCalendar(); }
 function applyNotifPrefs() {
   const prefs = safeJsonParse(localStorage.getItem('fp_notif_prefs'), { tx: true, bills: true });
@@ -3845,6 +3872,8 @@ function goTab(name) {
   });
   organizeSimplifiedLayout();
   if (name === 'analytics') renderAnalytics();
+  if (name === 'calendar') renderCalendar(true);
+  if (name === 'home') animateOperationRows(document.getElementById('tx-feed'), 'home', true);
 }
 
 function initCardSpotlights() {

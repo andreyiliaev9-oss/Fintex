@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>FINTEX — Личные финансы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./assets/utilities.css?v=22" />
+  <link rel="stylesheet" href="./assets/utilities.css?v=24" />
   <script src="./assets/icons.js?v=21"></script>
   <!-- Бесплатные автономные движки распознавания в браузере (QR + OCR + PDF) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -15,7 +15,7 @@
   <meta name="color-scheme" content="dark light" />
   <link rel="preload" as="image" href="./financial_tree_art.png?v=3" />
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=23" />
+  <link rel="stylesheet" href="./design-system.css?v=24" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -482,15 +482,15 @@
         <div id="cal-month-cashflow" class="grid grid-cols-3 gap-1.5 pt-2 border-t divider-line text-center">
           <div class="input-surface py-1.5 px-2 rounded-xl">
             <div class="text-[9px] uppercase tracking-wider text-sub">Доходы</div>
-            <div id="cal-month-inc" class="text-xs font-extrabold text-emerald-400 tabular-nums mt-0.5">+0 ₽</div>
+            <div id="cal-month-inc" class="cal-summary-value cal-income money-val">+0 ₽</div>
           </div>
           <div class="input-surface py-1.5 px-2 rounded-xl">
             <div class="text-[9px] uppercase tracking-wider text-sub">Расходы</div>
-            <div id="cal-month-exp" class="text-xs font-extrabold text-rose-400 tabular-nums mt-0.5">−0 ₽</div>
+            <div id="cal-month-exp" class="cal-summary-value cal-expense money-val">−0 ₽</div>
           </div>
           <div class="input-surface py-1.5 px-2 rounded-xl">
             <div class="text-[9px] uppercase tracking-wider text-sub">Итог месяца</div>
-            <div id="cal-month-net" class="text-xs font-extrabold text-main tabular-nums mt-0.5">0 ₽</div>
+            <div id="cal-month-net" class="cal-summary-value money-val">0 ₽</div>
           </div>
         </div>
       </div>
@@ -501,30 +501,29 @@
       </div>
 
       <!-- Сетка календаря с тепловой картой и микро-суммами -->
-      <div class="card-surface p-3.5 space-y-2.5">
+      <div class="card-surface calendar-board p-3.5 space-y-2.5">
         <div id="cal-filter-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
 
         <div class="grid grid-cols-7 text-center text-[10px] font-bold uppercase tracking-wider text-dim pt-0.5">
           <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span class="text-gold/75">Сб</span><span class="text-gold/75">Вс</span>
         </div>
-        <div id="cal-cells" class="grid grid-cols-7 gap-1.5"></div>
+        <div id="cal-cells" class="grid grid-cols-7 gap-1.5" role="group" aria-label="Даты календаря"></div>
 
-        <div class="pt-2 border-t divider-line flex items-center justify-between flex-wrap gap-x-2 gap-y-1 text-[10px] text-sub px-0.5">
-          <span class="flex items-center gap-1"><i class="w-2 h-2 rounded-sm bg-[#00D6C3]/35 border border-[#00D6C3]/60 inline-block"></i>Траты</span>
-          <span class="flex items-center gap-1"><i class="w-2 h-2 rounded-sm bg-emerald-500/30 border border-emerald-400/60 inline-block"></i>Доход</span>
-          <span class="flex items-center gap-1"><i class="w-1.5 h-1.5 rounded-full bg-[#F2C65D] inline-block"></i>Платёж</span>
-          <span class="flex items-center gap-1"><i class="w-2 h-2 rounded-sm border border-[#F2C65D] bg-[#F2C65D]/20 inline-block"></i>Зарплата</span>
+        <div class="cal-legend" aria-label="Обозначения календаря">
+          <span><i class="cal-legend-dot cal-expense-dot" aria-hidden="true"></i>Расход</span>
+          <span><i class="cal-legend-dot cal-income-dot" aria-hidden="true"></i>Доход</span>
+          <span><i class="cal-legend-dot cal-planned-dot" aria-hidden="true"></i>Платёж</span>
+          <span><i class="cal-legend-payday" aria-hidden="true">ЗП</i>Зарплата</span>
         </div>
       </div>
 
       <!-- Ритм до зарплаты и предстоящие платежи -->
-      <div id="cal-upcoming-events" class="card-surface p-3.5 space-y-2.5"></div>
 
       <!-- Операции выбранного дня -->
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-2 px-0.5">
           <div class="flex items-center gap-2 min-w-0 flex-wrap">
-            <span id="cal-day-heading" class="text-xs font-extrabold uppercase tracking-wider text-main">Сегодня</span>
+            <h3 id="cal-day-heading" class="cal-day-heading">Сегодня</h3><span id="cal-day-count" class="cal-day-count"></span>
             <span id="cal-day-total" class="text-[11px] font-bold text-sub tabular-nums">0 ₽</span>
           </div>
           <button type="button" onclick="openAddModalForDate(state.calSelected)" class="h-7 px-2.5 rounded-lg btn-turquoise text-[11px] font-bold flex items-center gap-1 shrink-0 tap">
@@ -533,8 +532,9 @@
           </button>
         </div>
         <div id="cal-day-bills" class="space-y-2"></div>
-        <div id="cal-day-txs" class="card-surface divide-y divider-line overflow-hidden"></div>
+        <div id="cal-day-txs" class="card-surface overflow-hidden" aria-label="Операции выбранного дня"></div>
       </div>
+      <details class="cal-upcoming card-surface"><summary>План до зарплаты <i data-lucide="chevron-down" class="w-4 h-4" aria-hidden="true"></i></summary><div id="cal-upcoming-events" class="p-3.5 space-y-2.5"></div></details>
     </section>
 
     <!-- ВКЛАДКА 3: ФИНАНСОВЫЙ ЦЕНТР -->
@@ -1819,7 +1819,7 @@
   </div>
 
   <script src="./scanner.js?v=19"></script>
-  <script src="./app.js?v=23"></script>
+  <script src="./app.js?v=24"></script>
   <script src="./extensions.js?v=22"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=19" data-fintex-mod="sim_engine.js"></script>

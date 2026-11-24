@@ -175,3 +175,98 @@ test('nature theme stays forest green and keeps the tree in full colour', async 
   await page.evaluate(() => setTheme('light'));
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#F4F5E8');
 });
+
+async function seedCalendar(page) {
+  await page.evaluate(() => {
+    state.calYear = 2026; state.calMonth = 10; state.calSelected = '2026-11-24'; state.calFilter = 'all';
+    state.payday = '2026-11-29';
+    state.transactions = [
+      {id:'cal-e1',date:'2026-11-24',time:'13:00',merchant:'Кофейня',amount:350,type:'expense',category:'cafe',items:[]},
+      {id:'cal-e2',date:'2026-11-24',time:'10:00',merchant:'Продукты',amount:1250,type:'expense',category:'food',items:[]},
+      {id:'cal-i1',date:'2026-11-24',time:'09:00',merchant:'Доход',amount:100000,type:'income',category:'other',items:[]},
+      {id:'cal-big',date:'2026-11-22',merchant:'Машина',amount:300000,type:'expense',category:'other',items:[]}
+    ];
+    state.bills = [{id:'cal-b1',due_date:'2026-11-24',title:'Подписка',amount:399,is_paid:false}];
+    goTab('calendar');
+  });
+}
+
+test('calendar keeps expenses coral, income green, shows both on mixed days and filters planned bills', async ({page}) => {
+  await openApp(page); await seedCalendar(page);
+  const cell = page.locator('[data-cal-date="2026-11-24"]');
+  await expect(cell.locator('.cal-expense')).toHaveText('−1.6к');
+  await expect(cell.locator('.cal-income')).toHaveText('+100к');
+  await expect(cell).toHaveAttribute('aria-pressed','true');
+  const colours = await cell.evaluate(el => ({expense:getComputedStyle(el.querySelector('.cal-expense')).color, income:getComputedStyle(el.querySelector('.cal-income')).color}));
+  expect(colours.expense).not.toBe(colours.income);
+  expect(await page.locator('#cal-day-txs [data-operation-type="expense"]').count()).toBe(2);
+  await expect(page.locator('[data-cal-date="2026-11-23"] .cal-day-amounts')).toBeEmpty();
+  await page.locator('[data-cal-filter="expense"]').click();
+  await expect(page.locator('#cal-day-txs [data-operation-type="income"]')).toHaveCount(0);
+  await expect(page.locator('#cal-day-bills')).toBeEmpty();
+  await expect(cell.locator('.cal-income')).toHaveCount(0);
+  await page.locator('[data-cal-filter="bills"]').click();
+  await expect(page.locator('#cal-day-bills')).toContainText('Подписка');
+  await expect(page.locator('#cal-day-txs [data-operation-row]')).toHaveCount(0);
+  await page.locator('[data-cal-filter="all"]').click();
+  await page.locator('#cal-day-txs [data-operation-row="cal-e1"]').click();
+  await expect(page.locator('#modal-tx')).toBeVisible();
+});
+
+test('calendar selection, month boundaries and semantic colours work in both themes at 320px', async ({page}) => {
+  await openApp(page); await seedCalendar(page);
+  await page.setViewportSize({width:320,height:844});
+  for (const theme of ['dark','light']) {
+    await page.evaluate(theme => setTheme(theme), theme);
+    const expense = await page.locator('[data-cal-date="2026-11-22"] .cal-expense').evaluate(el=>getComputedStyle(el).color.match(/\d+/g).map(Number));
+    expect(expense[0]).toBeGreaterThan(expense[1]);
+    await expect(page.locator('[data-cal-date="2026-11-29"]')).toHaveClass(/has-planned/);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
+  }
+  await page.evaluate(()=>{state.calYear=2026;state.calMonth=0;state.calSelected='2026-01-31';shiftCalMonth(1);});
+  await expect(page.locator('[data-cal-date="2026-02-28"]')).toHaveAttribute('aria-pressed','true');
+  await page.evaluate(()=>{state.calYear=2026;state.calMonth=0;state.calSelected='2026-01-31';shiftCalMonth(-1);});
+  await expect(page.locator('[data-cal-date="2025-12-31"]')).toHaveAttribute('aria-pressed','true');
+});
+
+test('operation reveal is staggered, only new rows replay on sync, and reduced motion disables it', async ({page}) => {
+  await openApp(page);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
+  await seedCalendar(page);
+  await page.evaluate(() => renderCalendar()); // Sync before the offscreen rows enter view.
+  await page.locator('#cal-day-txs').scrollIntoViewIfNeeded();
+  await expect.poll(() => page.locator('#cal-day-txs').evaluate(el => el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(3);
+  const initial = await page.evaluate(()=>Array.from(document.querySelectorAll('#cal-day-txs [data-operation-row]')).map(row=>{
+    const animation=row.getAnimations().find(a=>a.id==='fintex-operation-reveal');
+    animation?.pause(); return animation?.effect.getTiming().delay;
+  }));
+  expect(initial).toEqual([0,65,130]);
+  const fresh = await page.evaluate(()=>{
+    state.transactions.push({id:'cal-new',date:'2026-11-24',merchant:'Новый расход',amount:99,type:'expense',category:'other',items:[]});
+    renderCalendar();
+    return [...document.querySelectorAll('#cal-day-txs [data-operation-row]')].filter(el=>el.getAnimations().some(a=>a.id==='fintex-operation-reveal')).map(el=>el.dataset.operationRow);
+  });
+  expect(fresh).toEqual(['cal-new']);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.evaluate(()=>renderCalendar());
+  expect(await page.locator('#cal-day-txs').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(0);
+  await expect(page.locator('#cal-day-txs [data-operation-row="cal-new"]')).toHaveCSS('opacity','1');
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();pickCalDay('2026-11-22');});
+  expect(await page.locator('#cal-day-txs').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(0);
+});
+
+test('home operation arrivals share the animation without replaying existing rows', async ({page}) => {
+  await openApp(page, true);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.locator('#tx-feed').scrollIntoViewIfNeeded();
+  const appeared = await page.evaluate(()=>{
+    localStorage.setItem('fp_motion','1'); applyMotionPref();
+    state.transactions.unshift({id:'home-new',date:TODAY,merchant:'Новая покупка',amount:85,type:'expense',category:'food',items:[]});
+    renderHome();
+    return [...document.querySelectorAll('#tx-feed [data-operation-row]')].filter(el=>el.getAnimations().some(a=>a.id==='fintex-operation-reveal')).map(el=>el.dataset.operationRow);
+  });
+  expect(appeared).toEqual(['home-new']);
+  await expect(page.locator('#tx-feed [data-operation-row="home-new"] .money-val')).toHaveClass(/operation-expense/);
+});
