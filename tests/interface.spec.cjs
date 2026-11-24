@@ -152,3 +152,26 @@ test('balance card handles a long account name and large amounts at 320px', asyn
   await page.locator('#hero-forecast-row').click();
   await expect(page.locator('#modal-forecast-info')).toBeVisible();
 });
+
+test('nature theme stays forest green and keeps the tree in full colour', async ({ page }) => {
+  await openApp(page);
+  const palette = await page.evaluate(() => {
+    const rgb = selector => getComputedStyle(document.querySelector(selector)).backgroundColor.match(/[\d.]+/g).slice(0,3).map(Number);
+    return {
+      canvas: rgb('body'),
+      balance: rgb('#hero-balance-card'),
+      tree: rgb('#filely-financial-tree'),
+      filter: getComputedStyle(document.querySelector('#filely-financial-tree .ft-img')).filter,
+      botanical: getComputedStyle(document.querySelector('#hero-balance-card'), '::before').backgroundImage,
+    };
+  });
+  for (const colour of [palette.canvas, palette.balance, palette.tree]) {
+    expect(colour[1]).toBeGreaterThan(colour[0] * 1.5);
+    expect(colour[1]).toBeGreaterThan(colour[2] * 1.3);
+  }
+  expect(palette.filter).not.toMatch(/saturate\(0\./);
+  expect(palette.botanical).toContain('forest-leaves.svg');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#061C12');
+  await page.evaluate(() => setTheme('light'));
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#F4F5E8');
+});

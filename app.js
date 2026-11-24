@@ -390,9 +390,9 @@ function setTheme(mode) {
     el.className = `seg-item py-1 ${i === idx ? 'text-[#041311] font-bold' : 'text-sub'}`;
   });
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#101416' : '#F4F6F7');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#061C12' : '#F4F5E8');
   if (tg) {
-    const bg = dark ? '#101416' : '#F4F6F7';
+    const bg = dark ? '#061C12' : '#F4F5E8';
     tg.setBackgroundColor(bg);
     tg.setHeaderColor(bg);
   }
