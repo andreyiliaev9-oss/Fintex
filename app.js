@@ -2529,6 +2529,7 @@ function quickTopupGoal(amt) {
   const target = Math.max(0.01, FM.money(state.goal.target) || 10000);
   state.goal.saved = FM.add(prev, amt);
   persistAll();
+  window.FintexBehavior?.recordSaving(amt);
   openGoalDetailsModal();
   updateSyncQueueUI();
   renderAll(false);
@@ -2569,6 +2570,7 @@ function withdrawFromGoal(amt, spendDirectly = false) {
     renderAll(false);
     toast(`Переведено из подушки в доступные: +${fmtR(take)}`);
   }
+  window.FintexBehavior?.recordSaving(-take);
 }
 
 function transferCustomGoal(spendDirectly = false) {
@@ -2657,7 +2659,7 @@ function undoLastTxDelete() {
     if (!state.transactions.some(x => x.id === t.id)) {
       state.balance = FM.add(state.balance, t.type === 'income' ? t.amount : -t.amount);
       state.transactions.push(t);
-      if(t.goal_withdrawal) state.goal.saved=FM.add(state.goal.saved,-t.goal_withdrawal);
+      if(t.goal_withdrawal) { state.goal.saved=FM.add(state.goal.saved,-t.goal_withdrawal); window.FintexBehavior?.recordSaving(-t.goal_withdrawal); }
       if (t.bill_after) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].due_date===t.bill_before?.due_date && state.bills[i].last_paid_tx_id===t.bill_before?.last_paid_tx_id) state.bills[i]={...t.bill_after}; }
     }
   });
@@ -2675,7 +2677,7 @@ function deleteTxsBatch(ids) {
   lastDeletedTxsBackup = removed.map(x => ({ ...x }));
   [...removed].sort((a,b)=>String(b.bill_after?.last_paid_date||b.date).localeCompare(String(a.bill_after?.last_paid_date||a.date))).forEach(t => {
     state.balance = FM.add(state.balance, t.type === 'income' ? -t.amount : t.amount);
-    if(t.goal_withdrawal) state.goal.saved=FM.add(state.goal.saved,t.goal_withdrawal);
+    if(t.goal_withdrawal) { state.goal.saved=FM.add(state.goal.saved,t.goal_withdrawal); window.FintexBehavior?.recordSaving(t.goal_withdrawal); }
     if (t.bill_before) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].last_paid_tx_id===t.id) state.bills[i]={...t.bill_before}; }
   });
   state.transactions = state.transactions.filter(x => !idSet.has(x.id));
