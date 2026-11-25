@@ -73,7 +73,15 @@
     return Number(tx.amount) > 0 && tx.category === 'Доход';
   }
   function fmt(num, currency) {
-    return `${Math.round(Number(num) || 0).toLocaleString('ru-RU')} ${currency || '₽'}`;
+    return `${window.FintexMath.money(num).toLocaleString('ru-RU',{maximumFractionDigits:2})} ${currency || '₽'}`;
+  }
+  function numberAttrs(value,currency,prefix='') {
+    return `data-ap-number="${FintexMath.money(value)}" data-ap-prefix="${esc(prefix)}" data-ap-currency="${esc(currency||'₽')}"`;
+  }
+  function renderCashflow(data){
+    const max=Math.max(data.income,data.spent,1);
+    const lines=[{label:'Доходы',value:data.income,type:'income',icon:'arrow-down-left'},{label:'Расходы',value:data.spent,type:'expense',icon:'arrow-up-right'}];
+    return `<section class="ap-cashflow" aria-labelledby="ap-cashflow-title"><div class="ap-cashflow-heading"><div><span class="ap-cashflow-kicker">Два направления</span><h3 id="ap-cashflow-title">Движение денег</h3></div><span class="ap-record-count">${data.currentTxs.length} записей</span></div>${lines.map(line=>`<div class="ap-cashflow-row" data-flow="${line.type}"><div class="ap-cashflow-label"><span class="ap-cashflow-icon" aria-hidden="true"><i data-lucide="${line.icon}"></i></span><span>${line.label}</span><strong class="ap-flow-value money-val" ${numberAttrs(line.value,data.currency)}>${fmt(line.value,data.currency)}</strong></div><div class="ap-cashflow-track" aria-hidden="true"><span style="width:${line.value/max*100}%"></span></div></div>`).join('')}<div class="ap-cashflow-net"><div><strong>Разница</strong><span>Доходы минус расходы</span></div><b class="ap-flow-value money-val ${data.net<0?'ap-negative':''}" ${numberAttrs(data.net,data.currency,data.net>0?'+':'')}>${data.net>0?'+':''}${fmt(data.net,data.currency)}</b></div><p class="ap-cashflow-note">По записям за выбранный период. Это не остаток на счёте.</p></section>`;
   }
   function categoryMeta(rawName) {
     const aliases = { food: 'Продукты', taxi: 'Транспорт', cafe: 'Кафе и рестораны', fun: 'Развлечения', subs: 'Подписки', shop: 'Покупки', health: 'Здоровье', other: 'Прочее', income: 'Доход' };
@@ -331,22 +339,19 @@
     const range = periodRange(data, period);
     const previous = periodRange({ now: new Date(`${FintexMath.shift(range.start, -1)}T12:00:00`) }, period);
     const topCats = data.categories.slice(0, 4).map(cat => `
-      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val">${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
+      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val" ${numberAttrs(cat.total,data.currency)}>${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
     return `
       <div class="ftx-ap-card gold ap-expense-hero">
         <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
-        <div class="ftx-ap-big money-val">${fmt(data.spent, data.currency)}</div>
+        <div class="ftx-ap-big money-val" ${numberAttrs(data.spent,data.currency)}>${fmt(data.spent, data.currency)}</div>
         <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
         <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
         ${renderExpenseTrend(data, period)}
-        <div class="ap-flow-summary">
-          <div><div class="ftx-ap-stat-label"><span class="ap-flow-dot"></span>Доходы</div><div class="ap-flow-value money-val">${fmt(data.income, data.currency)}</div></div>
-          <div><div class="ftx-ap-stat-label">Разница</div><div class="ap-flow-value money-val ${data.net < 0 ? 'ap-negative' : ''}">${data.net > 0 ? '+' : ''}${fmt(data.net, data.currency)}</div></div>
-        </div>
       </div>
+      ${renderCashflow(data)}
       <div class="ftx-ap-summary-row">
-        <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val">${fmt(data.burnRate, data.currency)}</div></div>
-        <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}">${fmt(data.projectedBalance, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val" ${numberAttrs(data.burnRate,data.currency)}>${fmt(data.burnRate, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}" ${numberAttrs(data.projectedBalance,data.currency)}>${fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
       <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details>
       <div class="ftx-ap-card ap-distribution">
@@ -372,7 +377,7 @@
           return `<div class="ftx-ap-cat ${isOpen ? 'open' : ''}" data-cat="${esc(cat.name)}" role="button" tabindex="0" aria-label="${esc(cat.name)}: показать операции" aria-expanded="${isOpen}">
             <div class="ftx-ap-cat-icon" style="--category-colour:${meta.color}"><i data-lucide="${meta.icon}"></i></div>
             <div class="ftx-ap-cat-main">
-              <div class="ftx-ap-cat-top"><span class="ftx-ap-cat-name">${esc(cat.name)}</span><span class="ftx-ap-cat-sum money-val">${fmt(cat.total, data.currency)}</span></div>
+              <div class="ftx-ap-cat-top"><span class="ftx-ap-cat-name">${esc(cat.name)}</span><span class="ftx-ap-cat-sum money-val" ${numberAttrs(cat.total,data.currency)}>${fmt(cat.total, data.currency)}</span></div>
               <div class="ftx-ap-bar"><div class="ftx-ap-bar-fill" style="width:${Math.max(1, cat.pct)}%;background:${meta.color}"></div></div>
               <div class="ftx-ap-cat-meta"><span>${Math.round(cat.pct)}% всех расходов</span><span>${cat.items.length}${cat.items.length === 8 ? '+' : ''} операций в списке</span></div>
               ${isOpen ? `<div class="ftx-ap-drill">${cat.items.map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)} · ${esc(item.date)}</span><span class="ftx-ap-tx-sum money-val">${fmt(item.amount, data.currency)}</span></div>`).join('')}</div>` : ''}
@@ -502,6 +507,7 @@
       next?.focus({ preventScroll: true });
     }
     container.querySelectorAll('#fintex-behavior details[data-behavior-detail]').forEach(el => { if (behaviorDisclosures.has(el.dataset.behaviorDetail)) el.open = behaviorDisclosures.get(el.dataset.behaviorDetail); });
+    container.querySelectorAll('[data-ap-number]').forEach(el=>window.FintexNumerals?.render(el,Number(el.dataset.apNumber),el.dataset.apPrefix,el.dataset.apCurrency));
     bindExpenseTrend(container, data, period);
     window.FintexBehavior?.bind(container);
     container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });

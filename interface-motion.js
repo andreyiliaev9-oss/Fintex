@@ -13,7 +13,7 @@
     cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
       frame=0;observer?.disconnect();if(!enabled())return;
       const tab=document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav,view=document.getElementById(`view-${tab}`);if(!view)return;
-      const targets=[...view.querySelectorAll('.ap-period-panel,.ap-expense-hero,.ap-distribution,.ap-period-information,.behavior-heading,.behavior-planner,#calendar-plan,.ap-donut,.ap-plot-surface,#hero-balance-card,#filely-financial-tree,.section-group,.sg-card,.sg-heading')];
+      const targets=[...view.querySelectorAll('.ap-period-panel,.ap-expense-hero,.ap-distribution,.ap-period-information,.behavior-heading,.behavior-planner,#calendar-plan,.ap-donut,.ap-plot-surface,#hero-balance-card,#filely-financial-tree,.section-group,.sg-card,.sg-heading,.ap-cashflow,.ap-category-row')];
       observer=new IntersectionObserver(entries=>{
         if(!enabled()||view.classList.contains('hidden'))return;
         let i=0;for(const entry of entries){if(!entry.isIntersecting)continue;observer.unobserve(entry.target);if(seen.has(entry.target))continue;seen.add(entry.target);
@@ -22,6 +22,11 @@
             if(bars.length<=40)bars.forEach((bar,index)=>play(bar,[{transform:'scaleY(.05)'},{transform:'scaleY(1)'}],{duration:420,delay:Math.min(index*9,160)}));
             else play(entry.target.querySelector('svg'),[{opacity:.3,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:380});
           }
+          else if(entry.target.matches('.ap-cashflow')){
+            play(entry.target,[{opacity:.4,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}]);
+            entry.target.querySelectorAll('.ap-cashflow-track > span').forEach((el,index)=>play(el,[{transform:'scaleX(.02)'},{transform:'scaleX(1)'}],{duration:650,delay:index*90}));
+          }
+          else if(entry.target.matches('.ap-category-row')){play(entry.target,[{opacity:.3,transform:'translateX(-8px)'},{opacity:1,transform:'translateX(0)'}],{delay:Math.min(i++*40,160)});play(entry.target.querySelector('.ap-category-rail > span'),[{transform:'scaleX(.05)'},{transform:'scaleX(1)'}],{duration:550});}
           else if(entry.target.matches('.ap-donut'))play(entry.target,[{transform:'scale(.92)',opacity:.35},{transform:'scale(1)',opacity:1}],{duration:460});
           else play(entry.target,[{transform:'translateY(9px)',opacity:.4},{transform:'translateY(0)',opacity:1}],{delay:Math.min(i++*35,140)});
         }

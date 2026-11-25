@@ -104,7 +104,7 @@ function animateCounter(el, target, fromZero = false) {
   const num = FM.money(target);
   const prevVal = fromZero ? 0 : Number(el.dataset.val || 0);
   el.dataset.val = num;
-  const motionOn = localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionOn = localStorage.getItem('fp_motion') !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !document.hidden;
   const formatted = fmtN(num);
   window.FintexNumerals.render(el,num);
   if (!motionOn || prevVal === num || num < 0 || !Number.isInteger(num)) return;
@@ -1042,6 +1042,7 @@ function organizeSimplifiedLayout() {
 // Stagger new rows only; a background sync must not replay the whole history.
 const operationRevealState = new WeakMap();
 const operationRevealObservers = new Set();
+const operationRevealEffects = new Set();
 function animateOperationRows(container, context, force = false) {
   if (!container) return;
   const previous = operationRevealState.get(container);
@@ -1049,7 +1050,7 @@ function animateOperationRows(container, context, force = false) {
     previous.observer.disconnect();
     operationRevealObservers.delete(previous.observer);
   }
-  if (!container.getClientRects().length) return;
+  if (!container.getClientRects().length || document.hidden) return;
   const rows = Array.from(container.querySelectorAll('[data-operation-row]'));
   const record = { context, ids: new Set(rows.map(row => row.dataset.operationRow)), pendingIds: new Set(), observer: null };
   operationRevealState.set(container, record);
@@ -1059,20 +1060,24 @@ function animateOperationRows(container, context, force = false) {
     ? rows : rows.filter(row => !previous.ids.has(row.dataset.operationRow) || previous.pendingIds?.has(row.dataset.operationRow));
   const play = (row, index) => {
     if (!motionAllowed() || !row.isConnected || typeof row.animate !== 'function') return;
-    row.getAnimations().filter(animation => animation.id === 'fintex-operation-reveal').forEach(animation => animation.cancel());
+    row.getAnimations({subtree:true}).filter(animation => animation.id.startsWith('fintex-operation-')).forEach(animation => animation.cancel());
     record.pendingIds.delete(row.dataset.operationRow);
-    const animation = row.animate([
-      { opacity: 0, transform: 'translateY(12px)' },
-      { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 380, delay: Math.min(index * 65, 260), easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
-    animation.id = 'fintex-operation-reveal';
+    const delay=Math.min(index*48,192),income=row.dataset.operationType==='income';
+    function effect(el,frames,options,id='fintex-operation-detail'){
+      if(!el)return;const a=el.animate(frames,{duration:480,delay,easing:'cubic-bezier(.16,1,.3,1)',...options});a.id=id;operationRevealEffects.add(a);a.finished.catch(()=>{}).finally(()=>operationRevealEffects.delete(a));
+    }
+    effect(row,[{opacity:.18,transform:'translateY(18px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],{fill:'backwards'},'fintex-operation-reveal');
+    effect(row.querySelector('.tx-merchant-mark'),[{transform:`translateY(${income?9:-9}px) scale(.65) rotate(${income?-9:9}deg)`},{transform:'translateY(-2px) scale(1.06) rotate(0deg)',offset:.7},{transform:'translateY(0) scale(1) rotate(0deg)'}],{duration:560});
+    // The true amount is present throughout; reveal it, never count through invented values.
+    effect(row.querySelector('.tx-amount'),[{opacity:.3,clipPath:'inset(0 0 85% 0)',transform:'translateY(6px)'},{opacity:1,clipPath:'inset(0 0 0% 0)',transform:'translateY(0)'}],{duration:460,delay:delay+45});
+    effect(row.querySelector('.tx-arrival-glow'),[{opacity:0,transform:'translateX(-100%)'},{opacity:.65,offset:.35},{opacity:0,transform:'translateX(100%)'}],{duration:720,delay:delay+30});
   };
   // Rows below the calendar grid should animate when scrolled into view, not offscreen.
   let pending = 0;
   if (typeof IntersectionObserver === 'function') {
     const observer = new IntersectionObserver(entries => {
-      entries.filter(entry => entry.isIntersecting).forEach(entry => {
-        play(entry.target, reveal.indexOf(entry.target));
+      entries.filter(entry => entry.isIntersecting).forEach((entry,index) => {
+        play(entry.target, index);
         observer.unobserve(entry.target);
         pending--;
       });
@@ -1091,13 +1096,17 @@ function animateOperationRows(container, context, force = false) {
 function stopOperationReveals() {
   operationRevealObservers.forEach(observer => observer.disconnect());
   operationRevealObservers.clear();
-  document.querySelectorAll('[data-operation-row]').forEach(row => {
-    row.getAnimations?.().filter(animation => animation.id === 'fintex-operation-reveal').forEach(animation => animation.cancel());
-  });
+  operationRevealEffects.forEach(animation=>animation.cancel());operationRevealEffects.clear();
 }
 window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', event => {
   if (event.matches) stopOperationReveals();
 });
+
+function replayOperationHistory() {
+  animateOperationRows(document.getElementById('tx-feed'),'home',true);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopOperationReveals();else if(document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav==='home')animateOperationRows(document.getElementById('tx-feed'),'home');});
+window.addEventListener('fintex:tabchange',event=>{if(event.detail.name!=='home')stopOperationReveals();});
 
 function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
@@ -1160,9 +1169,9 @@ function renderHome() {
     const dayExp = FM.sum(dayItems.filter(t => t.type === 'expense'),t=>t.amount);
 
     const dayTotalsHtml = `
-      <div class="flex items-center gap-2 shrink-0">
-        ${dayInc > 0 ? `<span class="text-xs font-bold text-emerald-400 tabular-nums">${fmtR(dayInc, '+')}</span>` : ''}
-        ${dayExp > 0 ? `<span class="text-xs font-bold operation-expense tabular-nums">${fmtR(dayExp, '−')}</span>` : ''}
+      <div class="tx-day-totals" title="По показанным записям">
+        ${dayInc > 0 ? `<span class="money-val operation-income" data-journal-amount="${dayInc}" data-journal-prefix="+">${fmtR(dayInc, '+')}</span>` : ''}
+        ${dayExp > 0 ? `<span class="money-val operation-expense" data-journal-amount="${dayExp}" data-journal-prefix="−">${fmtR(dayExp, '−')}</span>` : ''}
       </div>
     `;
 
@@ -1175,7 +1184,7 @@ function renderHome() {
       const rowDateText = formatFeedRowDate(t.date);
 
       const metaSub = inc
-        ? rowDateText
+        ? `Доход · ${rowDateText}`
         : `${cat.name} · ${rowDateText}`;
 
       const rowAccentCls = inc
@@ -1205,19 +1214,20 @@ function renderHome() {
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Удалить</span>
             </button>
           </div>
-          <div data-tx-id="${t.id}" onclick="${rowClickHandler}"
+          <div data-tx-id="${t.id}" role="button" tabindex="0" onclick="${rowClickHandler}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${rowClickHandler}}"
                ontouchstart="swipeStart(event, '${t.id}')" ontouchmove="swipeMove(event, this)" ontouchend="swipeEnd(this, '${t.id}')"
                onmousedown="swipeMouseStart(event, this, '${t.id}')" onwheel="swipeWheel(event, this)"
                class="tx-swipe-content p-4 flex items-center justify-between gap-3.5 cursor-pointer ${rowAccentCls}">
-            <div class="flex items-center gap-3.5 min-w-0">
+            <span class="tx-arrival-glow" aria-hidden="true"></span>
+            <div class="tx-row-main flex items-center gap-3.5 min-w-0">
               ${selectCheckHtml}
-              ${merchantBadge(dispMerchant, dispCatId, t.type)}
+              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type)}<span class="tx-direction">${inc?'↙':'↗'}</span></span>
               <div class="min-w-0">
                 <div class="text-sm font-bold text-main truncate">${escapeHtml(dispMerchant)}</div>
                 <div class="text-xs text-sub truncate mt-0.5">${metaSub}</div>
               </div>
             </div>
-            <span class="money-val text-sm font-extrabold tabular-nums shrink-0 ${amountCls}">
+            <span data-journal-amount="${t.amount}" data-journal-prefix="${inc?'+':'−'}" class="tx-amount money-val text-sm font-extrabold tabular-nums shrink-0 ${amountCls}">
               ${fmtR(t.amount, inc ? '+' : '−')}
             </span>
           </div>
@@ -1226,9 +1236,9 @@ function renderHome() {
     }).join('');
 
     return `
-      <div class="card-surface overflow-hidden">
-        <div class="px-4 py-3 bg-white/[0.03] border-b border-white/[0.07] flex items-center justify-between gap-2">
-          <span class="text-xs font-extrabold text-main truncate">${hdr.title}</span>
+      <div class="tx-day-card card-surface overflow-hidden">
+        <div class="tx-day-heading">
+          <div class="tx-day-date"><span class="tx-day-kicker">${dayItems.length} показано</span><strong>${hdr.title}</strong></div>
           ${dayTotalsHtml}
         </div>
         <div>${itemsHtml}</div>
@@ -1247,6 +1257,7 @@ function renderHome() {
     moreWrap.innerHTML = '';
   }
 
+  feed.querySelectorAll('[data-journal-amount]').forEach(el=>window.FintexNumerals.render(el,Number(el.dataset.journalAmount),el.dataset.journalPrefix));
   if (typeof renderBatchActionDock === 'function') renderBatchActionDock(visibleRows);
   animateOperationRows(feed, 'home');
   lucide.createIcons();
