@@ -8,3 +8,7 @@ test('figure typography preserves signed amounts, groups and kopecks without cha
   }
   assert.equal(parts(10,'+').label,'+10 ₽');
 });
+test('figure labels support explicit display currency without dropping signs or kopecks',()=>{
+  assert.equal(parts(12.34,'+','€').label,'+12,34 €');
+  assert.equal(parts(-12.34,'','$').label,'-12,34 $');
+});

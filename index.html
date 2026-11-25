@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=58" />
+  <link rel="stylesheet" href="./design-system.css?v=59" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -398,12 +398,13 @@
 
       <!-- Умная лента операций -->
       <div class="space-y-2.5">
-        <div class="flex items-center justify-between px-0.5">
-          <h2 class="feed-heading">Операции</h2>
-          <div class="flex items-center gap-3">
+        <div class="tx-feed-header flex items-center justify-between px-0.5">
+          <div><span class="tx-feed-eyebrow">Лента денег</span><h2 class="feed-heading">Операции</h2></div>
+          <div class="tx-feed-actions flex items-center gap-3">
             <button type="button" id="feed-today-btn" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
               Сегодня: <span id="feed-today-sum" class="money-val text-brand font-bold tabular-nums">0 ₽</span>
             </button>
+            <button type="button" id="history-replay" onclick="replayOperationHistory()" class="tx-history-replay" aria-label="Повторить анимацию истории" title="Повторить анимацию истории"><i data-lucide="play" aria-hidden="true"></i></button>
             <button type="button" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте" aria-label="Поиск операций">
               <i data-lucide="search" class="w-3.5 h-3.5"></i>
             </button>
@@ -1866,15 +1867,15 @@
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./finance-math.js?v=58"></script>
   <script src="./life-cost.js?v=30"></script>
-  <script src="./numerals.js?v=42"></script>
-  <script src="./app.js?v=58"></script>
+  <script src="./numerals.js?v=59"></script>
+  <script src="./app.js?v=59"></script>
   <script src="./navigation.js?v=57"></script>
-  <script src="./interface-motion.js?v=58"></script>
+  <script src="./interface-motion.js?v=59"></script>
   <script src="./goals-model.js?v=58"></script>
   <script src="./savings-goals.js?v=58"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=57"></script>
+  <script src="./extensions.js?v=59"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>

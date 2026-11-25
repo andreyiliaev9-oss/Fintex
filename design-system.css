@@ -1641,3 +1641,93 @@ body .sg-new-tile { display: flex; flex-direction: column; justify-content: cent
 body .sg-new-tile > span { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--border-active); border-radius: 50%; font-size: 25px; }
 body .sg-new-tile > strong { font-size: 15px; line-height: 1.4; }
 body .sg-new-tile > small { font-size: 10px; color: var(--text-secondary); line-height: 1.7; }
+
+/* v59 · Crisp figures, a choreographed money journal and a clearer overview. */
+body .money-val { font-family: 'Fintex Figures', -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums lining-nums; font-feature-settings: 'tnum' 1, 'lnum' 1; }
+body .number-display { font-weight: 720; letter-spacing: -.025em; }
+body .number-display .number-minor { font-size: .74em; letter-spacing: -.01em; font-weight: 650; }
+body .number-display .number-currency { font-size: .6em; font-weight: 600; margin-left: .08em; }
+body .tx-feed-eyebrow { display: block; margin-bottom: 4px; color: var(--text-secondary); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .13em; }
+body .feed-heading { font-size: 24px; font-weight: 750; letter-spacing: -.04em; }
+body #feed-today-btn { font-size: 10px; line-height: 1.6; text-align: right; }
+body #feed-today-sum { display: block; font-size: 13px; color: var(--number-ink,var(--text-primary)); }
+body .tx-history-replay { display: grid; place-items: center; width: 40px; height: 44px; border-radius: 13px; border: 1px solid var(--border-active); color: var(--text-primary); background: var(--accent-soft); }
+body .tx-history-replay svg { width: 15px; height: 15px; fill: currentColor; stroke-width: 1.4; }
+body #tx-feed { display: grid; gap: 16px; border-radius: 0; }
+body #tx-feed .tx-day-card { border: 1px solid var(--border-subtle); border-radius: 22px; box-shadow: 0 5px 20px rgba(20,40,20,.025); }
+body .tx-day-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 14px; padding: 14px 15px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-wash),var(--surface-2); }
+body .tx-day-date { display: grid; gap: 4px; }
+body .tx-day-kicker { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text-secondary); }
+body .tx-day-date strong { font-size: 13px; font-weight: 750; color: var(--text-primary); }
+body .tx-day-totals { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px 12px; min-width: 0; }
+body .tx-day-totals > span { font-size: 12px; font-weight: 750; letter-spacing: -.01em; }
+body .tx-day-totals .number-minor, body .tx-day-totals .number-currency { font-size: .9em; }
+body #tx-feed .tx-swipe-content { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 10px; row-gap: 7px; padding: 17px 14px; border-left-width: 0; min-height: 86px; position: relative; overflow: hidden; }
+body #tx-feed [data-operation-type=income] .tx-swipe-content { background: linear-gradient(var(--income-soft),var(--income-soft)),var(--surface-1); }
+body #tx-feed [data-operation-type=expense] .tx-swipe-content { background: var(--surface-1); }
+body .tx-row-main { position: relative; z-index: 1; gap: 12px; }
+body .tx-row-main > .min-w-0 > :first-child { font-size: 13px; font-weight: 700; line-height: 1.45; }
+body .tx-row-main > .min-w-0 > :nth-child(2) { font-size: 10px; line-height: 1.6; }
+body .tx-merchant-mark { display: block; position: relative; flex-shrink: 0; }
+body .tx-merchant-mark > div { width: 38px; height: 38px; border-radius: 13px; }
+body .tx-direction { display: grid; place-items: center; position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border: 2px solid var(--surface-1); border-radius: 50%; font-size: 10px; font-weight: 800; background: var(--expense-soft); color: var(--expense); }
+body [data-operation-type=income] .tx-direction { background: var(--income-soft); color: var(--income); }
+body .tx-amount.number-display { position: relative; z-index: 1; font-size: 17px; font-weight: 780; letter-spacing: -.025em; white-space: nowrap; text-align: right; }
+body .tx-amount.number-display .number-minor { font-size: .82em; font-weight: 700; }
+body .tx-amount.number-display .number-currency { font-size: .72em; font-weight: 650; }
+body #tx-feed .tx-swipe-content:has(.tx-amount[data-number-size=medium],.tx-amount[data-number-size=wide]) { grid-template-columns: minmax(0,1fr); }
+body #tx-feed .tx-amount:is([data-number-size=medium],[data-number-size=wide]) { justify-self: end; font-size: 18px; }
+body .tx-arrival-glow { position: absolute; pointer-events: none; inset: 0; opacity: 0; background: linear-gradient(105deg,transparent 10%,var(--gold-soft) 48%,transparent 86%); }
+body [data-operation-type=income] .tx-arrival-glow { background: linear-gradient(105deg,transparent 10%,var(--income-soft) 48%,transparent 86%); }
+body .ap-page-heading h2 { font-weight: 780; letter-spacing: -.045em; }
+body .ftx-ap .ftx-ap-big { font-family: 'Fintex Figures',sans-serif; font-size: clamp(32px,10vw,44px); font-weight: 760; letter-spacing: -.035em; margin: 13px 0 10px; color: var(--number-ink,var(--text-primary)); }
+body .ftx-ap .ftx-ap-big[data-number-size=medium] { font-size: clamp(26px,8vw,36px); }
+body .ftx-ap .ftx-ap-big[data-number-size=wide] { font-size: clamp(21px,6.5vw,29px); }
+body .ftx-ap .ap-expense-hero { border-radius: 25px; border-color: var(--border-active); background: var(--hero-wash),var(--surface-1); }
+body .ap-hero-heading .ftx-ap-kicker { font-weight: 750; letter-spacing: .1em; }
+body .ap-period-caption { padding: 5px 9px; border-radius: 20px; background: var(--gold-soft); color: var(--text-primary); font-weight: 650; }
+body .ap-trend-value { font-family: 'Fintex Figures',sans-serif; font-weight: 750; letter-spacing: -.015em; }
+body .ap-cashflow { margin: 16px 0; padding: 20px; border: 1px solid var(--border-subtle); border-radius: 24px; background: var(--surface-1); color: var(--text-primary); }
+body .ap-cashflow-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 19px; }
+body .ap-cashflow-kicker { font-size: 8px; color: var(--text-secondary); letter-spacing: .12em; font-weight: 650; text-transform: uppercase; }
+body .ap-cashflow-heading h3 { margin-top: 5px; font-size: 20px; font-weight: 750; letter-spacing: -.035em; }
+body .ap-record-count { flex-shrink: 0; font-size: 9px; padding: 6px 8px; border: 1px solid var(--border-subtle); border-radius: 20px; color: var(--text-secondary); }
+body .ap-cashflow-row { margin-bottom: 17px; }
+body .ap-cashflow-label { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 9px; align-items: center; }
+body .ap-cashflow-label > span:not(.ap-cashflow-icon) { font-size: 11px; font-weight: 600; }
+body .ap-cashflow-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: var(--income-soft); color: var(--income); }
+body .ap-cashflow-icon svg { width: 15px; height: 15px; }
+body [data-flow=expense] .ap-cashflow-icon { background: var(--expense-soft); color: var(--expense); }
+body .ap-cashflow .ap-flow-value { margin: 0; font-size: 20px; font-weight: 750; color: var(--number-ink,var(--text-primary)); text-align: right; letter-spacing: -.025em; }
+body .ap-cashflow .ap-flow-value .number-minor { font-size: .8em; }
+body .ap-cashflow .ap-flow-value[data-number-size=medium] { font-size: 17px; }
+body .ap-cashflow .ap-flow-value[data-number-size=wide] { font-size: 15px; }
+body .ap-cashflow-track { margin-top: 10px; height: 6px; border-radius: 20px; background: var(--surface-2); overflow: hidden; }
+body .ap-cashflow-track > span { display: block; height: 100%; border-radius: inherit; background: var(--income); transform-origin: left center; }
+body [data-flow=expense] .ap-cashflow-track > span { background: var(--expense); }
+body .ap-cashflow-net { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 19px; padding: 15px; border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--gold-soft); }
+body .ap-cashflow-net > div { display: grid; gap: 4px; }
+body .ap-cashflow-net strong { font-size: 12px; font-weight: 700; }
+body .ap-cashflow-net > div > span { font-size: 9px; color: var(--text-secondary); }
+body .ap-cashflow .ap-negative { color: var(--expense); }
+body .ap-cashflow-note { font-size: 9px; line-height: 1.8; color: var(--text-secondary); margin-top: 12px; }
+body .ftx-ap .ftx-ap-stat-value { font-weight: 740; font-size: 23px; letter-spacing: -.025em; }
+body .ftx-ap .ftx-ap-stat-value[data-number-size=medium] { font-size: 18px; }
+body .ftx-ap .ftx-ap-stat-value[data-number-size=wide] { font-size: 15px; }
+body .ap-category-amount.number-display { font-size: 14px; font-weight: 750; }
+body .ap-category-rail { height: 5px; border-radius: 10px; }
+body .ap-category-rail > span { transform-origin: left center; border-radius: inherit; }
+body .ftx-ap .ftx-ap-cat-sum.number-display { font-size: 15px; font-weight: 740; }
+body .ftx-ap .ftx-ap-cat-sum[data-number-size=wide] { font-size: 12px; }
+body.stealth-mode .ap-cashflow-track { visibility: hidden; }
+@media(max-width:360px) { body #view-home .feed-heading { font-size: 22px; } body .tx-amount.number-display { font-size: 15px; } body .tx-row-main { gap: 9px; } body .ap-cashflow { padding: 16px; } body .ap-cashflow-label { grid-template-columns: 27px minmax(0,1fr); gap: 6px 8px; } body .ap-cashflow-label > strong { grid-column: 2; justify-self: start; } body .ap-cashflow-icon { grid-row: span 2; } }
+body #tx-feed .tx-swipe-content:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+html.no-motion body #history-replay { display: none; }
+@media(prefers-reduced-motion:reduce) { body #history-replay { display: none; } }
+body #tx-feed .tx-row-selected .tx-swipe-content { background: linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface-1) !important; box-shadow: inset 3px 0 var(--accent); }
+body .tx-feed-header { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+body .tx-feed-actions { gap: 5px; }
+body #feed-select-mode-btn { font-size: 10px; min-height: 44px; min-width: 40px; }
+body #feed-today-btn { min-width: 65px; }
+body .tx-feed-actions > button[aria-label="Поиск операций"] { display: grid; place-items: center; width: 30px; min-height: 44px; }
+@media(max-width:360px) { body .tx-feed-header { grid-template-columns: minmax(0,1fr); } body .tx-feed-actions { justify-content: space-between; } }

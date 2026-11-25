@@ -3,20 +3,20 @@
   'use strict';
   const labels=new WeakMap();
   const formatter=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2});
-  function parts(value,prefix='') {
+  function parts(value,prefix='',currency='₽') {
     const amount=window.FintexMath.money(value);
     const all=formatter.formatToParts(amount);
     return {
       major:prefix+all.filter(p=>!['decimal','fraction'].includes(p.type)).map(p=>p.value).join(''),
       minor:all.filter(p=>['decimal','fraction'].includes(p.type)).map(p=>p.value).join(''),
-      label:(prefix+formatter.format(amount)+' ₽').replace(/[\u00a0\u202f]/g,' '),
+      label:(prefix+formatter.format(amount)+' '+currency).replace(/[\u00a0\u202f]/g,' '),
       digits:all.filter(p=>p.type==='integer').map(p=>p.value).join('').length
     };
   }
-  function render(el,value,prefix='') {
+  function render(el,value,prefix='',currency='₽') {
     if(!el)return;
-    const p=parts(value,prefix),fragment=document.createDocumentFragment();
-    for(const [cls,text] of [['number-major',p.major],['number-minor',p.minor],['number-currency',' ₽']]) {
+    const p=parts(value,prefix,currency),fragment=document.createDocumentFragment();
+    for(const [cls,text] of [['number-major',p.major],['number-minor',p.minor],['number-currency',' '+currency]]) {
       if(!text)continue;
       const span=document.createElement('span');span.className=cls;span.textContent=text;span.setAttribute('aria-hidden','true');fragment.append(span);
     }
