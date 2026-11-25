@@ -1167,3 +1167,10 @@ body #fintex-navigation .nav-tab:active .nav-icon { transform: translateY(1px) s
 body #fintex-navigation .nav-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 @media (hover:hover) { body #fintex-navigation .nav-tab:hover:not(.is-active-tab) .nav-icon { background: var(--surface-2); transform: translateY(-1px); } }
 html.no-motion body #fintex-navigation *, html.no-motion body #hdr-plus-btn { transition: none !important; }
+
+/* Individual button outlines sit inside each equal-width slot, leaving a 6px gap.
+   An overlay avoids shrinking labels or shifting the existing sliding indicator. */
+body #fintex-navigation .nav-tab::after { content: ''; position: absolute; inset: 3px; border: 1px solid var(--nav-edge); border-radius: 17px; pointer-events: none; transition: border-color .2s ease, border-width .2s ease; }
+body #fintex-navigation .nav-tab.is-active-tab::after { border: 2px solid var(--nav-ink); }
+@media (hover:hover) { body #fintex-navigation .nav-tab:hover::after { border-color: var(--nav-ink); } }
+html.no-motion body #fintex-navigation .nav-tab::after { transition: none !important; }
