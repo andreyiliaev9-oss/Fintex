@@ -2432,23 +2432,6 @@ function shiftCalMonth(d) {
   renderCalendar();
 }
 function pickCalDay(iso) { state.calSelected = iso; renderCalendar(); }
-function applyNotifPrefs() {
-  const prefs = safeJsonParse(localStorage.getItem('fp_notif_prefs'), { tx: true, bills: true });
-  const txEl = document.getElementById('notif-tx');
-  const billsEl = document.getElementById('notif-bills');
-  if (txEl) txEl.checked = prefs.tx !== false;
-  if (billsEl) billsEl.checked = prefs.bills !== false;
-}
-function saveNotifPrefs() {
-  const prefs = {
-    tx: document.getElementById('notif-tx')?.checked !== false,
-    bills: document.getElementById('notif-bills')?.checked !== false
-  };
-  localStorage.setItem('fp_notif_prefs', JSON.stringify(prefs));
-  vibro('selection');
-  toast('Настройки уведомлений сохранены');
-}
-
 function openCanIBuyModal() {
   document.getElementById('cb-title').value = '';
   document.getElementById('cb-amount').value = '';
@@ -4261,7 +4244,6 @@ function initPullToRefresh() {
   }, { passive: true });
 }
 
-applyNotifPrefs();
 initPullToRefresh();
 initTactileSheets();
 initVoicePullCordPhysics();

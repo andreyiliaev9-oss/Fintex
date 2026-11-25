@@ -64,3 +64,15 @@ test('synced text cannot become executable markup in financial views',async({pag
     return {images:document.querySelectorAll('#mtx-items-list img,#an-detective-list img,#an-subs-list img,#autopilot-logs-list img').length,injected:window.__injected||0};
   });expect(result).toEqual({images:0,injected:0});
 });
+
+test('notification rollback leaves the app openable offline with no reminder UI or subscription requests',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  const calls=await open(page,{offline:true});await page.evaluate(()=>dismissReturningSplash());
+  await page.locator('[data-nav="settings"]').click();
+  await expect(page.locator('#settings-notifications,#fintex-reminders,#reminder-form')).toHaveCount(0);
+  expect(await page.evaluate(()=>typeof window.FintexReminders)).toBe('undefined');
+  expect(await page.locator('script[src*="reminders.js"]').count()).toBe(0);
+  expect(calls.some(c=>String(c.action).startsWith('reminders_'))).toBe(false);
+  await page.locator('[data-nav="home"]').click();await expect(page.locator('#hero-balance')).toBeVisible();
+  expect(errors).toEqual([]);
+});
