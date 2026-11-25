@@ -538,6 +538,7 @@
       else if (window.openSimulator) window.openSimulator();
     });
     try { if (window.lucide?.createIcons) window.lucide.createIcons({ attrs: { 'stroke-width': 2 } }); } catch (_) {}
+    window.FintexMotion?.refresh();
   }
 
   const originalRenderAnalytics = window.renderAnalytics;

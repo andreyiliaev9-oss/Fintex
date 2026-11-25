@@ -3773,6 +3773,8 @@ function handleVersionSecretTap() {
 }
 
 function goTab(name) {
+  const previousTab = document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav;
+  const previousScroll = window.scrollY;
   vibro('selection');
   const tabOrder = ['home', 'calendar', 'analytics', 'settings'];
   const tabIdx = Math.max(0, tabOrder.indexOf(name));
@@ -3804,6 +3806,7 @@ function goTab(name) {
   if (name === 'analytics') renderAnalytics();
   if (name === 'calendar') renderCalendar(true);
   if (name === 'home') animateOperationRows(document.getElementById('tx-feed'), 'home', true);
+  window.dispatchEvent(new CustomEvent('fintex:tabchange', {detail:{name,previous:previousTab,scroll:previousScroll}}));
 }
 
 function initCardSpotlights() {
