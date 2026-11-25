@@ -840,10 +840,10 @@ body #filely-financial-tree .ft-bar { margin-top: 11px; overflow: hidden; border
 body #filely-financial-tree .ft-bar[hidden] { display: none; }
 body #filely-financial-tree .ft-bar > span { display: block; height: 100%; border-radius: inherit; transition: width .4s; }
 body #filely-financial-tree .ft-art-wrap { display: grid; place-items: center; position: relative; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; }
-body #filely-financial-tree .ft-art-motion { display: block; width: 100%; height: 140px; transform-origin: 50% 91%; animation: ft-tree-breeze 7s ease-in-out infinite; }
+body #filely-financial-tree .ft-art-motion { display: block; width: 100%; height: 140px; transform-origin: 50% 91%; animation: ft-tree-breeze 4.6s ease-in-out infinite; }
 body #filely-financial-tree .ft-img, body #filely-financial-tree .ft-svg-art { display: block; width: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
 body #filely-financial-tree .ft-img[hidden] { display: none; }
-body #filely-financial-tree .ft-aura { position: absolute; width: 100%; height: 100%; pointer-events: none; animation: ft-tree-light 9s ease-in-out infinite; }
+body #filely-financial-tree .ft-aura { position: absolute; width: 100%; height: 100%; pointer-events: none; animation: ft-tree-light 6.4s ease-in-out infinite; }
 body #filely-financial-tree .ft-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 11px; margin-top: 8px; border-top: 1px solid var(--border-subtle); }
 body #filely-financial-tree .ft-note { font-size: 11px; line-height: 1.6; min-width: 0; }
 body #filely-financial-tree .ft-actions { display: flex; align-items: center; gap: 6px; }
@@ -851,11 +851,23 @@ body #filely-financial-tree :is(.ft-topup, .ft-more) { padding: 8px 10px; font-s
 body #filely-financial-tree .ft-details { font-size: 11px; line-height: 1.65; border-top: 1px solid var(--border-subtle); margin-top: 12px; padding-top: 12px; }
 body #filely-financial-tree .ft-details p + p { margin-top: 10px; }
 body #filely-financial-tree .ft-details[hidden] { display: none; }
-body #filely-financial-tree[data-animation-paused='true'] :is(.ft-art-motion, .ft-aura) { animation-play-state: paused; }
-@keyframes ft-tree-breeze { 0%, 100% { transform: rotate(-1.5deg) scale(1); } 50% { transform: rotate(1.5deg) scale(1.015); } }
-@keyframes ft-tree-light { 0%, 100% { opacity: .5; transform: scale(.95); } 50% { opacity: .8; transform: scale(1.04); } }
-html.no-motion body #filely-financial-tree :is(.ft-art-motion, .ft-aura) { animation: none !important; }
-@media(prefers-reduced-motion:reduce) { body #filely-financial-tree :is(.ft-art-motion, .ft-aura) { animation: none !important; } }
+body #filely-financial-tree :is(.ft-img, .ft-svg-art) { transform-origin: 50% 91%; animation: ft-tree-flex 3.1s ease-in-out infinite; }
+body #filely-financial-tree .ft-wind-leaves { position: absolute; inset: 0; pointer-events: none; }
+body #filely-financial-tree .ft-wind-leaf { position: absolute; display: block; width: 8px; height: 5px; border-radius: 85% 0 85% 0; background: #7c9c53; left: 12%; top: 31%; opacity: .65; animation: ft-leaf-drift 5.4s ease-in-out infinite; }
+body #filely-financial-tree .ft-wind-leaf:nth-child(2) { left: 78%; top: 18%; width: 6px; height: 4px; background: #a9b969; animation-duration: 6.8s; animation-delay: -2.1s; }
+body #filely-financial-tree .ft-wind-leaf:nth-child(3) { left: 83%; top: 48%; width: 7px; height: 4px; background: #709252; animation-duration: 5.9s; animation-delay: -3.7s; }
+@keyframes ft-tree-breeze {
+  0%, 100% { transform: translateX(-2px) rotate(-4.5deg) scale(1); }
+  25% { transform: translateX(1px) rotate(1.2deg) scale(1.012); }
+  50% { transform: translateX(2px) rotate(5deg) scale(1.025); }
+  75% { transform: translateX(-1px) rotate(-1.8deg) scale(1.008); }
+}
+@keyframes ft-tree-flex { 0%, 100% { transform: skewX(-1.4deg); } 50% { transform: skewX(1.8deg) translateY(-1px); } }
+@keyframes ft-leaf-drift { 0%, 100% { transform: translate(-3px, 3px) rotate(-20deg); opacity: .35; } 50% { transform: translate(9px, -6px) rotate(28deg); opacity: .8; } }
+@keyframes ft-tree-light { 0%, 100% { opacity: .45; transform: scale(.94); } 50% { opacity: .85; transform: scale(1.08); } }
+body #filely-financial-tree[data-animation-paused='true'] :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation-play-state: paused; }
+html.no-motion body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation: none !important; }
+@media(prefers-reduced-motion:reduce) { body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation: none !important; } }
 
 body #filely-financial-tree .ft-kicker { font-weight: 700; text-transform: uppercase; }
 

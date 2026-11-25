@@ -1154,3 +1154,47 @@ test('local numeral font and preview',async({page})=>{
   expect(await page.evaluate(()=>document.fonts.check('650 42px "Fintex Figures"'))).toBe(true);
   await page.screenshot({path:'docs/numerals-preview.png'});
 });
+
+test('My tree has a visibly stronger layered breeze and all layers obey motion preferences',async({page})=>{
+  await openApp(page,true);await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
+  const tree=page.locator('#filely-financial-tree');await tree.scrollIntoViewIfNeeded();
+  await expect(tree).toHaveAttribute('data-animation-paused','false');
+  await expect(tree.locator('.ft-wind-leaf')).toHaveCount(3);
+  const before=await page.evaluate(()=>localStorage.getItem('fp_local_tx'));
+  const angles=await tree.locator('.ft-art-motion').evaluate(el=>{
+    const animation=el.getAnimations()[0];animation.pause();
+    const angle=time=>{animation.currentTime=time;const m=new DOMMatrix(getComputedStyle(el).transform);return Math.atan2(m.b,m.a)*180/Math.PI;};
+    const result={start:angle(0),end:angle(2300),duration:animation.effect.getTiming().duration};animation.play();return result;
+  });
+  expect(angles.end-angles.start).toBeGreaterThan(9);expect(angles.duration).toBe(4600);
+  await expect(tree.locator('.ft-img')).toHaveCSS('animation-name','ft-tree-flex');
+  await expect(tree.locator('.ft-wind-leaf').first()).toHaveCSS('animation-name','ft-leaf-drift');
+  await page.locator('[data-nav="calendar"]').click();
+  await expect(tree).toHaveAttribute('data-animation-paused','true');
+  for(const selector of ['.ft-art-motion','.ft-img','.ft-aura','.ft-wind-leaf'])for(const el of await tree.locator(selector).all())await expect(el).toHaveCSS('animation-play-state','paused');
+  await page.locator('[data-nav="home"]').click();await tree.scrollIntoViewIfNeeded();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  expect(await tree.evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});
+  expect(await tree.evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);
+  expect(await page.evaluate(()=>localStorage.getItem('fp_local_tx'))).toBe(before);
+});
+
+test('My tree stronger wind fits all species at both sway extremes on a narrow screen',async({page})=>{
+  await openApp(page,true);await page.setViewportSize({width:320,height:740});await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
+  const tree=page.locator('#filely-financial-tree');
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    for(const [expense,variant] of [[null,'sapling'],[11000,'birch'],[9500,'spruce'],[8000,'maple'],[5000,'oak']]){
+      await setTreeFlow(page,expense);await expect(tree).toHaveAttribute('data-tree-variant',variant);await tree.scrollIntoViewIfNeeded();
+      for(const time of [0,2300]){
+        await tree.evaluate((el,time)=>el.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=time;}),time);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
+      }
+    }
+  }
+  await tree.locator('.ft-art-wrap').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
+});
