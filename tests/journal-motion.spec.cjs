@@ -20,7 +20,7 @@ test('journal keeps exact signs and kopecks, clearer subunits and keyboard-opena
   await expect(page.locator('[data-operation-row=salary] .tx-amount')).toHaveAttribute('aria-label','+85 000,75 ₽');await expect(page.locator('[data-operation-row=food] .tx-amount')).toHaveAttribute('aria-label','−2 450,26 ₽');
   const ratio=await page.locator('[data-operation-row=food] .tx-amount').evaluate(el=>parseFloat(getComputedStyle(el.querySelector('.number-minor')).fontSize)/parseFloat(getComputedStyle(el).fontSize));expect(ratio).toBeGreaterThanOrEqual(.8);
   await expect(page.locator('.tx-day-card').first().locator('.tx-day-totals')).toContainText('2 735,76');await expect(page.locator('.tx-day-kicker').first()).toHaveText('3 показано');
-  const row=page.locator('[data-operation-row=food] .tx-swipe-content');await row.focus();await page.keyboard.press('Enter');await expect(page.locator('#modal-tx')).toBeVisible();expect(await snapshot(page)).toBe(before);
+  const row=page.locator('[data-operation-row=food] .tx-row-open');await row.focus();await page.keyboard.press('Enter');await expect(page.locator('#modal-tx')).toBeVisible();expect(await snapshot(page)).toBe(before);
 });
 test('replay choreographs rows, icons, actual amounts and light sweep, with finite timing and no writes',async({page})=>{
   await open(page);const before=await snapshot(page);await motion(page);await page.locator('#tx-feed').scrollIntoViewIfNeeded();await page.locator('#history-replay').click();

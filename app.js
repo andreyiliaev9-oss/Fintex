@@ -1108,18 +1108,29 @@ function replayOperationHistory() {
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopOperationReveals();else if(document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav==='home')animateOperationRows(document.getElementById('tx-feed'),'home');});
 window.addEventListener('fintex:tabchange',event=>{if(event.detail.name!=='home')stopOperationReveals();});
 
+function matchesJournalQuery(t,q) {
+  const normalize=value=>String(value??'').toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+  const query=normalize(q);
+  if([t.merchant,...(Array.isArray(t.items)?t.items.map(item=>item?.name||item?.title):[])].some(value=>normalize(value).includes(query)))return true;
+  const numeric=query.replace(/[ \u00a0\u202f]/g,'').replace(/(?:₽|руб\.?|рублей)$/,'').replace(',','.');
+  return /^\d+(?:\.\d{0,2})?$/.test(numeric)&&String(FM.money(t.amount)).includes(numeric);
+}
+function clearJournalSearch() {const input=document.getElementById('search-input');if(input)input.value='';renderHome();input?.focus({preventScroll:true});}
 function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
 
   const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
   const rows = FM.transactions(state.transactions).filter(t => {
     if (state.journalDay && (t.date !== state.journalDay.date || (state.journalDay.type !== 'all' && t.type !== state.journalDay.type))) return false;
-    if (q && !String(t.merchant || '').toLowerCase().includes(q) && !String(t.amount).includes(q)) return false;
+    if (q && !matchesJournalQuery(t,q)) return false;
     return true;
   });
 
   const feed = document.getElementById('tx-feed');
   if (!feed) return;
+  let searchStatus=document.getElementById('journal-search-status');
+  if(!searchStatus){searchStatus=document.createElement('div');searchStatus.id='journal-search-status';feed.before(searchStatus);}
+  searchStatus.hidden=!q;searchStatus.innerHTML=q?`<span role="status">Найдено: ${rows.length}</span><button type="button" onclick="clearJournalSearch()">Сбросить поиск ×</button>`:'';
   let dayBanner = document.getElementById('journal-day-filter');
   if (!dayBanner) { dayBanner = document.createElement('div'); dayBanner.id = 'journal-day-filter'; feed.before(dayBanner); }
   dayBanner.hidden = !state.journalDay;
@@ -1140,8 +1151,9 @@ function renderHome() {
   if (!rows.length) {
     feed.innerHTML = `
       <div class="card-surface p-6 text-center space-y-1.5">
-        <div class="text-sm font-semibold text-main">${state.journalDay ? 'За выбранный день операций нет' : 'Операций пока нет'}</div>
-        <div class="text-xs text-sub">Добавьте первую покупку или пополнение</div>
+        <div class="text-sm font-semibold text-main">${q?'Совпадений нет':state.journalDay ? 'За выбранный день операций нет' : 'Операций пока нет'}</div>
+        <div class="text-xs text-sub">${q?`По запросу «${escapeHtml(q)}» ничего не найдено. Попробуйте магазин, товар из чека или сумму.`:state.journalDay?'Выберите другую дату или добавьте операцию за этот день.':'Добавьте первую покупку или пополнение'}</div>
+        ${q?'':`<button type="button" class="journal-empty-add" onclick="${state.journalDay?`openAddModalForDate('${state.journalDay.date}')`:'openAddModal()'}">＋ Добавить операцию</button>`}
       </div>
     `;
     moreWrap.innerHTML = '';
@@ -1205,31 +1217,34 @@ function renderHome() {
         : '';
 
       return `
-        <div data-tx-id="${t.id}" data-operation-row="${escapeHtml(t.id)}" data-operation-type="${inc ? 'income' : 'expense'}" class="tx-swipe-wrap border-b border-white/[0.06] last:border-b-0 ${t._justMerged ? 'tx-merge-flash' : ''} ${isSelected ? 'tx-row-selected' : ''}">
-          <div class="tx-swipe-actions">
-            <button type="button" onclick="event.stopPropagation(); repeatTxById('${t.id}')" class="bg-[#00D6C3]/20 text-brand text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5">
+        <div data-tx-id="${t.id}" data-operation-row="${escapeHtml(t.id)}" data-no-tab-swipe data-operation-type="${inc ? 'income' : 'expense'}" class="tx-swipe-wrap border-b border-white/[0.06] last:border-b-0 ${t._justMerged ? 'tx-merge-flash' : ''} ${isSelected ? 'tx-row-selected' : ''}">
+          <div class="tx-swipe-actions" id="tx-actions-${escapeHtml(t.id)}" inert aria-hidden="true">
+            <button type="button" aria-label="Повторить операцию: ${escapeHtml(dispMerchant)}" onclick="event.stopPropagation(); repeatTxById('${t.id}')" class="bg-[#00D6C3]/20 text-brand text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5">
               <i data-lucide="repeat" class="w-3.5 h-3.5"></i><span>Повтор</span>
             </button>
-            <button type="button" onclick="event.stopPropagation(); deleteTxById('${t.id}')" class="bg-red-500/25 text-red-300 text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5">
+            <button type="button" aria-label="Удалить операцию: ${escapeHtml(dispMerchant)}" onclick="event.stopPropagation(); deleteTxById('${t.id}')" class="bg-red-500/25 text-red-300 text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Удалить</span>
             </button>
           </div>
-          <div data-tx-id="${t.id}" role="button" tabindex="0" onclick="${rowClickHandler}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${rowClickHandler}}"
-               ontouchstart="swipeStart(event, '${t.id}')" ontouchmove="swipeMove(event, this)" ontouchend="swipeEnd(this, '${t.id}')"
+          <div data-tx-id="${t.id}" onclick="${rowClickHandler}"
+               ontouchstart="swipeStart(event, '${t.id}')" ontouchmove="swipeMove(event, this)" ontouchend="swipeEnd(this, '${t.id}')" ontouchcancel="cancelTxSwipe()"
                onmousedown="swipeMouseStart(event, this, '${t.id}')" onwheel="swipeWheel(event, this)"
                class="tx-swipe-content p-4 flex items-center justify-between gap-3.5 cursor-pointer ${rowAccentCls}">
             <span class="tx-arrival-glow" aria-hidden="true"></span>
-            <div class="tx-row-main flex items-center gap-3.5 min-w-0">
+            <button type="button" class="tx-row-open" data-tx-open="${escapeHtml(t.id)}" ${isSelectMode?`aria-pressed="${isSelected}"`: ''}>
+            <span class="tx-row-main flex items-center gap-3.5 min-w-0">
               ${selectCheckHtml}
-              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type)}<span class="tx-direction">${inc?'↙':'↗'}</span></span>
-              <div class="min-w-0">
-                <div class="text-sm font-bold text-main truncate">${escapeHtml(dispMerchant)}</div>
-                <div class="text-xs text-sub truncate mt-0.5">${metaSub}</div>
-              </div>
-            </div>
+              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type).replace(/<div/g,'<span').replace(/<\/div>/g,'</span>')}<span class="tx-direction">${inc?'↙':'↗'}</span></span>
+              <span class="tx-merchant-copy min-w-0">
+                <span class="tx-merchant-name">${escapeHtml(dispMerchant)}</span>
+                <span class="tx-merchant-meta">${metaSub}</span>
+              </span>
+            </span>
             <span data-journal-amount="${t.amount}" data-journal-prefix="${inc?'+':'−'}" class="tx-amount money-val text-sm font-extrabold tabular-nums shrink-0 ${amountCls}">
               ${fmtR(t.amount, inc ? '+' : '−')}
             </span>
+            </button>
+            <button type="button" class="tx-row-menu" aria-label="Действия с операцией: ${escapeHtml(dispMerchant)}" aria-expanded="false" aria-controls="tx-actions-${escapeHtml(t.id)}" onclick="event.stopPropagation();toggleTxActions(this.closest('.tx-swipe-content'))"><span aria-hidden="true">⋯</span></button>
           </div>
         </div>
       `;
@@ -1263,147 +1278,72 @@ function renderHome() {
   lucide.createIcons();
 }
 
-let swipeStartX = 0, swipeStartY = 0, swipeDeltaX = 0, openedSwipeEl = null, swipeMovedFlag = false, swipeHoldTimer = null;
-
-function handleTxRowTap(e, id) {
-  if (swipeMovedFlag) { swipeMovedFlag = false; return; }
-  if (openedSwipeEl) {
-    openedSwipeEl.style.transform = 'translateX(0px)';
-    openedSwipeEl = null;
-    return;
-  }
+let swipeStartX=0,swipeStartY=0,swipeDeltaX=0,openedSwipeEl=null,swipeMovedFlag=false,swipeHoldTimer=null,txSwipe=null,txMouseCleanup=null;
+function setTxActions(el,open){
+  if(!el)return;
+  el.style.transition='transform .24s cubic-bezier(.2,.8,.2,1)';el.style.transform=open?'translateX(-128px)':'translateX(0px)';
+  const row=el.closest('.tx-swipe-wrap'),actions=row?.querySelector('.tx-swipe-actions');
+  row?.querySelector('.tx-row-menu')?.setAttribute('aria-expanded',String(open));
+  if(actions){actions.inert=!open;actions.setAttribute('aria-hidden',String(!open));}
+  if(open)openedSwipeEl=el;else if(openedSwipeEl===el)openedSwipeEl=null;
+}
+function toggleTxActions(el){if(openedSwipeEl&&openedSwipeEl!==el)setTxActions(openedSwipeEl,false);setTxActions(el,openedSwipeEl!==el);}
+function cancelTxSwipe(){
+  clearTimeout(swipeHoldTimer);swipeHoldTimer=null;
+  if(txSwipe?.el)setTxActions(txSwipe.el,false);txSwipe=null;swipeDeltaX=0;
+  if(openedSwipeEl)setTxActions(openedSwipeEl,false);
+  txMouseCleanup?.();txMouseCleanup=null;
+}
+function handleTxRowTap(e,id){
+  if(swipeMovedFlag){swipeMovedFlag=false;return;}
+  if(openedSwipeEl){setTxActions(openedSwipeEl,false);return;}
   openTxModal(id);
 }
-
-function swipeStart(e, txId) {
-  const touch = e.touches?.[0];
-  if (!touch) return;
-  swipeStartX = touch.clientX;
-  swipeStartY = touch.clientY;
-  swipeDeltaX = 0;
-  swipeMovedFlag = false;
-  if (swipeHoldTimer) clearTimeout(swipeHoldTimer);
-  if (txId && !state.txSelectMode) {
-    swipeHoldTimer = setTimeout(() => {
-      swipeMovedFlag = true;
-      if (typeof toggleTxSelectMode === 'function') toggleTxSelectMode(true, txId);
-    }, 460);
-  }
-  if (openedSwipeEl && openedSwipeEl !== e.currentTarget) {
-    openedSwipeEl.style.transform = 'translateX(0px)';
-    openedSwipeEl = null;
-  }
+function swipeStart(e,txId){
+  if(e.target.closest('.tx-row-menu'))return;
+  if(e.touches?.length!==1){cancelTxSwipe();return;}
+  const touch=e.touches[0];clearTimeout(swipeHoldTimer);swipeMovedFlag=false;swipeDeltaX=0;
+  swipeStartX=touch.clientX;swipeStartY=touch.clientY;
+  txSwipe={el:e.currentTarget,axis:null,id:touch.identifier};
+  if(openedSwipeEl&&openedSwipeEl!==e.currentTarget)setTxActions(openedSwipeEl,false);
+  if(txId&&!state.txSelectMode)swipeHoldTimer=setTimeout(()=>{swipeHoldTimer=null;swipeMovedFlag=true;txSwipe=null;window.toggleTxSelectMode?.(true,txId);},460);
 }
-
-function swipeMove(e, el) {
-  const touch = e.touches?.[0];
-  if (!touch) return;
-  const dx = touch.clientX - swipeStartX;
-  const dy = touch.clientY - swipeStartY;
-  if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-    if (swipeHoldTimer) { clearTimeout(swipeHoldTimer); swipeHoldTimer = null; }
-  }
-  if (Math.abs(dy) > Math.abs(dx) && Math.abs(swipeDeltaX) < 12) return;
-  if (dx < -8) {
-    swipeMovedFlag = true;
-    swipeDeltaX = Math.max(-168, dx);
-    el.style.transition = 'none';
-    el.style.transform = `translateX(${swipeDeltaX}px)`;
-  } else if (dx > 12) {
-    swipeMovedFlag = true;
-    if (openedSwipeEl === el) {
-      swipeDeltaX = 0;
-      el.style.transition = 'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)';
-      el.style.transform = 'translateX(0px)';
-    } else {
-      swipeDeltaX = Math.min(48, dx);
-      el.style.transition = 'none';
-      el.style.transform = `translateX(${swipeDeltaX}px)`;
-    }
-  }
+function swipeMove(e,el){
+  if(!txSwipe)return;
+  if(e.touches.length!==1){swipeMovedFlag=true;cancelTxSwipe();return;}
+  const t=e.touches[0];if(t.identifier!==txSwipe.id){cancelTxSwipe();return;}
+  const dx=t.clientX-swipeStartX,dy=t.clientY-swipeStartY;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
+  clearTimeout(swipeHoldTimer);swipeHoldTimer=null;
+  if(!txSwipe.axis)txSwipe.axis=Math.abs(dx)>Math.abs(dy)*1.35?'horizontal':'vertical';
+  if(txSwipe.axis==='vertical'){swipeMovedFlag=true;cancelTxSwipe();return;}
+  swipeMovedFlag=true;if(e.cancelable)e.preventDefault();swipeDeltaX=Math.max(-128,Math.min(32,dx));
+  el.style.transition='none';el.style.transform=`translateX(${swipeDeltaX}px)`;
 }
-
-function swipeEnd(el, txId) {
-  if (swipeHoldTimer) { clearTimeout(swipeHoldTimer); swipeHoldTimer = null; }
-  el.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)';
-  if (swipeDeltaX > 36 && txId) {
-    el.style.transform = 'translateX(0px)';
-    if (typeof toggleTxSelectMode === 'function') toggleTxSelectMode(true, txId);
-  } else if (swipeDeltaX < -136 && txId) {
-    el.style.transform = 'translateX(-100%)';
-    vibro('medium');
-    setTimeout(() => deleteTxById(txId), 150);
-  } else if (swipeDeltaX < -48) {
-    el.style.transform = 'translateX(-128px)';
-    openedSwipeEl = el;
-    vibro('selection');
-  } else {
-    el.style.transform = 'translateX(0px)';
-    if (openedSwipeEl === el) openedSwipeEl = null;
-  }
-  swipeDeltaX = 0;
+function swipeEnd(el){
+  clearTimeout(swipeHoldTimer);swipeHoldTimer=null;
+  if(!txSwipe)return;
+  if(txSwipe.axis==='horizontal')setTxActions(el,swipeDeltaX<-48);
+  txSwipe=null;swipeDeltaX=0;
 }
-
-function swipeMouseStart(e, el, txId) {
-  if (e.button !== 0 || e.target.closest('button')) return;
-  const startX = e.clientX;
-  let deltaX = 0;
-  let dragged = false;
-  if (openedSwipeEl && openedSwipeEl !== el) {
-    openedSwipeEl.style.transform = 'translateX(0px)';
-    openedSwipeEl = null;
-  }
-  const onMove = (mv) => {
-    const dx = mv.clientX - startX;
-    if (Math.abs(dx) > 6) dragged = true;
-    if (dx < -6) {
-      deltaX = Math.max(-168, dx);
-      el.style.transition = 'none';
-      el.style.transform = `translateX(${deltaX}px)`;
-    } else if (dx > 8) {
-      deltaX = Math.min(44, dx);
-      el.style.transition = 'none';
-      el.style.transform = `translateX(${deltaX}px)`;
-    }
-  };
-  const onUp = () => {
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', onUp);
-    if (!dragged) return;
-    swipeMovedFlag = true;
-    el.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)';
-    if (deltaX > 32 && txId) {
-      el.style.transform = 'translateX(0px)';
-      if (typeof toggleTxSelectMode === 'function') toggleTxSelectMode(true, txId);
-    } else if (deltaX < -136 && txId) {
-      el.style.transform = 'translateX(-100%)';
-      setTimeout(() => deleteTxById(txId), 150);
-    } else if (deltaX < -46) {
-      el.style.transform = 'translateX(-128px)';
-      openedSwipeEl = el;
-    } else {
-      el.style.transform = 'translateX(0px)';
-      if (openedSwipeEl === el) openedSwipeEl = null;
-    }
-  };
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
+function swipeMouseStart(e,el){
+  if(e.button!==0||e.target.closest('.tx-row-menu'))return;
+  txMouseCleanup?.();const startX=e.clientX,startY=e.clientY;let dx=0,axis=null;
+  if(openedSwipeEl&&openedSwipeEl!==el)setTxActions(openedSwipeEl,false);
+  const cleanup=()=>{window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);window.removeEventListener('blur',abort);};
+  const move=event=>{const x=event.clientX-startX,y=event.clientY-startY;if(Math.max(Math.abs(x),Math.abs(y))<10)return;if(!axis)axis=Math.abs(x)>Math.abs(y)*1.35?'horizontal':'vertical';if(axis==='vertical'){cleanup();txMouseCleanup=null;return;}swipeMovedFlag=true;dx=Math.max(-128,Math.min(32,x));el.style.transition='none';el.style.transform=`translateX(${dx}px)`;};
+  const up=()=>{cleanup();txMouseCleanup=null;if(axis==='horizontal')setTxActions(el,dx<-48);};
+  const abort=()=>{cleanup();setTxActions(el,false);txMouseCleanup=null;};
+  txMouseCleanup=abort;window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);window.addEventListener('blur',abort);
 }
-
-function swipeWheel(e, el) {
-  if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 14) return;
-  e.preventDefault();
-  if (e.deltaX > 18) {
-    if (openedSwipeEl && openedSwipeEl !== el) openedSwipeEl.style.transform = 'translateX(0px)';
-    el.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)';
-    el.style.transform = 'translateX(-128px)';
-    openedSwipeEl = el;
-  } else if (e.deltaX < -18) {
-    el.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)';
-    el.style.transform = 'translateX(0px)';
-    if (openedSwipeEl === el) openedSwipeEl = null;
-  }
+function swipeWheel(e,el){
+  if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)||Math.abs(e.deltaX)<14)return;
+  e.preventDefault();if(openedSwipeEl&&openedSwipeEl!==el)setTxActions(openedSwipeEl,false);setTxActions(el,e.deltaX>0);
 }
+window.addEventListener('fintex:tabchange',cancelTxSwipe);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelTxSwipe();});
+document.addEventListener('scroll',()=>{clearTimeout(swipeHoldTimer);swipeHoldTimer=null;},{capture:true,passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openedSwipeEl){e.preventDefault();const button=openedSwipeEl.querySelector('.tx-row-menu');cancelTxSwipe();button?.focus({preventScroll:true});}});
 
 function setCalFilter(mode) {
   vibro('selection');
@@ -2452,7 +2392,7 @@ function exportToIosCalendar() {
   toast('Файл FINTEX_Calendar.ics сформирован');
 }
 function setFilter(id) { vibro('selection'); state.filterCat = id; renderHome(); }
-function toggleSearch() { document.getElementById('search-bar-wrap').classList.toggle('hidden'); }
+function toggleSearch() {const wrap=document.getElementById('search-bar-wrap'),input=document.getElementById('search-input');wrap.classList.toggle('hidden');if(!wrap.classList.contains('hidden'))input?.focus({preventScroll:true});else input?.blur();}
 function shiftCalMonth(d) {
   const next = new Date(state.calYear, state.calMonth + d, 1);
   const day = Number((state.calSelected || TODAY).slice(8, 10)) || 1;
@@ -3338,6 +3278,8 @@ function openSmartHubModal() {
 }
 
 function closeModals() {
+  cancelTxSwipe();
+  cancelGoalHold();
   document.getElementById('savings-goals-dialog')?.close();
   ['modal-smart-hub', 'modal-scan', 'modal-autopilot', 'modal-can-buy', 'modal-sub-guide', 'modal-forecast-info', 'modal-goal-detail', 'modal-today', 'modal-tx', 'modal-cat-limit', 'modal-balance', 'modal-payday', 'modal-bill', 'modal-add', 'modal-ios-shortcuts', 'modal-price-tracker', 'modal-voice'].forEach(id => {
     const el = document.getElementById(id);
@@ -4031,22 +3973,16 @@ function startGoalHold(e) {
   }, 165);
 }
 
-function stopGoalHold() {
-  if (!goalHoldTimer) return;
-  clearInterval(goalHoldTimer);
-  goalHoldTimer = null;
-  const fill = document.getElementById('goal-hold-fill');
-  const lbl = document.getElementById('goal-hold-label');
-  if (fill) fill.style.width = '0%';
-  if (lbl) lbl.textContent = 'Удерживайте, чтобы отложить (+100 ₽/тик)';
-
-  if (goalHoldAccum > 0) {
-    const toAdd = goalHoldAccum;
-    goalHoldAccum = 0;
-    vibro('success');
-    quickTopupGoal(toAdd);
-  }
+function cancelGoalHold() {
+  clearInterval(goalHoldTimer);goalHoldTimer=null;goalHoldAccum=0;
+  const fill=document.getElementById('goal-hold-fill'),label=document.getElementById('goal-hold-label');
+  if(fill)fill.style.width='0%';if(label)label.textContent='Удерживайте, чтобы отложить (+100 ₽/тик)';
 }
+function stopGoalHold() {
+  if(!goalHoldTimer)return;const amount=goalHoldAccum;cancelGoalHold();
+  if(amount>0){vibro('success');quickTopupGoal(amount);}
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelGoalHold();});
 
 setTheme();
 applyMotionPref();

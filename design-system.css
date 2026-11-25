@@ -1731,3 +1731,32 @@ body #feed-select-mode-btn { font-size: 10px; min-height: 44px; min-width: 40px;
 body #feed-today-btn { min-width: 65px; }
 body .tx-feed-actions > button[aria-label="Поиск операций"] { display: grid; place-items: center; width: 30px; min-height: 44px; }
 @media(max-width:360px) { body .tx-feed-header { grid-template-columns: minmax(0,1fr); } body .tx-feed-actions { justify-content: space-between; } }
+
+/* v60 · deliberate actions, useful search and phone-friendly sheets. */
+body #tx-feed .tx-swipe-content, body #tx-feed .tx-swipe-content:has(.tx-amount[data-number-size]) { grid-template-columns: minmax(0,1fr) 30px; column-gap: 6px; }
+body .tx-row-open { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; position: relative; z-index: 1; width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; min-height: 44px; font: inherit; }
+body .tx-row-open:has(.tx-amount[data-number-size=medium],.tx-amount[data-number-size=wide]) { grid-template-columns: minmax(0,1fr); }
+body .tx-merchant-copy, body .tx-merchant-name, body .tx-merchant-meta { display: block; min-width: 0; }
+body .tx-merchant-name, body .tx-merchant-meta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body .tx-merchant-name { color: var(--text-primary); font-size: 13px; font-weight: 700; line-height: 1.5; }
+body .tx-merchant-meta { color: var(--text-secondary); font-size: 10px; line-height: 1.7; margin-top: 3px; }
+body .tx-merchant-mark > span:first-child { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 13px; }
+body .tx-row-menu { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; min-height: 44px; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-1); color: var(--text-primary); font-size: 21px; }
+body .tx-row-menu[aria-expanded=true] { background: var(--accent-soft); border-color: var(--border-active); }
+body #tx-feed .tx-swipe-actions button { min-height: 44px; color: var(--text-primary); background: var(--surface-2); border-left: 1px solid var(--border-subtle); }
+body #tx-feed .tx-swipe-actions button:last-child { color: var(--expense); background: var(--expense-soft); }
+body #tx-feed :is(.tx-row-open,.tx-row-menu):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 10px; }
+body #journal-search-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px 10px; padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: 13px; color: var(--text-secondary); background: var(--surface-1); font-size: 11px; }
+body #journal-search-status[hidden] { display: none; }
+body #journal-search-status button { min-height: 44px; color: var(--text-primary); font-size: 11px; font-weight: 650; }
+body .journal-empty-add { min-height: 44px; margin-top: 15px; padding: 10px 16px; border: 1px solid var(--border-active); border-radius: 13px; background: var(--accent-soft); color: var(--text-primary); font-size: 12px; font-weight: 700; }
+body [id^=modal-] > .modal-sheet { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 24px; }
+body .modal-sheet button[onclick*="closeModals"] { min-width: 44px; min-height: 44px; }
+body .modal-sheet :is(input,textarea,select,button):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+html.fintex-modal-open { overflow: hidden; }
+@media(pointer:coarse) { body .modal-sheet :is(input:not([type=checkbox]):not([type=range]),textarea,select) { font-size: 16px; } }
+body #tx-feed .tx-swipe-content, body #tx-feed .tx-swipe-content:has(.tx-amount[data-number-size]) { grid-template-columns: minmax(0,1fr) 44px; }
+body .tx-row-menu { width: 44px; border: 0; background: transparent; }
+body .tx-row-menu > span { display: grid; place-items: center; width: 30px; height: 38px; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-1); }
+body .tx-row-menu[aria-expanded=true] > span { border-color: var(--border-active); background: var(--accent-soft); }
+@media(max-width:360px) { body .tx-row-open { grid-template-columns: minmax(0,1fr); } body .tx-row-open .tx-amount { justify-self: end; } }
