@@ -5,10 +5,10 @@
   'use strict';
 
   const PERIODS = [
-    { id: 'week', label: 'Неделя', days: 7 },
-    { id: 'month', label: 'Месяц', days: 30 },
-    { id: 'quarter', label: 'Квартал', days: 90 },
-    { id: 'year', label: 'Год', days: 365 }
+    { id: 'week', label: '7 дней', days: 7 },
+    { id: 'month', label: '30 дней', days: 30 },
+    { id: 'quarter', label: '90 дней', days: 90 },
+    { id: 'year', label: '365 дней', days: 365 }
   ];
   const SUBTABS = [
     { id: 'overview', label: 'Обзор' },
@@ -75,7 +75,11 @@
     return `${Math.round(Number(num) || 0).toLocaleString('ru-RU')} ${currency || '₽'}`;
   }
   function categoryMeta(rawName) {
-    const raw = String(rawName || 'Прочее').trim();
+    const aliases = { food: 'Продукты', taxi: 'Транспорт', cafe: 'Кафе и рестораны', fun: 'Развлечения', subs: 'Подписки', shop: 'Покупки', health: 'Здоровье', other: 'Прочее', income: 'Доход' };
+    const original = String(rawName || 'Прочее').trim();
+    const key = original.toLowerCase();
+    const raw = Object.prototype.hasOwnProperty.call(aliases, key) ? aliases[key] : original;
+    if (raw.toLocaleLowerCase('ru-RU') === 'подписки') return { name: 'Подписки', icon: 'repeat', color: 'var(--ap-category-7)' };
     const normalized = raw.toLocaleLowerCase('ru-RU');
     if (normalized === 'доход' || normalized === 'income') return { name: 'Доход', icon: 'wallet', color: COLORS.mint, bg: 'rgba(0,214,195,.13)' };
     const match = CATEGORY_META.find(meta => meta.keys.some(key => normalized.includes(key)));
@@ -139,7 +143,7 @@
     const start=new Date(`${startKey}T00:00:00`);
     const prevStart=new Date(`${prevKey}T00:00:00`);
     let spent = 0, income = 0, prevSpent = 0;
-    const byCat = {};
+    const byCat = Object.create(null);
     const byWeekday = [0, 0, 0, 0, 0, 0, 0];
     const byDate = {};
     const activeDates = new Set();
@@ -163,7 +167,7 @@
         byWeekday[date.getDay()] = M.add(byWeekday[date.getDay()],amount);
         if (!byDate[dateKey]) byDate[dateKey] = { total: 0, list: [] };
         byDate[dateKey].total = M.add(byDate[dateKey].total,amount);
-        byDate[dateKey].list.push({ title: tx.merchant || tx.title || tx.note || tx.category || 'Покупка', amount, category: tx.category || 'Прочее' });
+        byDate[dateKey].list.push({ title: tx.merchant || tx.title || tx.note || categoryMeta(tx.category).name || 'Покупка', amount, category: tx.category || 'Прочее' });
         const meta = categoryMeta(tx.category || 'Прочее');
         const key = meta.name;
         if (!byCat[key]) byCat[key] = { total: 0, items: [], meta };
@@ -208,9 +212,11 @@
     return { st, currency, now, spent, income, net: M.add(income,-spent), deltaPct, prevSpent, burnRate, projectedBalance, categories, insights, byWeekday, weekdayNames, byDate, activeDates, currentTxs, allTxs: M.transactions(st.transactions,null,today) };
   }
 
-  function renderPeriodControls() {
-    return `<div class="ftx-ap-pills" role="group" aria-label="Период аналитики">${PERIODS.map(p => `<button type="button" class="ftx-ap-pill ${p.id === activePeriod ? 'active' : ''}" data-period="${p.id}" aria-pressed="${p.id === activePeriod}">${p.label}</button>`).join('')}</div>`;
+  function renderPeriodControls(data, period) {
+    const range = periodRange(data, period);
+    return `<div class="ap-period-panel"><div class="ap-period-title"><span><i data-lucide="calendar-range" aria-hidden="true"></i>Период расходов</span><span>По сегодня</span></div><div class="ftx-ap-pills" role="group" aria-label="Период аналитики">${PERIODS.map(p => `<button type="button" class="ftx-ap-pill ${p.id === activePeriod ? 'active' : ''}" data-period="${p.id}" aria-pressed="${p.id === activePeriod}">${p.label}</button>`).join('')}</div><div class="ap-period-dates"><strong>${range.first} — ${range.last}</strong><span>Включая сегодня · ${period.days} дн.</span></div></div>`;
   }
+
   function renderTabs() {
     return `<div class="ftx-ap-tabs" role="tablist" aria-label="Разделы аналитики">${SUBTABS.map(t => `<button type="button" class="ftx-ap-tab ${t.id === activeSubtab ? 'active' : ''}" data-subtab="${t.id}" role="tab" aria-selected="${t.id === activeSubtab}">${t.label}</button>`).join('')}</div>`;
   }
@@ -218,7 +224,7 @@
   function periodRange(data, period) {
     const end = window.FintexMath.key(data.now);
     const start = window.FintexMath.shift(end, 1 - period.days);
-    const label = key => new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
+    const label = key => new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
     return { start, end, first: label(start), last: label(end) };
   }
 
@@ -237,18 +243,33 @@
     </figure>`;
   }
 
+  function renderDistribution(data) {
+    if (!data.categories.length) return '<div class="ftx-ap-empty"><i data-lucide="chart-pie" aria-hidden="true"></i><strong>У каждой траты будет своё место</strong><span>Добавьте расходы, чтобы увидеть их распределение по категориям</span></div>';
+    let offset = 0;
+    const segments = data.categories.map(cat => {
+      const circle = `<circle class="ap-donut-segment" cx="64" cy="64" r="52" pathLength="100" stroke="${cat.meta.color}" stroke-dasharray="${cat.pct} ${100 - cat.pct}" stroke-dashoffset="${-offset}"/>`;
+      offset += cat.pct;
+      return circle;
+    }).join('');
+    const leader = data.categories[0];
+    return `<div class="ap-distribution-visual"><div class="ap-donut" role="img" aria-label="Распределение записанных расходов по ${data.categories.length} категориям"><svg viewBox="0 0 128 128" aria-hidden="true"><circle class="ap-donut-track" cx="64" cy="64" r="52"/>${segments}</svg><div class="ap-donut-centre" aria-hidden="true"><strong>${data.categories.length}</strong><span>категорий</span></div></div><div class="ap-distribution-leader"><span>Больше всего</span><strong>${esc(leader.name)}</strong><div><b>${Math.round(leader.pct)}%</b><span>от расходов</span></div></div></div>`;
+  }
+
   function renderOverview(data, period) {
     const deltaLabel = data.prevSpent > 0
       ? `${data.deltaPct > 0 ? '+' : ''}${data.deltaPct}% к предыдущему периоду`
       : 'Пока нет данных для сравнения';
     const deltaClass = data.deltaPct > 0 ? 'warn' : '';
+    const range = periodRange(data, period);
+    const previous = periodRange({ now: new Date(`${FintexMath.shift(range.start, -1)}T12:00:00`) }, period);
     const topCats = data.categories.slice(0, 4).map(cat => `
-      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val">${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span></div>`).join('');
+      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val">${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
     return `
       <div class="ftx-ap-card gold ap-expense-hero">
-        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
+        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за ${period.days} дней</div><span class="ap-period-caption">${period.label}</span></div>
         <div class="ftx-ap-big money-val">${fmt(data.spent, data.currency)}</div>
         <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
+        <details class="ap-comparison"><summary>С чем сравниваем <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
         ${renderExpenseTrend(data, period)}
         <div class="ap-flow-summary">
           <div><div class="ftx-ap-stat-label"><span class="ap-flow-dot"></span>Доходы</div><div class="ap-flow-value money-val">${fmt(data.income, data.currency)}</div></div>
@@ -262,7 +283,10 @@
       <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details>
       <div class="ftx-ap-card ap-distribution">
         <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length ? data.categories.length + ' катег.' : 'Нет операций'}</span></div>
-        ${data.categories.length ? `<div class="ap-composition" aria-hidden="true">${data.categories.map(cat => `<span style="width:${cat.pct}%;background:${cat.meta.color}"></span>`).join('')}</div>${topCats}<button type="button" class="ftx-ap-btn ap-category-link" data-goto="categories">Все категории <span aria-hidden="true">↗</span></button>` : '<div class="ftx-ap-empty"><i data-lucide="layers" aria-hidden="true"></i><strong>Каждая трата — часть картины</strong><span>Добавьте расходы, чтобы увидеть их распределение по категориям</span></div>'}
+        ${renderDistribution(data)}
+        ${topCats}
+        ${data.categories.length > 4 ? `<p class="ap-distribution-rest">Ещё ${data.categories.length - 4} катег. · ${fmt(FintexMath.sum(data.categories.slice(4), c => c.total), data.currency)}</p>` : ''}
+        ${data.categories.length ? '<button type="button" class="ftx-ap-btn ap-category-link" data-goto="categories">Разобрать по категориям <span aria-hidden="true">↗</span></button>' : ''}
       </div>
       <div class="ftx-ap-card ap-observations">
         <div class="ftx-ap-section-title"><span>Главное за период</span><span class="ftx-ap-section-sub">По вашим записям</span></div>
@@ -272,11 +296,11 @@
   }
 
   function renderCategories(data) {
-    if (!data.categories.length) return `<div class="ftx-ap-card"><div class="ftx-ap-empty">За выбранный период расходов пока нет.<br>Добавьте операцию — и FINTEX покажет, на что уходят деньги.</div></div>`;
+    if (!data.categories.length) return `<div class="ftx-ap-card"><div class="ftx-ap-empty">За выбранный период расходов пока нет.<br>Добавьте операцию — и приложение покажет, на что уходят деньги.</div></div>`;
     return `
       <div class="ftx-ap-card">
         <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length} катег.</span></div>
-        <div class="ap-category-hint">Нажмите на категорию, чтобы посмотреть операции внутри неё.</div>
+        ${renderDistribution(data)}<div class="ap-category-hint">Нажмите на категорию, чтобы посмотреть операции внутри неё.</div>
         ${data.categories.map(cat => {
           const isOpen = expandedCategory === cat.name;
           const meta = cat.meta;
@@ -291,7 +315,7 @@
           </div>`;
         }).join('')}
       </div>
-      <div class="ftx-ap-note">Категории сгруппированы по названию операции. Неизвестные названия сохраняются как есть — FINTEX не приписывает им неподтверждённый смысл.</div>`;
+      <div class="ftx-ap-note">Категории сгруппированы по названию операции. Неизвестные названия сохраняются как есть — приложение не приписывает им неподтверждённый смысл.</div>`;
   }
 
   function renderWeekdayRhythm(data) {
@@ -332,7 +356,7 @@
       if (!map[key]) map[key] = { total: 0, list: [] };
       const amount = Math.abs(Number(tx.amount) || 0);
       map[key].total += amount;
-      map[key].list.push({ title: tx.merchant || tx.title || tx.category || 'Покупка', amount });
+      map[key].list.push({ title: tx.merchant || tx.title || categoryMeta(tx.category).name || 'Покупка', amount });
     });
     const totals = Object.values(map).map(item => item.total).filter(Boolean);
     const max = Math.max(1, ...totals);
@@ -378,7 +402,7 @@
         <button type="button" class="section-action" data-tool="prices"><span><strong>Цены по чекам</strong><small>Сравнение ваших покупок</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-tool="limits"><span><strong>Лимиты категорий</strong><small>Настроить бюджет на расходы</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-act="sim"><span><strong>Дерево будущего</strong><small>Сценарии личных финансов</small></span><span aria-hidden="true">→</span></button>
-        <button type="button" class="section-action" data-act="stories"><span><strong>Итоги в Stories</strong><small>Короткий отчёт за период</small></span><span aria-hidden="true">→</span></button>
+        <button type="button" class="section-action" data-act="stories"><span><strong>Итоги периода</strong><small>Короткий отчёт за период</small></span><span aria-hidden="true">→</span></button>
       </div></details>`;
   }
 
@@ -397,6 +421,7 @@
     injectStyles();
     const focused = container.contains(document.activeElement) ? document.activeElement : null;
     const focusKey = focused && ['period','subtab','cat','hdate','goto'].map(key => focused.hasAttribute(`data-${key}`) ? [key, focused.getAttribute(`data-${key}`)] : null).find(Boolean);
+    const behaviorDisclosures = new Map([...container.querySelectorAll('#fintex-behavior details[data-behavior-detail]')].map(el => [el.dataset.behaviorDetail, el.open]));
     const previousTools = container.querySelector('#analytics-tools');
     if (previousTools) toolsOpen = previousTools.open;
     const period = PERIODS.find(p => p.id === activePeriod) || PERIODS[1];
@@ -406,11 +431,12 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Ваши деньги в деталях <span class="ap-date-range">${periodRange(data, period).first} — ${periodRange(data, period).last}</span></p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Ваши деньги в деталях <span class="ap-date-range">${periodRange(data, period).first} — ${periodRange(data, period).last}</span></p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
     if (focusKey) {
       const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
       next?.focus({ preventScroll: true });
     }
+    container.querySelectorAll('#fintex-behavior details[data-behavior-detail]').forEach(el => { if (behaviorDisclosures.has(el.dataset.behaviorDetail)) el.open = behaviorDisclosures.get(el.dataset.behaviorDetail); });
     window.FintexBehavior?.bind(container);
     container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });
     const toolActions = { purchase: () => window.openCanIBuyModal?.(), prices: () => window.openPriceTrackerModal?.(), limits: () => window.openCatLimitModal?.() };
