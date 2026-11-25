@@ -78,3 +78,13 @@ test('refined observations have Russian labels and accessible evidence disclosur
   await page.locator('[data-period="week"]').click();await expect(profile).toHaveAttribute('open');await expect(unusual).not.toHaveAttribute('open');
   await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.setViewportSize({width:390,height:1000});await panel.locator('.behavior-insights').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/behavior-observations-preview.png'});
 });
+test('savings pace has a live personal scenario, persists only on save, and fits every theme',async({page})=>{
+  await open(page,{empty:true});const before=await snapshot(page),planner=page.locator('.behavior-planner');await planner.locator('summary').click();await expect(planner.locator('[data-savings-duration]')).toHaveText('—');
+  await planner.locator('[name="remaining"]').fill('100000');await planner.locator('[name="monthly"]').fill('5000');await expect(planner.locator('[data-savings-duration]')).toHaveText('20 мес.');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.fp_behavior_v1).plan)).toBeUndefined();expect(await snapshot(page)).toBe(before);
+  await planner.locator('[name="monthly"]').fill('0');await expect(planner.locator('[data-savings-duration]')).toHaveText('—');await planner.locator('[name="monthly"]').fill('5000,50');await planner.getByRole('button',{name:'Сохранить мой план'}).click();await expect(planner.locator('[data-savings-duration]')).toHaveText('20 мес.');
+  expect(await snapshot(page)).toBe(before);await page.setViewportSize({width:320,height:740});
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});expect(await planner.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
+  await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.setViewportSize({width:390,height:1000});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await planner.evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/savings-pace-preview.png'});
+  await page.evaluate(()=>togglePrivacy());await expect(planner).toBeHidden();
+});

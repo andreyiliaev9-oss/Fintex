@@ -1198,3 +1198,13 @@ test('My tree stronger wind fits all species at both sway extremes on a narrow s
   }
   await tree.locator('.ft-art-wrap').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
 });
+test('tree leaves fall down with varied timing, remain bounded and obey all animation controls',async({page})=>{
+  await openApp(page,true);await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});const tree=page.locator('#filely-financial-tree');await tree.scrollIntoViewIfNeeded();await expect(tree).toHaveAttribute('data-animation-paused','false');
+  const before=await page.evaluate(()=>JSON.stringify({transactions:state.transactions,goal:state.goal}));const leaves=tree.locator('.ft-falling-leaf');await expect(leaves).toHaveCount(6);await expect(tree.locator('.ft-falling-leaves')).toHaveAttribute('aria-hidden','true');
+  const result=await leaves.first().evaluate(el=>{const a=el.getAnimations()[0];a.pause();a.effect.updateTiming({delay:0});a.currentTime=0;const start=new DOMMatrix(getComputedStyle(el).transform);a.currentTime=a.effect.getTiming().duration*.82;const end=new DOMMatrix(getComputedStyle(el).transform);a.play();return {dy:end.m42-start.m42,opacity:Number(getComputedStyle(el).opacity)};});expect(result.dy).toBeGreaterThan(80);expect(result.opacity).toBeGreaterThan(0);
+  expect(new Set(await leaves.evaluateAll(els=>els.map(el=>getComputedStyle(el).animationDuration))).size).toBeGreaterThan(3);
+  await page.locator('[data-nav="calendar"]').click();for(const leaf of await leaves.all())await expect(leaf).toHaveCSS('animation-play-state','paused');
+  await page.locator('[data-nav="home"]').click();await tree.scrollIntoViewIfNeeded();await page.setViewportSize({width:320,height:740});for(const time of [0,1800,3800,6000]){await tree.evaluate((el,t)=>el.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=t;}),time);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);}
+  await page.emulateMedia({reducedMotion:'reduce'});expect(await tree.evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);await expect(tree.locator('.ft-falling-leaves')).toBeHidden();
+  await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});await expect(tree.locator('.ft-falling-leaves')).toBeHidden();expect(await tree.evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);expect(await page.evaluate(()=>JSON.stringify({transactions:state.transactions,goal:state.goal}))).toBe(before);
+});

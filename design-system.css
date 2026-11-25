@@ -865,9 +865,9 @@ body #filely-financial-tree .ft-wind-leaf:nth-child(3) { left: 83%; top: 48%; wi
 @keyframes ft-tree-flex { 0%, 100% { transform: skewX(-1.4deg); } 50% { transform: skewX(1.8deg) translateY(-1px); } }
 @keyframes ft-leaf-drift { 0%, 100% { transform: translate(-3px, 3px) rotate(-20deg); opacity: .35; } 50% { transform: translate(9px, -6px) rotate(28deg); opacity: .8; } }
 @keyframes ft-tree-light { 0%, 100% { opacity: .45; transform: scale(.94); } 50% { opacity: .85; transform: scale(1.08); } }
-body #filely-financial-tree[data-animation-paused='true'] :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation-play-state: paused; }
-html.no-motion body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation: none !important; }
-@media(prefers-reduced-motion:reduce) { body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf) { animation: none !important; } }
+body #filely-financial-tree[data-animation-paused='true'] :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf, .ft-falling-leaf) { animation-play-state: paused; }
+html.no-motion body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf, .ft-falling-leaf) { animation: none !important; }
+@media(prefers-reduced-motion:reduce) { body #filely-financial-tree :is(.ft-art-motion, .ft-aura, .ft-img, .ft-svg-art, .ft-wind-leaf, .ft-falling-leaf) { animation: none !important; } }
 
 body #filely-financial-tree .ft-kicker { font-weight: 700; text-transform: uppercase; }
 
@@ -1437,3 +1437,59 @@ body.stealth-mode .ap-period-information { visibility: hidden; }
   body .ap-period-metrics > div > span { font-size: 9px; }
   body .ap-period-metrics > div + div { padding-left: 10px; }
 }
+
+/* v54 · coloured destinations, a deliberate savings planner, and falling leaves. */
+body #fintex-navigation [data-nav='home'] { --tab-colour: #216343; --tab-soft: #e0efd7; }
+body #fintex-navigation [data-nav='calendar'] { --tab-colour: #905028; --tab-soft: #fae5cd; }
+body #fintex-navigation [data-nav='analytics'] { --tab-colour: #315d91; --tab-soft: #dce9f8; }
+body #fintex-navigation [data-nav='settings'] { --tab-colour: #795087; --tab-soft: #eedff3; }
+body #fintex-navigation .nav-tab .nav-icon { background: var(--tab-soft); color: var(--tab-colour); }
+body #fintex-navigation .nav-tab::after { border-color: color-mix(in srgb, var(--tab-colour) 52%, var(--nav-edge)); }
+body #fintex-navigation .nav-tab.is-active-tab::after { border-color: var(--tab-colour); }
+body #fintex-navigation .nav-tab.is-active-tab .nav-icon { background: var(--tab-colour); color: #fffdf7; }
+body #fintex-navigation .nav-tab .nav-icon-brand, body #fintex-navigation .nav-tab.is-active-tab .nav-icon-brand { background: #10543d; }
+html.dark body #fintex-navigation .nav-tab::after { border-color: color-mix(in srgb, var(--tab-soft) 55%, var(--nav-edge)); }
+html.dark body #fintex-navigation .nav-tab.is-active-tab::after { border-color: var(--tab-soft); }
+@media(hover:hover) { body #fintex-navigation .nav-tab:hover:not(.is-active-tab) .nav-icon { background: var(--tab-soft); color: var(--tab-colour); box-shadow: 0 0 0 1px var(--tab-colour); } }
+body .behavior-panel .behavior-planner { margin: 24px 0 20px; border: 1px solid var(--border-subtle); background: var(--surface-1); border-radius: 22px; overflow: hidden; }
+body .behavior-panel .behavior-planner > summary { justify-content: flex-start; padding: 20px; gap: 12px; }
+body .behavior-panel .behavior-planner > summary::after { margin-left: auto; }
+body .savings-planner-icon { width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; color: var(--accent); background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 13px; }
+body .savings-planner-icon svg { width: 20px; height: 20px; stroke-width: 1.5; }
+body .savings-planner-title { min-width: 0; }
+body .savings-planner-title strong { display: block; font-size: 16px; font-weight: 650; line-height: 1.3; letter-spacing: -.025em; }
+body .savings-planner-title small { display: block; color: var(--text-secondary); font-size: 10px; font-weight: 400; margin-top: 6px; }
+body .savings-planner-body { padding: 0 20px 20px; }
+body .savings-planner-body > .behavior-copy { border-top: 1px solid var(--border-subtle); padding-top: 16px; margin: 0 0 18px; font-size: 11px; }
+body .savings-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+body .savings-fields label { margin: 0; padding: 12px; background: var(--surface-2); border-radius: 13px; min-width: 0; }
+body .savings-fields label > span { display: block; font-size: 9px; color: var(--text-secondary); line-height: 1.6; min-height: 29px; }
+body .behavior-panel .savings-fields input { border: 0; border-bottom: 1px solid var(--border-active); border-radius: 0; padding: 9px 0; margin-top: 4px; min-height: 44px; background: transparent; font-size: 18px; font-weight: 600; letter-spacing: -.03em; }
+body .savings-fields input::placeholder { font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--text-secondary); }
+body .savings-preview { padding: 18px; margin: 14px 0; border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--hero-wash), var(--surface-1); }
+body .savings-preview > span { display: block; font-size: 10px; color: var(--text-secondary); }
+body .savings-preview > strong { display: block; font-size: 30px; font-weight: 600; letter-spacing: -.04em; color: var(--number-ink, var(--text-primary)); margin: 8px 0; overflow-wrap: anywhere; }
+body .savings-preview > small { display: block; color: var(--text-secondary); font-size: 10px; line-height: 1.7; }
+body .savings-history { border-top: 1px solid var(--border-subtle); margin-top: 20px; padding-top: 18px; }
+body .savings-history-label { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; color: var(--gold); }
+body .savings-history-label svg { width: 14px; height: 14px; }
+body .savings-history .behavior-copy { font-size: 11px; }
+body #filely-financial-tree .ft-falling-leaves { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+body #filely-financial-tree .ft-falling-leaf { --fall-x: 20px; --fall-distance: 120px; position: absolute; display: block; left: 32%; top: 14%; width: 10px; height: 6px; border-radius: 85% 0 85% 0; background: #8ba34e; border-bottom: 1px solid rgba(83,98,35,.35); opacity: 0; animation: ft-leaf-fall 6.8s linear infinite; animation-delay: -1.2s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(2) { --fall-x: -22px; --fall-distance: 105px; left: 68%; top: 22%; width: 8px; height: 5px; background: #c6a45b; animation-duration: 7.6s; animation-delay: -4.3s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(3) { --fall-x: 30px; left: 42%; top: 8%; width: 7px; height: 5px; background: #a7ba65; animation-duration: 5.9s; animation-delay: -3.4s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(4) { --fall-x: -30px; --fall-distance: 90px; left: 76%; top: 32%; width: 9px; height: 5px; background: #8fa268; animation-duration: 8.3s; animation-delay: -6.2s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(5) { --fall-x: 16px; --fall-distance: 95px; left: 24%; top: 30%; width: 6px; height: 4px; background: #b89b51; animation-duration: 7.1s; animation-delay: -5.1s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(6) { --fall-x: -14px; --fall-distance: 110px; left: 57%; top: 16%; width: 8px; height: 5px; background: #a0b873; animation-duration: 8.8s; animation-delay: -.3s; }
+@keyframes ft-leaf-fall {
+  0% { transform: translate(0,-8px) rotate(-25deg) scaleX(1); opacity: 0; }
+  12% { opacity: .9; }
+  35% { transform: translate(calc(var(--fall-x) * .8),calc(var(--fall-distance) * .28)) rotate(70deg) scaleX(.45); }
+  60% { transform: translate(calc(var(--fall-x) * -.3),calc(var(--fall-distance) * .6)) rotate(155deg) scaleX(-.8); opacity: .8; }
+  82% { transform: translate(calc(var(--fall-x) * .6),calc(var(--fall-distance) * .86)) rotate(225deg) scaleX(.6); opacity: .6; }
+  100% { transform: translate(var(--fall-x),var(--fall-distance)) rotate(310deg) scaleX(1); opacity: 0; }
+}
+body #filely-financial-tree[data-animation-paused='true'] .ft-falling-leaf { animation-play-state: paused; }
+html.no-motion body #filely-financial-tree .ft-falling-leaves { display: none; }
+@media(prefers-reduced-motion:reduce) { body #filely-financial-tree .ft-falling-leaves { display: none; } }
+@media(max-width:359px) { body .behavior-panel .behavior-planner > summary { padding: 16px; gap: 10px; } body .savings-planner-title strong { font-size: 15px; } body .savings-planner-body { padding: 0 16px 16px; } body .savings-fields label { padding: 10px; } }

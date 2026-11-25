@@ -7,6 +7,7 @@
   function today(){return typeof TODAY==='string'?TODAY:FintexMath.key(new Date());}
   function initial(){const data=load();if(!data.observedSince){data.observedSince=today();store(data);}return data;}
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fieldMoney=n=>n===''?'':Number(n).toLocaleString('ru-RU',{maximumFractionDigits:2});
   const money=n=>`${Number(n).toLocaleString('ru-RU',{maximumFractionDigits:2})} ₽`;
   const date=d=>{if(FintexMath.ordinal(d)===null)return '—';const [y,m,day]=String(d).split('-');return `${day}.${m}.${y}`;};
   const period=(from,to)=>`${date(from)} — ${date(to)}`;
@@ -26,15 +27,15 @@
   }
 
   function planner(result,data){
-    const p=result.planning,remaining=data.plan?.remaining??100000,monthly=data.plan?.monthly??'';
+    const p=result.planning,remaining=data.plan?.remaining??'',monthly=data.plan?.monthly??'';
     let estimate='';
     if(p){
       const months=remaining>0?Math.ceil(remaining/p.monthly):0;
-      estimate=`<p class="behavior-copy">Ориентир для сравнения — <strong>${money(p.monthly)} в месяц</strong>, примерно ${months} мес. на указанную оставшуюся сумму, без доходности и инфляции.</p><p class="behavior-evidence">Основа: ${p.months} полных месяцев · ${period(p.from,p.to)}. ${p.basis==='saving'?'Нижний квартиль чистых пополнений подушки.':'Половина нижнего квартиля разницы записанных поступлений и расходов в месяцах с доходами. Это не факт накопления и не оценка всех обязательств.'} Это сценарий, не гарантия устойчивости.</p>`;
+      estimate=`<p class="behavior-copy">Ориентир для сравнения — <strong>${money(p.monthly)} в месяц</strong>, ${remaining>0?`примерно ${months} мес. на указанную оставшуюся сумму`:'срок можно рассчитать после ввода оставшейся суммы'}, без доходности и инфляции.</p><p class="behavior-evidence">Основа: ${p.months} полных месяцев · ${period(p.from,p.to)}. ${p.basis==='saving'?'Нижний квартиль чистых пополнений подушки.':'Половина нижнего квартиля разницы записанных поступлений и расходов в месяцах с доходами. Это не факт накопления и не оценка всех обязательств.'} Это сценарий, не гарантия устойчивости.</p>`;
       if(Number(monthly)>p.monthly)estimate+='<p class="behavior-note">Ваш темп выше этого ориентира. Он может быть достижим — проверьте будущие доходы и обязательства, которых нет в журнале.</p>';
     }else if(result.planningReason==='nonpositive')estimate='<p class="behavior-copy">Истории уже достаточно для сравнения, но положительный ежемесячный темп по ней не подтверждён. Не будем рекомендовать сумму, которую эти записи не поддерживают. Вы можете сохранить собственный план и проверить его после новых наблюдений.</p>';
     else estimate='<p class="behavior-copy">Для персонального ориентира пока мало истории: нужны 3 полных месяца с поступлениями и хотя бы 12 днями расходов, либо 3 месяца наблюдения за подушкой. Пока можно сохранить собственный план — мы не будем выдавать его за рекомендацию.</p>';
-    return `<details class="behavior-planner" data-behavior-detail="planner"><summary>Проверить темп накоплений</summary><p class="behavior-copy">Сравните свой план с доступной историей. Это сценарий для размышления, не обязательство и не гарантия результата.</p><form id="behavior-plan-form"><label>Осталось накопить, ₽<input name="remaining" inputmode="decimal" value="${esc(remaining)}" required></label><label>Ваш темп в месяц, ₽<input name="monthly" inputmode="decimal" value="${esc(monthly)}" placeholder="Укажите комфортную сумму" required></label><button type="submit" class="behavior-primary">Сохранить мой план</button></form>${estimate}${data.plan?`<p class="behavior-evidence">Ваш план сохранён ${date(data.plan.date)}. ${data.planChanges>1?`Вы явно меняли его ${Math.min(data.planChanges-1,999)} раз; это не считается ошибкой.`:''} Баланс и цель в разделе подушки не меняются.</p>`:''}</details>`;
+    return `<details class="behavior-planner" data-behavior-detail="planner"><summary><span class="savings-planner-icon" aria-hidden="true"><i data-lucide="sprout"></i></span><span class="savings-planner-title"><strong>Темп накоплений</strong><small>Ваш план и ориентир по истории</small></span></summary><div class="savings-planner-body"><p class="behavior-copy">Сравните свой план с доступной историей. Это сценарий для размышления, не обязательство и не гарантия результата.</p><form id="behavior-plan-form"><div class="savings-fields"><label><span>Осталось накопить, ₽</span><input name="remaining" inputmode="decimal" value="${esc(fieldMoney(remaining))}" placeholder="Например, 100 000" required></label><label><span>Ваш темп в месяц, ₽</span><input name="monthly" inputmode="decimal" value="${esc(fieldMoney(monthly))}" placeholder="Например, 5 000" required></label></div><div class="savings-preview" aria-live="polite"><span>Срок по вашему плану</span><strong data-savings-duration>—</strong><small data-savings-explanation>Укажите сумму и ежемесячный взнос</small></div><button type="submit" class="behavior-primary">Сохранить мой план</button></form><div class="savings-history"><div class="savings-history-label"><i data-lucide="scan-text" aria-hidden="true"></i>Что видно по истории</div>${estimate}</div>${data.plan?`<p class="behavior-evidence">Ваш план сохранён ${date(data.plan.date)}. ${data.planChanges>1?`Вы явно меняли его ${Math.min(data.planChanges-1,999)} раз; это не считается ошибкой.`:''} Баланс и цель в разделе подушки не меняются.</p>`:''}</div></details>`;
   }
   function entryHTML(){
     const data=initial();
@@ -65,6 +66,15 @@
       else return;
       if(!store(data)){rerender('Не удалось сохранить реакцию в браузере.');return;}rerender(note);
     });
+    const planForm=panel.querySelector('#behavior-plan-form');
+    function updatePlanPreview(){
+      if(!planForm)return;
+      const remaining=FintexMath.parse(planForm.elements.remaining.value),monthly=FintexMath.parse(planForm.elements.monthly.value);
+      const valid=remaining>0&&monthly>0;
+      planForm.querySelector('[data-savings-duration]').textContent=valid?`${Math.ceil(remaining/monthly).toLocaleString('ru-RU')} мес.`:'—';
+      planForm.querySelector('[data-savings-explanation]').textContent=valid?'При неизменном взносе. Без доходности и инфляции; это сценарий, не гарантия.':'Укажите положительные суммы с точностью до копеек';
+    }
+    planForm?.addEventListener('input',updatePlanPreview);updatePlanPreview();
     panel.querySelector('#behavior-plan-form')?.addEventListener('submit',event=>{
       event.preventDefault();const fields=new FormData(event.target),remaining=FintexMath.parse(fields.get('remaining')),monthly=FintexMath.parse(fields.get('monthly'));
       if(!(remaining>0&&monthly>0)){panel.querySelector('.behavior-status').textContent='Укажите положительные суммы с точностью до копеек.';return;}

@@ -66,3 +66,11 @@ test('each panel button has a separated outline, with a stronger current outline
     }
   }
 });
+test('each destination has a distinct coloured icon tile even when inactive',async({page})=>{
+  await open(page);
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    const colours=await page.locator('#fintex-navigation .nav-icon').evaluateAll(els=>els.map(el=>getComputedStyle(el).backgroundColor));expect(new Set(colours).size).toBe(4);
+    for(const tab of ['calendar','analytics','settings']){const icon=page.locator(`[data-nav="${tab}"] .nav-icon`);const c=await icon.evaluate(el=>{const rgb=s=>s.match(/\d+/g).slice(0,3).map(Number),style=getComputedStyle(el);return {fg:rgb(style.color),bg:rgb(style.backgroundColor)};});expect(contrast(c.fg,c.bg)).toBeGreaterThanOrEqual(4.5);}
+  }
+});
