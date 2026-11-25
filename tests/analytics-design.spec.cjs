@@ -13,7 +13,7 @@ test('editorial overview plots real daily expenses, preserves amounts, periods a
   await open(page);const before=await snapshot(page);
   await expect(page.locator('.ftx-ap-stat').first()).toHaveCSS('border-top-width','0px');
   await expect(page.locator('.ftx-ap-stat').first()).toHaveCSS('border-radius','0px');
-  await expect(page.locator('.ap-observations')).toHaveCSS('border-top-width','0px');
+  await expect(page.locator('.ap-period-information')).toBeVisible();
   for(const [period,days]of [['week',7],['month',30],['quarter',90],['year',365]]){
     await page.locator(`[data-period="${period}"]`).click();
     const data=await page.evaluate(days=>{const d=FintexAnalyticsPro.analyze(days);return {spent:d.spent,income:d.income,categories:d.categories,net:d.net};},days);
@@ -79,4 +79,40 @@ test('distribution uses Russian built-in names, matching ring shares and works i
     await page.setViewportSize({width:320,height:740});expect(await card.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
   }
   await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.setViewportSize({width:390,height:1000});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.locator('.ap-distribution').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-structure-preview.png'});
+});
+test('daily chart supports pointer, keyboard and exact kopecks without mutating the ledger',async({page})=>{
+  await open(page);await page.evaluate(()=>{state.transactions=[{id:'a',date:'2026-11-23',type:'expense',amount:1234.56,category:'food'},{id:'b',date:'2026-11-23',type:'expense',amount:10.1,category:'food'},{id:'salary',date:'2026-11-24',type:'income',amount:60000}];FintexAnalyticsPro.render();});
+  const before=await snapshot(page),slider=page.locator('.ap-chart-range');
+  await slider.focus();await page.keyboard.press('End');await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('.ap-trend-value')).toHaveText('1 244,66 ₽');await expect(page.locator('.ap-trend-count')).toHaveText('Записей: 2');
+  await slider.focus();await page.keyboard.press('End');await expect(slider).toHaveValue('29');await expect(page.locator('.ap-trend-value')).toHaveText('0 ₽');await expect(page.locator('.ap-trend-count')).toHaveText('Нет записанных расходов');await expect(slider).toHaveAttribute('aria-valuetext',/24 ноября.*0 ₽/);
+  await page.keyboard.press('ArrowLeft');await expect(page.locator('.ap-trend-value')).toHaveText('1 244,66 ₽');await expect(page.locator('.ap-chart-point')).toHaveAttribute('cx',String(28/29*320));
+  await page.keyboard.press('Home');await expect(slider).toHaveValue('0');
+  await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const box=await page.locator('.ap-plot-surface').boundingBox();await page.mouse.click(box.x+box.width-1,box.y+50);await expect(slider).toHaveValue('29');await page.mouse.move(box.x+box.width-1,box.y+50);await page.mouse.down();await page.mouse.move(box.x+1,box.y+50,{steps:8});await page.mouse.up();await expect(slider).toHaveValue('0');
+  for(const period of ['week','quarter','year','month']){await page.locator(`[data-period="${period}"]`).click();expect(Number(await slider.inputValue())).toBeGreaterThanOrEqual(0);await expect(page.locator('.ap-chart-line')).not.toHaveAttribute('d',/NaN|Infinity/);}
+  expect(await snapshot(page)).toBe(before);
+});
+test('period information excludes income and describes the actual expense median and busiest day',async({page})=>{
+  await open(page);await page.evaluate(()=>{state.transactions=[{id:'a',date:'2026-11-22',type:'expense',amount:100},{id:'b',date:'2026-11-23',type:'expense',amount:200},{id:'c',date:'2026-11-23',type:'expense',amount:50.5},{id:'salary',date:'2026-11-24',type:'income',amount:98000}];FintexAnalyticsPro.render();});
+  const card=page.locator('.ap-period-information');await expect(card.locator('.ap-period-metrics strong').nth(0)).toHaveText('3');await expect(card.locator('.ap-period-metrics strong').nth(1)).toHaveText('2 из 30');await expect(card.locator('.ap-period-peak strong')).toHaveText('23 ноября');await expect(card.locator('.ap-period-peak b')).toHaveText('250,5 ₽');await expect(card.locator('.ap-period-typical strong')).toHaveText('175,25 ₽');
+  await card.locator('summary').click();await expect(card.locator('.ftx-ap-insight').first()).toBeVisible();
+  await page.evaluate(()=>{state.transactions=[];FintexAnalyticsPro.render();});await expect(card.locator('.ap-period-metrics strong').first()).toHaveText('0');await expect(card.locator('.ap-period-typical strong')).toHaveText('—');await expect(card).toContainText('Пока нет расходных записей');
+});
+test('refined chart and period information fit all palettes, preserve privacy, and provide focused previews',async({page})=>{
+  await open(page);await page.setViewportSize({width:320,height:740});
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    await expect(page.locator('.ap-chart-range')).toHaveCSS('min-height','44px');
+    for(const selector of ['.ap-trend','.ap-period-information'])expect(await page.locator(selector).evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  }
+  await page.evaluate(()=>togglePrivacy());await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ap-period-information')).toBeHidden();await expect(page.locator('.ap-chart-range')).toBeHidden();
+  await page.evaluate(()=>{togglePrivacy();setVisualStyle('forest');setTheme('light');});await page.setViewportSize({width:390,height:1000});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});
+  await page.locator('.ap-expense-hero').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-chart-preview.png'});
+  await page.locator('.ap-period-information').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/period-information-preview.png'});
+});
+test.describe('touch chart interaction',()=>{
+  test.use({hasTouch:true});
+  test('a touch selects a date while vertical page scrolling remains enabled',async({page})=>{
+    await open(page);await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const plot=page.locator('.ap-plot-surface'),box=await plot.boundingBox();await page.touchscreen.tap(box.x+box.width/2,box.y+60);await expect(page.locator('.ap-chart-range')).toHaveValue('15');await expect(plot).toHaveCSS('touch-action','pan-y');
+  });
 });

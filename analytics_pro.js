@@ -35,6 +35,7 @@
   let expandedCategory = null;
   let selectedHeatDate = null;
   let toolsOpen = false;
+  let selectedTrendDate = null;
 
   const COLORS = {
     bg: '#071916', surface: '#0B211D', surface2: '#102B25', border: 'rgba(0,214,195,.16)',
@@ -228,19 +229,82 @@
     return { start, end, first: label(start), last: label(end) };
   }
 
-  // A real daily series, including dates without recorded expenses; never demo data.
+  function expenseSeries(data, period) {
+    const range = periodRange(data, period);
+    return Array.from({ length: period.days }, (_, i) => {
+      const date = window.FintexMath.shift(range.start, i);
+      return { date, value: data.byDate[date]?.total || 0, count: data.byDate[date]?.list.length || 0 };
+    });
+  }
+  const exactMoney = (value, currency) => `${Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${currency || '₽'}`;
+  function trendGeometry(series) {
+    const max = Math.max(...series.map(day => day.value));
+    const step = Math.pow(10, Math.floor(Math.log10(max || 1)));
+    const ceiling = Math.ceil((max || 1) / step) * step;
+    return { ceiling, points: series.map((day, i) => ({ x: i / (series.length - 1) * 320, y: 144 - day.value / ceiling * 132 })) };
+  }
+
+  // Every point is a recorded daily total, not a smoothed or invented value.
   function renderExpenseTrend(data, period) {
     if (!data.spent) return `<div class="ap-trend-empty"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Здесь появится динамика расходов<small>Добавьте первую операцию, чтобы увидеть график</small></span></div>`;
-    const range = periodRange(data, period);
-    const values = Array.from({ length: period.days }, (_, i) => data.byDate[window.FintexMath.shift(range.start, i)]?.total || 0);
-    const max = Math.max(1, ...values);
-    const points = values.map((value, i) => `${(i / (values.length - 1) * 320).toFixed(2)},${(76 - value / max * 66).toFixed(2)}`);
-    const line = `M${points.join(' L')}`;
+    const series = expenseSeries(data, period), geometry = trendGeometry(series);
+    if (!series.some(day => day.date === selectedTrendDate)) selectedTrendDate = [...series].reverse().find(day => day.value > 0)?.date || series.at(-1).date;
+    const index = series.findIndex(day => day.date === selectedTrendDate);
+    const line = `M${geometry.points.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L')}`;
+    const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    const axis = value => Number(value).toLocaleString('ru-RU', { notation: value >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 3 });
     return `<figure class="ap-trend" aria-label="Расходы по дням за выбранный период">
-      <figcaption><span>Расходы по дням</span><span class="money-val">Пик ${fmt(max, data.currency)}</span></figcaption>
-      <svg viewBox="0 0 320 82" preserveAspectRatio="none" aria-hidden="true"><path class="ap-chart-grid" d="M0 10H320 M0 43H320 M0 76H320"/><path class="ap-chart-area" d="${line} L320,80 L0,80 Z"/><path class="ap-chart-line" d="${line}"/></svg>
-      <div class="ap-chart-axis"><span>${range.first}</span><span>${range.last}</span></div>
+      <figcaption><span><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i>Динамика расходов</span><span>По дням · ${esc(data.currency)}</span></figcaption>
+      <div class="ap-trend-readout" aria-live="polite" aria-atomic="true"><div><span class="ap-trend-date"></span><strong class="ap-trend-value money-val"></strong></div><span class="ap-trend-count"></span></div>
+      <div class="ap-plot-layout"><div class="ap-y-axis" aria-hidden="true"><span>${axis(geometry.ceiling)}</span><span>${axis(geometry.ceiling / 2)}</span><span>0</span></div><div class="ap-plot-surface">
+        <svg viewBox="0 0 320 156" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="ap-trend-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".2"/><stop offset="100%" stop-color="var(--accent)" stop-opacity=".01"/></linearGradient></defs><path class="ap-chart-grid" d="M0 12H320 M0 78H320 M0 144H320"/><path class="ap-chart-area" d="${line} L320,144 L0,144 Z"/><path class="ap-chart-line" d="${line}"/><line class="ap-chart-cursor" y1="8" y2="148"/><circle class="ap-chart-halo" r="8"/><circle class="ap-chart-point" r="3.5"/></svg>
+        <div class="ap-chart-axis"><span>${shortDate(series[0].date)}</span><span>${shortDate(series[Math.floor(series.length / 2)].date)}</span><span>${shortDate(series.at(-1).date)}</span></div>
+      </div></div>
+      <label class="ap-chart-control"><span>Выберите день <span aria-hidden="true">↔</span></span><input class="ap-chart-range" type="range" min="0" max="${series.length - 1}" value="${index}" step="1" aria-label="День на графике расходов" /></label>
+      <p class="ap-chart-caption">Коснитесь графика или перемещайте ползунок. Нулевая точка — нет записанных расходов, не обязательно отсутствие покупок.</p>
     </figure>`;
+  }
+
+  function bindExpenseTrend(container, data, period) {
+    const figure = container.querySelector('.ap-trend');
+    if (!figure) return;
+    const series = expenseSeries(data, period), { points } = trendGeometry(series);
+    const range = figure.querySelector('.ap-chart-range'), surface = figure.querySelector('.ap-plot-surface');
+    function select(raw) {
+      const i = Math.max(0, Math.min(series.length - 1, Math.round(raw)));
+      const day = series[i], point = points[i];
+      selectedTrendDate = day.date;
+      const dateLabel = new Date(`${day.date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+      range.value = String(i);
+      range.setAttribute('aria-valuetext', `${dateLabel}, ${exactMoney(day.value, data.currency)}, записей: ${day.count}`);
+      figure.querySelector('.ap-trend-date').textContent = dateLabel;
+      figure.querySelector('.ap-trend-value').textContent = exactMoney(day.value, data.currency);
+      figure.querySelector('.ap-trend-count').textContent = day.count ? `Записей: ${day.count}` : 'Нет записанных расходов';
+      const cursor = figure.querySelector('.ap-chart-cursor');
+      cursor.setAttribute('x1', point.x); cursor.setAttribute('x2', point.x);
+      figure.querySelectorAll('.ap-chart-point, .ap-chart-halo').forEach(el => { el.setAttribute('cx', point.x); el.setAttribute('cy', point.y); });
+    }
+    range.addEventListener('input', () => select(Number(range.value)));
+    const fromPointer = event => { const box = surface.getBoundingClientRect(); select((event.clientX - box.left) / box.width * (series.length - 1)); };
+    surface.addEventListener('pointerdown', event => { if (event.button !== 0) return; fromPointer(event); surface.setPointerCapture(event.pointerId); });
+    surface.addEventListener('pointermove', event => { if (surface.hasPointerCapture(event.pointerId)) fromPointer(event); });
+    select(Number(range.value));
+  }
+
+  function renderPeriodInformation(data, period) {
+    const expenseCount = data.currentTxs.filter(tx => !tx._inc).length;
+    const days = Object.entries(data.byDate).sort((a,b) => b[1].total - a[1].total);
+    const peak = days[0];
+    const median = days.length ? [...days.map(([,d]) => d.total)].sort((a,b)=>a-b) : [];
+    const middle = Math.floor(median.length / 2);
+    const typical = median.length ? median.length % 2 ? median[middle] : (median[middle - 1] + median[middle]) / 2 : 0;
+    const peakDate = peak ? new Date(`${peak[0]}T12:00:00`).toLocaleDateString('ru-RU', { day:'numeric', month:'long' }) : 'Нет записей';
+    return `<div class="ftx-ap-card ap-period-information"><div class="ftx-ap-section-title"><span>Информация за период</span><span class="ftx-ap-section-sub">${period.days} дней</span></div>
+      <div class="ap-period-metrics"><div><span><i data-lucide="receipt-text" aria-hidden="true"></i>Расходных записей</span><strong>${expenseCount}</strong></div><div><span><i data-lucide="calendar-check" aria-hidden="true"></i>Дней с расходами</span><strong>${days.length}<small> из ${period.days}</small></strong></div></div>
+      <div class="ap-period-peak"><span class="ap-peak-icon" aria-hidden="true"><i data-lucide="arrow-up-right"></i></span><div><span>Самый затратный день</span><strong>${peakDate}</strong></div><b class="money-val">${peak ? exactMoney(peak[1].total, data.currency) : '—'}</b></div>
+      <div class="ap-period-typical"><span>Медиана за день с расходами</span><strong class="money-val">${median.length ? exactMoney(typical, data.currency) : '—'}</strong></div><p class="ftx-ap-note">${median.length ? 'Половина дней с записанными расходами — не дороже этой суммы. Дни без записей в медиану не входят.' : 'Пока нет расходных записей. Добавьте операцию, чтобы появилась сводка.'}</p>
+      <details class="ap-period-notes"><summary>Наблюдения по записям <i data-lucide="chevron-down" aria-hidden="true"></i></summary>${data.insights.map((item, index) => `<div class="ftx-ap-insight"><span class="ap-insight-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span>${esc(item.text)}</span></div>`).join('')}</details>
+    </div>`;
   }
 
   function renderDistribution(data) {
@@ -288,10 +352,7 @@
         ${data.categories.length > 4 ? `<p class="ap-distribution-rest">Ещё ${data.categories.length - 4} катег. · ${fmt(FintexMath.sum(data.categories.slice(4), c => c.total), data.currency)}</p>` : ''}
         ${data.categories.length ? '<button type="button" class="ftx-ap-btn ap-category-link" data-goto="categories">Разобрать по категориям <span aria-hidden="true">↗</span></button>' : ''}
       </div>
-      <div class="ftx-ap-card ap-observations">
-        <div class="ftx-ap-section-title"><span>Главное за период</span><span class="ftx-ap-section-sub">По вашим записям</span></div>
-        ${data.insights.map((item, index) => `<div class="ftx-ap-insight"><span class="ap-insight-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span>${esc(item.text)}</span></div>`).join('')}
-      </div>
+      ${renderPeriodInformation(data, period)}
 `;
   }
 
@@ -437,6 +498,7 @@
       next?.focus({ preventScroll: true });
     }
     container.querySelectorAll('#fintex-behavior details[data-behavior-detail]').forEach(el => { if (behaviorDisclosures.has(el.dataset.behaviorDetail)) el.open = behaviorDisclosures.get(el.dataset.behaviorDetail); });
+    bindExpenseTrend(container, data, period);
     window.FintexBehavior?.bind(container);
     container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });
     const toolActions = { purchase: () => window.openCanIBuyModal?.(), prices: () => window.openPriceTrackerModal?.(), limits: () => window.openCatLimitModal?.() };

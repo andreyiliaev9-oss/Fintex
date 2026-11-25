@@ -1382,3 +1382,58 @@ body.stealth-mode .ftx-ap :is(.ap-distribution-visual, .ap-category-rail, .ap-di
   body .behavior-insight, body .behavior-scenario { padding: 18px 16px; }
   body .behavior-metrics > div { padding-inline: 9px; }
 }
+
+/* v53 · inspectable daily chart and a factual period digest. */
+body .ap-trend { margin-top: 26px; }
+body .ap-trend figcaption { align-items: center; font-size: 10px; }
+body .ap-trend figcaption > span:first-child { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text-primary); }
+body .ap-trend figcaption svg { width: 14px; height: 14px; margin: 0; color: var(--gold); }
+body .ap-trend-readout { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 20px 0 16px; min-height: 56px; }
+body .ap-trend-date { display: block; color: var(--text-secondary); font-size: 10px; line-height: 1.5; }
+body .ap-trend-value { display: block; font-size: 25px; letter-spacing: -.045em; line-height: 1.25; margin-top: 5px; font-weight: 600; color: var(--number-ink, var(--text-primary)); overflow-wrap: anywhere; }
+body .ap-trend-count { font-size: 9px; line-height: 1.5; color: var(--text-secondary); text-align: right; max-width: 95px; padding-bottom: 4px; }
+body .ap-plot-layout { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px; }
+body .ap-y-axis { display: flex; flex-direction: column; justify-content: space-between; height: 180px; padding: 9px 0 8px; color: var(--text-secondary); font-size: 8px; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; }
+body .ap-plot-surface { min-width: 0; cursor: crosshair; touch-action: pan-y; user-select: none; }
+body .ap-plot-surface > svg { height: 180px; margin: 0; overflow: visible; }
+body .ap-plot-surface .ap-chart-area { fill: url('#ap-trend-fill'); opacity: 1; }
+body .ap-plot-surface .ap-chart-line { stroke-width: 2.2px; }
+body .ap-chart-grid { stroke-dasharray: 2 5; }
+body .ap-chart-cursor { stroke: var(--gold); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+body .ap-chart-halo { fill: var(--accent); opacity: .15; }
+body .ap-chart-point { fill: var(--accent); stroke: var(--surface-1); stroke-width: 2; vector-effect: non-scaling-stroke; }
+body .ap-plot-surface .ap-chart-axis { margin-top: 8px; font-size: 8px; }
+body .ap-chart-control { display: flex; align-items: center; gap: 14px; margin-top: 16px; color: var(--text-secondary); font-size: 9px; }
+body .ap-chart-control > span { flex-shrink: 0; }
+body .ap-chart-control input { width: 100%; min-width: 0; min-height: 44px; accent-color: var(--accent); cursor: pointer; margin: 0; background: transparent; }
+body .ap-chart-caption { font-size: 9px; line-height: 1.7; color: var(--text-secondary); margin-top: 0; }
+body .ftx-ap .ftx-ap-card.ap-period-information { background: var(--surface-1); padding: 22px; }
+body .ap-period-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 4px 0 20px; gap: 12px; }
+body .ap-period-metrics > div + div { border-left: 1px solid var(--border-subtle); padding-left: 16px; }
+body .ap-period-metrics > div > span { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
+body .ap-period-metrics svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--gold); stroke-width: 1.5; }
+body .ap-period-metrics strong { display: block; font-size: 29px; line-height: 1.2; margin-top: 12px; font-weight: 600; letter-spacing: -.04em; color: var(--number-ink, var(--text-primary)); }
+body .ap-period-metrics small { font-size: 11px; font-weight: 400; color: var(--text-secondary); letter-spacing: 0; }
+body .ap-period-peak { display: flex; align-items: center; gap: 10px; padding: 16px 0; border-block: 1px solid var(--border-subtle); }
+body .ap-peak-icon { display: grid; place-items: center; background: var(--gold-soft); color: var(--gold); width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; }
+body .ap-peak-icon > svg { width: 16px; height: 16px; }
+body .ap-period-peak > div { flex: 1; min-width: 0; }
+body .ap-period-peak > div > span { display: block; font-size: 9px; color: var(--text-secondary); line-height: 1.5; }
+body .ap-period-peak strong { display: block; margin-top: 5px; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+body .ap-period-peak b { max-width: 44%; overflow-wrap: anywhere; font-size: 14px; font-weight: 650; letter-spacing: -.025em; color: var(--number-ink, var(--text-primary)); text-align: right; }
+body .ap-period-typical { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; color: var(--text-secondary); font-size: 10px; line-height: 1.6; }
+body .ap-period-typical strong { text-align: right; font-size: 13px; font-weight: 600; color: var(--number-ink, var(--text-primary)); overflow-wrap: anywhere; }
+body .ap-period-notes { margin-top: 16px; border-top: 1px solid var(--border-subtle); }
+body .ap-period-notes > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; list-style: none; min-height: 44px; font-size: 11px; color: var(--text-primary); cursor: pointer; }
+body .ap-period-notes > summary::-webkit-details-marker { display: none; }
+body .ap-period-notes summary svg { width: 13px; height: 13px; color: var(--gold); }
+body .ap-period-notes[open] summary svg { transform: rotate(180deg); }
+body.stealth-mode .ap-period-information { visibility: hidden; }
+@media(max-width:359px) {
+  body .ap-trend-readout { gap: 8px; }
+  body .ap-trend-value { font-size: 21px; }
+  body .ap-plot-layout { grid-template-columns: 37px minmax(0,1fr); gap: 6px; }
+  body .ftx-ap .ftx-ap-card.ap-period-information { padding: 18px 16px; }
+  body .ap-period-metrics > div > span { font-size: 9px; }
+  body .ap-period-metrics > div + div { padding-left: 10px; }
+}
