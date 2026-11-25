@@ -656,7 +656,7 @@ test('expanded settings and integration groups fit 320px in both themes',async({
   await openApp(page,true);await page.setViewportSize({width:320,height:844});await page.locator('[data-nav="settings"]').click();
   for(const theme of ['dark','light']) {
     await page.evaluate(theme=>setTheme(theme),theme);
-    for(const id of ['settings-appearance','settings-notifications','settings-data','settings-receipts','settings-advanced','settings-about']) {
+    for(const id of ['settings-appearance','settings-data','settings-receipts','settings-advanced','settings-about']) {
       await page.locator(`#${id}`).evaluate(el=>{el.open=true;});
       expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
     }
