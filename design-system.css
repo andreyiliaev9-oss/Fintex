@@ -1540,3 +1540,15 @@ body .cal-journal-note { grid-column: 1 / -1; }
 body #journal-day-filter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px; background: var(--surface-2); border-radius: 14px; color: var(--text-primary); font-size: 11px; line-height: 1.6; }
 body #journal-day-filter[hidden] { display: none; }
 body #journal-day-filter button { min-height: 44px; padding: 8px 10px; border: 1px solid var(--border-active); border-radius: 10px; color: var(--text-primary); }
+
+/* v57 · finger-follow movement, soft finite reveals and tactile actions. */
+body main > section.tab-is-dragging { animation: none !important; transition: none !important; will-change: transform; }
+body #tab-swipe-hint { position: fixed; top: 48%; z-index: 25; padding: 10px 13px; max-width: 150px; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border-active); border-radius: 14px; box-shadow: var(--shadow-card); font-size: 12px; font-weight: 600; pointer-events: none; }
+body #tab-swipe-hint[hidden] { display: none; }
+body .ap-day-bar { transform-box: fill-box; transform-origin: center bottom; }
+body :is(.section-action,.ftx-ap-btn,.behavior-primary,#cal-open-journal,#capture-fab) { transition: transform .18s cubic-bezier(.2,.8,.2,1), background-color .2s, box-shadow .2s; }
+body :is(.section-action,.ftx-ap-btn,.behavior-primary,#cal-open-journal,#capture-fab):active { transform: scale(.965); }
+body #cal-cells .cal-day { transition: background-color .2s, border-color .2s, transform .18s; }
+body #cal-cells .cal-day:active { transform: scale(.92); }
+html.no-motion body #tab-swipe-hint { display: none; }
+@media(prefers-reduced-motion:reduce) { body #tab-swipe-hint { display: none; } }
