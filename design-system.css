@@ -1493,3 +1493,38 @@ body #filely-financial-tree[data-animation-paused='true'] .ft-falling-leaf { ani
 html.no-motion body #filely-financial-tree .ft-falling-leaves { display: none; }
 @media(prefers-reduced-motion:reduce) { body #filely-financial-tree .ft-falling-leaves { display: none; } }
 @media(max-width:359px) { body .behavior-panel .behavior-planner > summary { padding: 16px; gap: 10px; } body .savings-planner-title strong { font-size: 15px; } body .savings-planner-body { padding: 0 16px 16px; } body .savings-fields label { padding: 10px; } }
+
+/* v55 · compact daily columns, not sparse spikes or an oversized native slider. */
+body .ftx-ap .ftx-ap-card.ap-expense-hero { background: var(--surface-1); padding: 20px; border-radius: 22px; }
+body .ap-expense-hero .ftx-ap-big { margin: 10px 0 6px; font-size: 36px; }
+body .ap-expense-hero .ap-period-caption { background: var(--surface-2); border: 0; }
+body .ap-expense-hero .ap-comparison { margin-top: 4px; }
+body .ap-expense-hero .ap-comparison summary { font-size: 9px; }
+body .ap-bar-trend { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+body .ap-bar-trend figcaption { margin-bottom: 14px; font-size: 9px; }
+body .ap-bar-trend .ap-plot-layout { grid-template-columns: 37px minmax(0,1fr); gap: 8px; }
+body .ap-bar-trend .ap-y-axis { height: 132px; position: relative; padding: 0; display: block; }
+body .ap-bar-trend .ap-y-axis > span { position: absolute; right: 0; transform: translateY(-50%); }
+body .ap-bar-trend .ap-y-axis > span:nth-child(1) { top: 7.8125%; }
+body .ap-bar-trend .ap-y-axis > span:nth-child(2) { top: 50%; }
+body .ap-bar-trend .ap-y-axis > span:nth-child(3) { top: 92.1875%; }
+body .ap-bar-trend .ap-plot-surface > svg { height: 132px; }
+body .ap-day-bar { fill: var(--accent); opacity: .58; }
+body .ap-day-bar.is-selected { fill: var(--gold); opacity: 1; stroke: var(--gold); stroke-width: 1; vector-effect: non-scaling-stroke; }
+body .ap-day-unrecorded { fill: var(--border-active); opacity: .45; }
+body .ap-day-unrecorded.is-selected { fill: var(--text-secondary); stroke: var(--text-secondary); }
+body .ap-bar-trend .ap-chart-axis { font-size: 8px; margin-top: 8px; }
+body .ap-bar-trend .ap-trend-readout { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; gap: 8px; min-height: 74px; margin: 16px 0 0; padding: 10px 0; border-top: 1px solid var(--border-subtle); }
+body .ap-bar-trend .ap-trend-readout > div { min-width: 0; text-align: center; }
+body .ap-bar-trend .ap-trend-date { font-size: 10px; }
+body .ap-bar-trend .ap-trend-value { font-size: 22px; margin-top: 4px; }
+body .ap-bar-trend .ap-trend-count { display: block; font-size: 9px; text-align: center; max-width: none; padding: 0; margin-top: 3px; }
+body .ap-bar-trend .ap-trend-readout > button { display: grid; place-items: center; min-height: 44px; width: 44px; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-2); color: var(--text-primary); }
+body .ap-bar-trend .ap-trend-readout > button > svg { width: 16px; height: 16px; margin: 0; }
+body .ap-chart-help { margin-top: 3px; color: var(--text-secondary); font-size: 9px; line-height: 1.7; }
+body .ap-chart-help summary { cursor: pointer; min-height: 30px; padding: 6px 0; }
+body .ap-chart-help p { margin: 6px 0; }
+body .ap-expense-hero .ap-flow-summary { margin-top: 14px; padding-top: 14px; }
+body .ap-expense-hero .ap-flow-value { font-size: 17px; }
+@media(max-width:359px) { body .ftx-ap .ftx-ap-card.ap-expense-hero { padding: 18px 16px; } body .ap-expense-hero .ftx-ap-big { font-size: 32px; } }
+body .ap-bar-trend .ap-trend-readout > button:disabled { opacity: .4; cursor: default; }

@@ -18,7 +18,7 @@ test('editorial overview plots real daily expenses, preserves amounts, periods a
     await page.locator(`[data-period="${period}"]`).click();
     const data=await page.evaluate(days=>{const d=FintexAnalyticsPro.analyze(days);return {spent:d.spent,income:d.income,categories:d.categories,net:d.net};},days);
     await expect(page.locator('.ftx-ap-big')).toHaveText(data.spent.toLocaleString('ru-RU')+' ₽');
-    const path=await page.locator('.ap-chart-line').getAttribute('d');expect((path.match(/L/g)||[]).length).toBe(days-1);expect(path).not.toMatch(/NaN|Infinity/);
+    await expect(page.locator('.ap-day-bar')).toHaveCount(days);expect(await page.locator('.ap-day-bar').evaluateAll(els=>els.every(el=>Number.isFinite(Number(el.getAttribute('height')))))).toBe(true);
     expect(await page.locator('.ap-donut-segment').count()).toBe(data.categories.length);
     const widths=await page.locator('.ap-donut-segment').evaluateAll(els=>els.reduce((sum,el)=>sum+parseFloat(el.getAttribute('stroke-dasharray')),0));expect(widths).toBeCloseTo(100,5);
     expect(await page.locator('.ap-category-amount').first().textContent()).toBe(Math.round(data.categories[0].total).toLocaleString('ru-RU')+' ₽');
@@ -46,7 +46,7 @@ test('all analytics subviews fit 320px in every palette and mode, including long
   expect(errors).toEqual([]);
 });
 test('empty analytics has honest designed placeholders and privacy hides the new data graphics',async({page})=>{
-  await open(page,{empty:true});await expect(page.locator('.ap-trend-empty')).toBeVisible();await expect(page.locator('.ap-chart-line')).toHaveCount(0);await expect(page.locator('.ap-distribution-visual')).toHaveCount(0);await expect(page.locator('.ftx-ap-empty')).toContainText('Добавьте расходы');
+  await open(page,{empty:true});await expect(page.locator('.ap-trend-empty')).toBeVisible();await expect(page.locator('.ap-day-bar')).toHaveCount(0);await expect(page.locator('.ap-distribution-visual')).toHaveCount(0);await expect(page.locator('.ftx-ap-empty')).toContainText('Добавьте расходы');
   await page.evaluate(()=>{state.transactions=[{id:'e',date:'2026-11-24',amount:900,type:'expense',category:'Продукты'}];FintexAnalyticsPro.render();togglePrivacy();});
   await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ap-distribution-visual')).toBeHidden();await expect(page.locator('.ftx-ap-big')).toHaveCSS('filter',/blur/);
 });
@@ -80,16 +80,16 @@ test('distribution uses Russian built-in names, matching ring shares and works i
   }
   await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.setViewportSize({width:390,height:1000});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.locator('.ap-distribution').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-structure-preview.png'});
 });
-test('daily chart supports pointer, keyboard and exact kopecks without mutating the ledger',async({page})=>{
+test('daily columns support pointer, keyboard and exact kopecks without mutating the ledger',async({page})=>{
   await open(page);await page.evaluate(()=>{state.transactions=[{id:'a',date:'2026-11-23',type:'expense',amount:1234.56,category:'food'},{id:'b',date:'2026-11-23',type:'expense',amount:10.1,category:'food'},{id:'salary',date:'2026-11-24',type:'income',amount:60000}];FintexAnalyticsPro.render();});
   const before=await snapshot(page),slider=page.locator('.ap-chart-range');
   await slider.focus();await page.keyboard.press('End');await page.keyboard.press('ArrowLeft');
   await expect(page.locator('.ap-trend-value')).toHaveText('1 244,66 ₽');await expect(page.locator('.ap-trend-count')).toHaveText('Записей: 2');
-  await slider.focus();await page.keyboard.press('End');await expect(slider).toHaveValue('29');await expect(page.locator('.ap-trend-value')).toHaveText('0 ₽');await expect(page.locator('.ap-trend-count')).toHaveText('Нет записанных расходов');await expect(slider).toHaveAttribute('aria-valuetext',/24 ноября.*0 ₽/);
-  await page.keyboard.press('ArrowLeft');await expect(page.locator('.ap-trend-value')).toHaveText('1 244,66 ₽');await expect(page.locator('.ap-chart-point')).toHaveAttribute('cx',String(28/29*320));
-  await page.keyboard.press('Home');await expect(slider).toHaveValue('0');
-  await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const box=await page.locator('.ap-plot-surface').boundingBox();await page.mouse.click(box.x+box.width-1,box.y+50);await expect(slider).toHaveValue('29');await page.mouse.move(box.x+box.width-1,box.y+50);await page.mouse.down();await page.mouse.move(box.x+1,box.y+50,{steps:8});await page.mouse.up();await expect(slider).toHaveValue('0');
-  for(const period of ['week','quarter','year','month']){await page.locator(`[data-period="${period}"]`).click();expect(Number(await slider.inputValue())).toBeGreaterThanOrEqual(0);await expect(page.locator('.ap-chart-line')).not.toHaveAttribute('d',/NaN|Infinity/);}
+  await slider.focus();await page.keyboard.press('End');await expect(slider).toHaveAttribute('aria-valuenow','29');await expect(page.locator('.ap-trend-value')).toHaveText('0 ₽');await expect(page.locator('.ap-trend-count')).toHaveText('Нет записанных расходов');await expect(slider).toHaveAttribute('aria-valuetext',/24 ноября.*0 ₽/);
+  await page.keyboard.press('ArrowLeft');await expect(page.locator('.ap-trend-value')).toHaveText('1 244,66 ₽');await expect(page.locator('.ap-day-bar.is-selected')).toHaveAttribute('data-day-index','28');
+  await page.keyboard.press('Home');await expect(slider).toHaveAttribute('aria-valuenow','0');
+  await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const box=await page.locator('.ap-plot-surface').boundingBox();await page.mouse.click(box.x+box.width-1,box.y+50);await expect(slider).toHaveAttribute('aria-valuenow','29');await page.mouse.move(box.x+box.width-1,box.y+50);await page.mouse.down();await page.mouse.move(box.x+1,box.y+50,{steps:8});await page.mouse.up();await expect(slider).toHaveAttribute('aria-valuenow','0');
+  for(const period of ['week','quarter','year','month']){await page.locator(`[data-period="${period}"]`).click();expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(0);expect(await page.locator('.ap-day-bar').count()).toBeGreaterThan(0);}
   expect(await snapshot(page)).toBe(before);
 });
 test('period information excludes income and describes the actual expense median and busiest day',async({page})=>{
@@ -102,7 +102,7 @@ test('refined chart and period information fit all palettes, preserve privacy, a
   await open(page);await page.setViewportSize({width:320,height:740});
   for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
     await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
-    await expect(page.locator('.ap-chart-range')).toHaveCSS('min-height','44px');
+    await expect(page.locator('[data-chart-step="1"]')).toHaveCSS('min-height','44px');
     for(const selector of ['.ap-trend','.ap-period-information'])expect(await page.locator(selector).evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
   }
   await page.evaluate(()=>togglePrivacy());await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ap-period-information')).toBeHidden();await expect(page.locator('.ap-chart-range')).toBeHidden();
@@ -112,7 +112,15 @@ test('refined chart and period information fit all palettes, preserve privacy, a
 });
 test.describe('touch chart interaction',()=>{
   test.use({hasTouch:true});
-  test('a touch selects a date while vertical page scrolling remains enabled',async({page})=>{
-    await open(page);await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const plot=page.locator('.ap-plot-surface'),box=await plot.boundingBox();await page.touchscreen.tap(box.x+box.width/2,box.y+60);await expect(page.locator('.ap-chart-range')).toHaveValue('15');await expect(plot).toHaveCSS('touch-action','pan-y');
+  test('a touch selects a column while vertical page scrolling remains enabled',async({page})=>{
+    await open(page);await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();const plot=page.locator('.ap-plot-surface'),box=await plot.boundingBox();await page.touchscreen.tap(box.x+box.width/2,box.y+60);await expect(page.locator('.ap-chart-range')).toHaveAttribute('aria-valuenow','15');await expect(plot).toHaveCSS('touch-action','pan-y');
   });
+});
+
+test('sparse history uses independent columns, no native slider, and a compact dark card',async({page})=>{
+  await open(page,{empty:true});await page.evaluate(()=>{state.transactions=[{id:'s1',date:'2026-11-18',type:'expense',amount:9800,category:'food'},{id:'s2',date:'2026-11-20',type:'expense',amount:7000,category:'shop'},{id:'s3',date:'2026-11-21',type:'expense',amount:232,category:'cafe'}];setVisualStyle('forest');setTheme('dark');FintexAnalyticsPro.render();});
+  await expect(page.locator('.ftx-ap-big')).toHaveText('17 032 ₽');await expect(page.locator('.ap-day-bar:not(.ap-day-unrecorded)')).toHaveCount(3);await expect(page.locator('.ap-day-unrecorded')).toHaveCount(27);await expect(page.locator('.ap-trend-value')).toHaveText('232 ₽');await expect(page.locator('.ap-trend input[type="range"]')).toHaveCount(0);await expect(page.locator('.ap-chart-line')).toHaveCount(0);
+  const before=await snapshot(page);await page.locator('[data-chart-step="-1"]').click();await expect(page.locator('.ap-trend-value')).toHaveText('7 000 ₽');await page.locator('[data-chart-step="1"]').click();await expect(page.locator('.ap-trend-value')).toHaveText('232 ₽');expect(await snapshot(page)).toBe(before);
+  for(const width of [320,390]){await page.setViewportSize({width,height:844});const box=await page.locator('.ap-expense-hero').boundingBox();expect(box.height).toBeLessThan(620);expect(await page.locator('.ap-expense-hero').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
+  await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.locator('.ap-expense-hero').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-sparse-dark-preview.png'});
 });

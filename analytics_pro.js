@@ -241,54 +241,58 @@
     const max = Math.max(...series.map(day => day.value));
     const step = Math.pow(10, Math.floor(Math.log10(max || 1)));
     const ceiling = Math.ceil((max || 1) / step) * step;
-    return { ceiling, points: series.map((day, i) => ({ x: i / (series.length - 1) * 320, y: 144 - day.value / ceiling * 132 })) };
+    const slot = 320 / series.length;
+    return { ceiling, slot, points: series.map((day, i) => ({ x: (i + .5) * slot, y: 118 - day.value / ceiling * 108 })) };
   }
 
-  // Every point is a recorded daily total, not a smoothed or invented value.
+  // Independent daily columns do not invent a continuous curve between sparse records.
   function renderExpenseTrend(data, period) {
-    if (!data.spent) return `<div class="ap-trend-empty"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Здесь появится динамика расходов<small>Добавьте первую операцию, чтобы увидеть график</small></span></div>`;
+    if (!data.spent) return `<div class="ap-trend-empty"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Здесь появятся расходы по дням<small>Добавьте первую операцию, чтобы увидеть график</small></span></div>`;
     const series = expenseSeries(data, period), geometry = trendGeometry(series);
     if (!series.some(day => day.date === selectedTrendDate)) selectedTrendDate = [...series].reverse().find(day => day.value > 0)?.date || series.at(-1).date;
     const index = series.findIndex(day => day.date === selectedTrendDate);
-    const line = `M${geometry.points.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' L')}`;
     const shortDate = key => new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
     const axis = value => Number(value).toLocaleString('ru-RU', { notation: value >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 3 });
-    return `<figure class="ap-trend" aria-label="Расходы по дням за выбранный период">
-      <figcaption><span><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i>Динамика расходов</span><span>По дням · ${esc(data.currency)}</span></figcaption>
-      <div class="ap-trend-readout" aria-live="polite" aria-atomic="true"><div><span class="ap-trend-date"></span><strong class="ap-trend-value money-val"></strong></div><span class="ap-trend-count"></span></div>
-      <div class="ap-plot-layout"><div class="ap-y-axis" aria-hidden="true"><span>${axis(geometry.ceiling)}</span><span>${axis(geometry.ceiling / 2)}</span><span>0</span></div><div class="ap-plot-surface">
-        <svg viewBox="0 0 320 156" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="ap-trend-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".2"/><stop offset="100%" stop-color="var(--accent)" stop-opacity=".01"/></linearGradient></defs><path class="ap-chart-grid" d="M0 12H320 M0 78H320 M0 144H320"/><path class="ap-chart-area" d="${line} L320,144 L0,144 Z"/><path class="ap-chart-line" d="${line}"/><line class="ap-chart-cursor" y1="8" y2="148"/><circle class="ap-chart-halo" r="8"/><circle class="ap-chart-point" r="3.5"/></svg>
+    return `<figure class="ap-trend ap-bar-trend" aria-label="Расходы по дням за выбранный период">
+      <figcaption><span>Расходы по дням</span><span>${Object.keys(data.byDate).length} дн. с записями</span></figcaption>
+      <div class="ap-plot-layout"><div class="ap-y-axis" aria-hidden="true"><span>${axis(geometry.ceiling)}</span><span>${axis(geometry.ceiling / 2)}</span><span>0 ${esc(data.currency)}</span></div><div class="ap-plot-surface ap-chart-range" role="slider" tabindex="0" aria-label="День на графике расходов" aria-valuemin="0" aria-valuemax="${series.length - 1}" aria-valuenow="${index}">
+        <svg viewBox="0 0 320 128" preserveAspectRatio="none" aria-hidden="true"><path class="ap-chart-grid" d="M0 10H320 M0 64H320 M0 118H320"/>${series.map((day,i)=>{const p=geometry.points[i],width=geometry.slot*.62;return `<rect class="ap-day-bar ${day.count?'':'ap-day-unrecorded'}" data-day-index="${i}" x="${p.x-width/2}" y="${day.count?p.y:116}" width="${width}" height="${day.count?118-p.y:2}" rx="${Math.min(2,width/2)}"/>`;}).join('')}</svg>
         <div class="ap-chart-axis"><span>${shortDate(series[0].date)}</span><span>${shortDate(series[Math.floor(series.length / 2)].date)}</span><span>${shortDate(series.at(-1).date)}</span></div>
       </div></div>
-      <label class="ap-chart-control"><span>Выберите день <span aria-hidden="true">↔</span></span><input class="ap-chart-range" type="range" min="0" max="${series.length - 1}" value="${index}" step="1" aria-label="День на графике расходов" /></label>
-      <p class="ap-chart-caption">Коснитесь графика или перемещайте ползунок. Нулевая точка — нет записанных расходов, не обязательно отсутствие покупок.</p>
+      <div class="ap-trend-readout"><button type="button" data-chart-step="-1" aria-label="Предыдущий день"><i data-lucide="chevron-left" aria-hidden="true"></i></button><div aria-live="polite" aria-atomic="true"><span class="ap-trend-date"></span><strong class="ap-trend-value money-val"></strong><span class="ap-trend-count"></span></div><button type="button" data-chart-step="1" aria-label="Следующий день"><i data-lucide="chevron-right" aria-hidden="true"></i></button></div>
+      <details class="ap-chart-help"><summary>Как читать график</summary><p>Каждый столбец — сумма записанных расходов за день. Касайтесь графика или выбирайте дату стрелками. Короткая серая отметка — нет записей, а не подтверждённый нулевой расход.</p></details>
     </figure>`;
   }
 
   function bindExpenseTrend(container, data, period) {
     const figure = container.querySelector('.ap-trend');
     if (!figure) return;
-    const series = expenseSeries(data, period), { points } = trendGeometry(series);
+    const series = expenseSeries(data, period);
     const range = figure.querySelector('.ap-chart-range'), surface = figure.querySelector('.ap-plot-surface');
     function select(raw) {
       const i = Math.max(0, Math.min(series.length - 1, Math.round(raw)));
-      const day = series[i], point = points[i];
+      const day = series[i];
       selectedTrendDate = day.date;
-      const dateLabel = new Date(`${day.date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-      range.value = String(i);
+      const dateLabel = new Date(`${day.date}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      range.setAttribute('aria-valuenow', String(i));
       range.setAttribute('aria-valuetext', `${dateLabel}, ${exactMoney(day.value, data.currency)}, записей: ${day.count}`);
       figure.querySelector('.ap-trend-date').textContent = dateLabel;
       figure.querySelector('.ap-trend-value').textContent = exactMoney(day.value, data.currency);
       figure.querySelector('.ap-trend-count').textContent = day.count ? `Записей: ${day.count}` : 'Нет записанных расходов';
-      const cursor = figure.querySelector('.ap-chart-cursor');
-      cursor.setAttribute('x1', point.x); cursor.setAttribute('x2', point.x);
-      figure.querySelectorAll('.ap-chart-point, .ap-chart-halo').forEach(el => { el.setAttribute('cx', point.x); el.setAttribute('cy', point.y); });
+      figure.querySelectorAll('.ap-day-bar').forEach((bar,index)=>bar.classList.toggle('is-selected',index===i));
+      figure.querySelector('[data-chart-step="-1"]').disabled = i === 0;
+      figure.querySelector('[data-chart-step="1"]').disabled = i === series.length - 1;
     }
-    range.addEventListener('input', () => select(Number(range.value)));
-    const fromPointer = event => { const box = surface.getBoundingClientRect(); select((event.clientX - box.left) / box.width * (series.length - 1)); };
+    range.addEventListener('keydown', event => {
+      const current=Number(range.getAttribute('aria-valuenow'));
+      const keys={ArrowLeft:current-1,ArrowDown:current-1,ArrowRight:current+1,ArrowUp:current+1,Home:0,End:series.length-1};
+      if(Object.prototype.hasOwnProperty.call(keys,event.key)){event.preventDefault();select(keys[event.key]);}
+    });
+    figure.querySelectorAll('[data-chart-step]').forEach(button=>button.addEventListener('click',()=>select(Number(range.getAttribute('aria-valuenow'))+Number(button.dataset.chartStep))));
+    const fromPointer = event => { const box = surface.getBoundingClientRect(); select(Math.floor((event.clientX - box.left) / box.width * series.length)); };
     surface.addEventListener('pointerdown', event => { if (event.button !== 0) return; fromPointer(event); surface.setPointerCapture(event.pointerId); });
     surface.addEventListener('pointermove', event => { if (surface.hasPointerCapture(event.pointerId)) fromPointer(event); });
-    select(Number(range.value));
+    select(Number(range.getAttribute('aria-valuenow')));
   }
 
   function renderPeriodInformation(data, period) {
@@ -330,10 +334,10 @@
       <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val">${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
     return `
       <div class="ftx-ap-card gold ap-expense-hero">
-        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за ${period.days} дней</div><span class="ap-period-caption">${period.label}</span></div>
+        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
         <div class="ftx-ap-big money-val">${fmt(data.spent, data.currency)}</div>
         <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
-        <details class="ap-comparison"><summary>С чем сравниваем <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
+        <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
         ${renderExpenseTrend(data, period)}
         <div class="ap-flow-summary">
           <div><div class="ftx-ap-stat-label"><span class="ap-flow-dot"></span>Доходы</div><div class="ap-flow-value money-val">${fmt(data.income, data.currency)}</div></div>
