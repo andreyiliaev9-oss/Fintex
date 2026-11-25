@@ -17,17 +17,17 @@
   ];
 
   const CATEGORY_META = [
-    { name: 'Продукты', icon: 'shopping-basket', color: 'var(--accent)', bg: 'rgba(0,214,195,.13)', keys: ['продукт', 'питан', 'бакалея', 'супермаркет', 'пятероч', 'пятёроч', 'магнит', 'перекрест', 'перекрёст', 'лента', 'ашан', 'дикси', 'вкусвилл', 'еда домой'] },
-    { name: 'Кафе и рестораны', icon: 'utensils', color: 'var(--gold)', bg: 'rgba(242,198,93,.14)', keys: ['кафе', 'ресторан', 'кофе', 'общепит', 'еда вне дома', 'фастфуд', 'доставка еды', 'столов', 'бар', 'перекус', 'макдон', 'вкусно — и точка', 'бургер', 'пицц'] },
-    { name: 'Транспорт', icon: 'car-front', color: '#64B5F6', bg: 'rgba(100,181,246,.14)', keys: ['транспорт', 'такси', 'бензин', 'топлив', 'азс', 'метро', 'автобус', 'трамвай', 'проезд', 'каршеринг', 'парков'] },
-    { name: 'Дом и ЖКХ', icon: 'house', color: '#A7D88D', bg: 'rgba(167,216,141,.14)', keys: ['жкх', 'коммун', 'жиль', 'квартир', 'аренд', 'дом', 'ремонт', 'мебел', 'хозтовар', 'бытов', 'интернет домой'] },
-    { name: 'Покупки', icon: 'shopping-bag', color: '#C4A7FF', bg: 'rgba(196,167,255,.14)', keys: ['покуп', 'магазин', 'одежд', 'обув', 'маркетплейс', 'wildberries', 'вайлдберриз', 'озон', 'ozon', 'техник', 'электроник', 'аксессуар'] },
-    { name: 'Здоровье', icon: 'heart-pulse', color: '#F28B9A', bg: 'rgba(242,139,154,.14)', keys: ['здоров', 'аптек', 'лекар', 'медицин', 'врач', 'клиник', 'стомат', 'анализ'] },
-    { name: 'Развлечения', icon: 'gamepad-2', color: '#D6A6FF', bg: 'rgba(214,166,255,.14)', keys: ['развлеч', 'кино', 'игр', 'подписк', 'стрим', 'музык', 'концерт', 'театр', 'хобби'] },
-    { name: 'Связь и сервисы', icon: 'smartphone', color: '#77C9E8', bg: 'rgba(119,201,232,.14)', keys: ['связ', 'телефон', 'мобиль', 'оператор', 'сервис', 'облак', 'программ', 'хостинг'] },
-    { name: 'Образование', icon: 'graduation-cap', color: '#E9B86C', bg: 'rgba(233,184,108,.14)', keys: ['образован', 'обучен', 'курс', 'учеб', 'книг', 'школ', 'университет'] },
-    { name: 'Переводы и финансы', icon: 'arrow-left-right', color: '#F0D27B', bg: 'rgba(240,210,123,.14)', keys: ['перевод', 'комисс', 'банк', 'кредит', 'долг', 'финанс', 'налог'] },
-    { name: 'Прочее', icon: 'circle-ellipsis', color: '#9BAFA9', bg: 'rgba(155,175,169,.12)', keys: [] }
+    { name: 'Продукты', icon: 'shopping-basket', color: 'var(--ap-category-1)', bg: 'rgba(0,214,195,.13)', keys: ['продукт', 'питан', 'бакалея', 'супермаркет', 'пятероч', 'пятёроч', 'магнит', 'перекрест', 'перекрёст', 'лента', 'ашан', 'дикси', 'вкусвилл', 'еда домой'] },
+    { name: 'Кафе и рестораны', icon: 'utensils', color: 'var(--ap-category-2)', bg: 'rgba(242,198,93,.14)', keys: ['кафе', 'ресторан', 'кофе', 'общепит', 'еда вне дома', 'фастфуд', 'доставка еды', 'столов', 'бар', 'перекус', 'макдон', 'вкусно — и точка', 'бургер', 'пицц'] },
+    { name: 'Транспорт', icon: 'car-front', color: 'var(--ap-category-3)', bg: 'rgba(100,181,246,.14)', keys: ['транспорт', 'такси', 'бензин', 'топлив', 'азс', 'метро', 'автобус', 'трамвай', 'проезд', 'каршеринг', 'парков'] },
+    { name: 'Дом и ЖКХ', icon: 'house', color: 'var(--ap-category-4)', bg: 'rgba(167,216,141,.14)', keys: ['жкх', 'коммун', 'жиль', 'квартир', 'аренд', 'дом', 'ремонт', 'мебел', 'хозтовар', 'бытов', 'интернет домой'] },
+    { name: 'Покупки', icon: 'shopping-bag', color: 'var(--ap-category-5)', bg: 'rgba(196,167,255,.14)', keys: ['покуп', 'магазин', 'одежд', 'обув', 'маркетплейс', 'wildberries', 'вайлдберриз', 'озон', 'ozon', 'техник', 'электроник', 'аксессуар'] },
+    { name: 'Здоровье', icon: 'heart-pulse', color: 'var(--ap-category-6)', bg: 'rgba(242,139,154,.14)', keys: ['здоров', 'аптек', 'лекар', 'медицин', 'врач', 'клиник', 'стомат', 'анализ'] },
+    { name: 'Развлечения', icon: 'gamepad-2', color: 'var(--ap-category-7)', bg: 'rgba(214,166,255,.14)', keys: ['развлеч', 'кино', 'игр', 'подписк', 'стрим', 'музык', 'концерт', 'театр', 'хобби'] },
+    { name: 'Связь и сервисы', icon: 'smartphone', color: 'var(--ap-category-8)', bg: 'rgba(119,201,232,.14)', keys: ['связ', 'телефон', 'мобиль', 'оператор', 'сервис', 'облак', 'программ', 'хостинг'] },
+    { name: 'Образование', icon: 'graduation-cap', color: 'var(--ap-category-9)', bg: 'rgba(233,184,108,.14)', keys: ['образован', 'обучен', 'курс', 'учеб', 'книг', 'школ', 'университет'] },
+    { name: 'Переводы и финансы', icon: 'arrow-left-right', color: 'var(--ap-category-10)', bg: 'rgba(240,210,123,.14)', keys: ['перевод', 'комисс', 'банк', 'кредит', 'долг', 'финанс', 'налог'] },
+    { name: 'Прочее', icon: 'circle-ellipsis', color: 'var(--ap-category-11)', bg: 'rgba(155,175,169,.12)', keys: [] }
   ];
 
   let activePeriod = 'month';
@@ -203,7 +203,7 @@
     if (categories[0]) insights.push({ text: `Больше всего денег ушло на категорию «${categories[0].name}» — ${Math.round(categories[0].pct)}% всех расходов.`, color: categories[0].meta.color });
     if (byWeekday[peakIndex] > 0) insights.push({ text: `Самый затратный день недели — ${weekdayLong[peakIndex]}.`, color: COLORS.gold });
     if (spent > 0) insights.push({ text: `В среднем расходы составляют ${fmt(burnRate, currency)} в день.`, color: COLORS.mint });
-    insights.push({ text: `Дней без покупок: ${quietDays} из ${days}.`, color: '#91A69F' });
+    insights.push({ text: `Дней без записанных расходов: ${quietDays} из ${days}.`, color: '#91A69F' });
 
     return { st, currency, now, spent, income, net: M.add(income,-spent), deltaPct, prevSpent, burnRate, projectedBalance, categories, insights, byWeekday, weekdayNames, byDate, activeDates, currentTxs, allTxs: M.transactions(st.transactions,null,today) };
   }
@@ -212,7 +212,29 @@
     return `<div class="ftx-ap-pills" role="group" aria-label="Период аналитики">${PERIODS.map(p => `<button type="button" class="ftx-ap-pill ${p.id === activePeriod ? 'active' : ''}" data-period="${p.id}" aria-pressed="${p.id === activePeriod}">${p.label}</button>`).join('')}</div>`;
   }
   function renderTabs() {
-    return `<div class="ftx-ap-tabs" role="tablist">${SUBTABS.map(t => `<button type="button" class="ftx-ap-tab ${t.id === activeSubtab ? 'active' : ''}" data-subtab="${t.id}" role="tab" aria-selected="${t.id === activeSubtab}">${t.label}</button>`).join('')}</div>`;
+    return `<div class="ftx-ap-tabs" role="tablist" aria-label="Разделы аналитики">${SUBTABS.map(t => `<button type="button" class="ftx-ap-tab ${t.id === activeSubtab ? 'active' : ''}" data-subtab="${t.id}" role="tab" aria-selected="${t.id === activeSubtab}">${t.label}</button>`).join('')}</div>`;
+  }
+
+  function periodRange(data, period) {
+    const end = window.FintexMath.key(data.now);
+    const start = window.FintexMath.shift(end, 1 - period.days);
+    const label = key => new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
+    return { start, end, first: label(start), last: label(end) };
+  }
+
+  // A real daily series, including dates without recorded expenses; never demo data.
+  function renderExpenseTrend(data, period) {
+    if (!data.spent) return `<div class="ap-trend-empty"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Здесь появится динамика расходов<small>Добавьте первую операцию, чтобы увидеть график</small></span></div>`;
+    const range = periodRange(data, period);
+    const values = Array.from({ length: period.days }, (_, i) => data.byDate[window.FintexMath.shift(range.start, i)]?.total || 0);
+    const max = Math.max(1, ...values);
+    const points = values.map((value, i) => `${(i / (values.length - 1) * 320).toFixed(2)},${(76 - value / max * 66).toFixed(2)}`);
+    const line = `M${points.join(' L')}`;
+    return `<figure class="ap-trend" aria-label="Расходы по дням за выбранный период">
+      <figcaption><span>Расходы по дням</span><span class="money-val">Пик ${fmt(max, data.currency)}</span></figcaption>
+      <svg viewBox="0 0 320 82" preserveAspectRatio="none" aria-hidden="true"><path class="ap-chart-grid" d="M0 10H320 M0 43H320 M0 76H320"/><path class="ap-chart-area" d="${line} L320,80 L0,80 Z"/><path class="ap-chart-line" d="${line}"/></svg>
+      <div class="ap-chart-axis"><span>${range.first}</span><span>${range.last}</span></div>
+    </figure>`;
   }
 
   function renderOverview(data, period) {
@@ -221,37 +243,30 @@
       : 'Пока нет данных для сравнения';
     const deltaClass = data.deltaPct > 0 ? 'warn' : '';
     const topCats = data.categories.slice(0, 4).map(cat => `
-      <div style="display:flex;align-items:center;gap:9px;margin:10px 0">
-        <span style="width:8px;height:8px;border-radius:3px;background:${cat.meta.color};flex:none"></span>
-        <span style="font-size:11px;color:#C8D8D1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(cat.name)}</span>
-        <span style="font-size:11px;font-weight:750;color:#F3F8F5">${Math.round(cat.pct)}%</span>
-      </div>`).join('');
+      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val">${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span></div>`).join('');
     return `
-      <div class="ftx-ap-card gold">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div class="ftx-ap-kicker">Расходы за период · ${period.label.toLocaleLowerCase('ru-RU')}</div>
-          <span class="ftx-ap-brand-label">FINTEX</span>
-        </div>
-        <div class="ftx-ap-big">${fmt(data.spent, data.currency)}</div>
-        <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↑' : data.deltaPct < 0 ? '↓' : '•'} ${esc(deltaLabel)}</span>
-        <div style="display:flex;gap:16px;margin-top:15px;padding-top:12px;border-top:1px solid rgba(242,198,93,.14)">
-          <div style="flex:1"><div class="ftx-ap-stat-label">Доходы</div><div style="font-size:14px;font-weight:800;color:var(--accent);margin-top:3px">${fmt(data.income, data.currency)}</div></div>
-          <div style="flex:1"><div class="ftx-ap-stat-label">Разница</div><div style="font-size:14px;font-weight:800;color:${data.net >= 0 ? 'var(--gold)' : 'var(--danger)'};margin-top:3px">${data.net > 0 ? '+' : ''}${fmt(data.net, data.currency)}</div></div>
+      <div class="ftx-ap-card gold ap-expense-hero">
+        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
+        <div class="ftx-ap-big money-val">${fmt(data.spent, data.currency)}</div>
+        <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
+        ${renderExpenseTrend(data, period)}
+        <div class="ap-flow-summary">
+          <div><div class="ftx-ap-stat-label"><span class="ap-flow-dot"></span>Доходы</div><div class="ap-flow-value money-val">${fmt(data.income, data.currency)}</div></div>
+          <div><div class="ftx-ap-stat-label">Разница</div><div class="ap-flow-value money-val ${data.net < 0 ? 'ap-negative' : ''}">${data.net > 0 ? '+' : ''}${fmt(data.net, data.currency)}</div></div>
         </div>
       </div>
       <div class="ftx-ap-summary-row">
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Средние расходы в день</div><div class="ftx-ap-stat-value" style="color:var(--number-ink, var(--accent))">${fmt(data.burnRate, data.currency)}</div></div>
-        <div class="ftx-ap-stat"><div class="ftx-ap-stat-label">Оценка остатка к концу месяца</div><div class="ftx-ap-stat-value" style="color:${data.projectedBalance < 0 ? 'var(--danger)' : 'var(--gold)'}">${fmt(data.projectedBalance, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val">${fmt(data.burnRate, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}">${fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
-      <p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p>
-      <div class="ftx-ap-card">
-        <div class="ftx-ap-section-title"><span>Куда уходят деньги</span><span class="ftx-ap-section-sub">Топ категорий</span></div>
-        ${topCats || '<div class="ftx-ap-empty">Добавьте расходы — здесь появится их распределение</div>'}
-        ${data.categories.length ? `<button type="button" class="ftx-ap-btn" data-goto="categories" style="width:100%;margin-top:8px">Все категории →</button>` : ''}
+      <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details>
+      <div class="ftx-ap-card ap-distribution">
+        <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length ? data.categories.length + ' катег.' : 'Нет операций'}</span></div>
+        ${data.categories.length ? `<div class="ap-composition" aria-hidden="true">${data.categories.map(cat => `<span style="width:${cat.pct}%;background:${cat.meta.color}"></span>`).join('')}</div>${topCats}<button type="button" class="ftx-ap-btn ap-category-link" data-goto="categories">Все категории <span aria-hidden="true">↗</span></button>` : '<div class="ftx-ap-empty"><i data-lucide="layers" aria-hidden="true"></i><strong>Каждая трата — часть картины</strong><span>Добавьте расходы, чтобы увидеть их распределение по категориям</span></div>'}
       </div>
-      <div class="ftx-ap-card">
-        <div class="ftx-ap-section-title"><span>Что важно заметить</span><span class="ftx-ap-section-sub">Анализ периода</span></div>
-        ${data.insights.map(item => `<div class="ftx-ap-insight"><span class="ftx-ap-insight-dot" style="background:${item.color}"></span><span>${esc(item.text)}</span></div>`).join('')}
+      <div class="ftx-ap-card ap-observations">
+        <div class="ftx-ap-section-title"><span>Главное за период</span><span class="ftx-ap-section-sub">По вашим записям</span></div>
+        ${data.insights.map((item, index) => `<div class="ftx-ap-insight"><span class="ap-insight-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span><span>${esc(item.text)}</span></div>`).join('')}
       </div>
 `;
   }
@@ -261,17 +276,17 @@
     return `
       <div class="ftx-ap-card">
         <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length} катег.</span></div>
-        <div style="font-size:10px;color:#91A69F;line-height:1.45;margin-top:-5px;margin-bottom:12px">Нажмите на категорию, чтобы посмотреть операции внутри неё.</div>
+        <div class="ap-category-hint">Нажмите на категорию, чтобы посмотреть операции внутри неё.</div>
         ${data.categories.map(cat => {
           const isOpen = expandedCategory === cat.name;
           const meta = cat.meta;
-          return `<div class="ftx-ap-cat ${isOpen ? 'open' : ''}" data-cat="${esc(cat.name)}" aria-expanded="${isOpen}">
-            <div class="ftx-ap-cat-icon" style="color:${meta.color};background:${meta.bg};border:1px solid ${meta.color}33"><i data-lucide="${meta.icon}"></i></div>
+          return `<div class="ftx-ap-cat ${isOpen ? 'open' : ''}" data-cat="${esc(cat.name)}" role="button" tabindex="0" aria-label="${esc(cat.name)}: показать операции" aria-expanded="${isOpen}">
+            <div class="ftx-ap-cat-icon" style="--category-colour:${meta.color}"><i data-lucide="${meta.icon}"></i></div>
             <div class="ftx-ap-cat-main">
-              <div class="ftx-ap-cat-top"><span class="ftx-ap-cat-name">${esc(cat.name)}</span><span class="ftx-ap-cat-sum" style="color:${meta.color}">${fmt(cat.total, data.currency)}</span></div>
-              <div class="ftx-ap-bar"><div class="ftx-ap-bar-fill" style="width:${Math.max(1, cat.pct)}%;background:linear-gradient(90deg,${meta.color}99,${meta.color})"></div></div>
+              <div class="ftx-ap-cat-top"><span class="ftx-ap-cat-name">${esc(cat.name)}</span><span class="ftx-ap-cat-sum money-val">${fmt(cat.total, data.currency)}</span></div>
+              <div class="ftx-ap-bar"><div class="ftx-ap-bar-fill" style="width:${Math.max(1, cat.pct)}%;background:${meta.color}"></div></div>
               <div class="ftx-ap-cat-meta"><span>${Math.round(cat.pct)}% всех расходов</span><span>${cat.items.length}${cat.items.length === 8 ? '+' : ''} операций в списке</span></div>
-              ${isOpen ? `<div class="ftx-ap-drill">${cat.items.map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)} · ${esc(item.date)}</span><span class="ftx-ap-tx-sum">${fmt(item.amount, data.currency)}</span></div>`).join('')}</div>` : ''}
+              ${isOpen ? `<div class="ftx-ap-drill">${cat.items.map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)} · ${esc(item.date)}</span><span class="ftx-ap-tx-sum money-val">${fmt(item.amount, data.currency)}</span></div>`).join('')}</div>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -289,8 +304,8 @@
         const value = data.byWeekday[day];
         const pct = value ? Math.max(4, value / max * 100) : 0;
         const isPeak = day === peak && value > 0;
-        const color = isPeak ? 'linear-gradient(180deg,var(--gold),#B88928)' : 'linear-gradient(180deg,var(--accent),#087D70)';
-        return `<div class="ftx-ap-weekday"><div class="ftx-ap-weekday-track"><div class="ftx-ap-weekday-fill" style="height:${pct}%;background:${color};opacity:${value ? 1 : .12}"></div></div><div class="ftx-ap-weekday-name" style="color:${isPeak ? 'var(--gold)' : ''};font-weight:${isPeak ? 800 : 600}">${data.weekdayNames[day]}</div><div class="ftx-ap-weekday-value">${value ? compactMoney(value) : '—'}</div></div>`;
+        const color = isPeak ? 'var(--gold)' : 'var(--accent)';
+        return `<div class="ftx-ap-weekday"><div class="ftx-ap-weekday-track"><div class="ftx-ap-weekday-fill" style="height:${pct}%;background:${color};opacity:${value ? 1 : .12}"></div></div><div class="ftx-ap-weekday-name" style="color:${isPeak ? 'var(--gold)' : ''};font-weight:${isPeak ? 800 : 600}">${data.weekdayNames[day]}</div><div class="ftx-ap-weekday-value money-val">${value ? compactMoney(value) : '—'}</div></div>`;
       }).join('')}</div>
       <div class="ftx-ap-legend" style="margin-top:11px"><span class="ftx-ap-legend-dot" style="background:var(--accent)"></span> Обычная активность <span class="ftx-ap-legend-dot" style="background:var(--gold);margin-left:8px"></span> Самый затратный день</div>
       <div class="ftx-ap-note">Сравниваются суммарные расходы по дням недели. Это помогает заметить повторяющиеся привычки, а не оценивать отдельную покупку.</div>
@@ -339,13 +354,13 @@
     const selectedDate = new Date(`${selectedHeatDate}T12:00:00`);
     const dateLabel = selectedDate.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
     const listHtml = selected.list.length
-      ? selected.list.sort((a, b) => b.amount - a.amount).slice(0, 8).map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)}</span><span class="ftx-ap-tx-sum">${fmt(item.amount, data.currency)}</span></div>`).join('')
-      : '<div style="font-size:11px;color:#91A69F;padding:5px 0">В этот день расходов не было</div>';
+      ? selected.list.sort((a, b) => b.amount - a.amount).slice(0, 8).map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)}</span><span class="ftx-ap-tx-sum money-val">${fmt(item.amount, data.currency)}</span></div>`).join('')
+      : '<div class="ap-no-records">В этот день нет записанных расходов</div>';
     return `<div class="ftx-ap-card">
       <div class="ftx-ap-section-title"><span>Карта финансовой активности</span><span class="ftx-ap-section-sub">12 недель</span></div>
       <div class="ftx-ap-heat-wrap"><div class="ftx-ap-heat">${cells.join('')}</div></div>
-      <div class="ftx-ap-legend" style="justify-content:flex-end;margin-top:7px"><span>Меньше</span><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.2)"></i><i class="ftx-ap-legend-dot" style="background:rgba(0,214,195,.48)"></i><i class="ftx-ap-legend-dot" style="background:linear-gradient(135deg,var(--accent),var(--gold))"></i><span>Больше</span></div>
-      <div class="ftx-ap-day-detail"><div class="ftx-ap-day-head"><span>${esc(dateLabel)}</span><span class="ftx-ap-day-total">${fmt(selected.total, data.currency)}</span></div>${listHtml}</div>
+      <div class="ftx-ap-legend" style="justify-content:flex-end;margin-top:7px"><span>Меньше</span><i class="ftx-ap-legend-dot" style="background:color-mix(in srgb,var(--accent) 25%,var(--surface-1))"></i><i class="ftx-ap-legend-dot" style="background:color-mix(in srgb,var(--accent) 55%,var(--surface-1))"></i><i class="ftx-ap-legend-dot" style="background:var(--accent)"></i><span>Больше</span></div>
+      <div class="ftx-ap-day-detail"><div class="ftx-ap-day-head"><span>${esc(dateLabel)}</span><span class="ftx-ap-day-total money-val">${fmt(selected.total, data.currency)}</span></div>${listHtml}</div>
       <div class="ftx-ap-note">Нажмите на любую ячейку, чтобы посмотреть покупки за конкретную дату. Яркость показывает относительный объём расходов за последние 12 недель.</div>
     </div>`;
   }
@@ -380,6 +395,8 @@
     const container = targetEl || findAnalyticsContainer();
     if (!container) return;
     injectStyles();
+    const focused = container.contains(document.activeElement) ? document.activeElement : null;
+    const focusKey = focused && ['period','subtab','cat','hdate','goto'].map(key => focused.hasAttribute(`data-${key}`) ? [key, focused.getAttribute(`data-${key}`)] : null).find(Boolean);
     const previousTools = container.querySelector('#analytics-tools');
     if (previousTools) toolsOpen = previousTools.open;
     const period = PERIODS.find(p => p.id === activePeriod) || PERIODS[1];
@@ -389,7 +406,11 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading"><h2>Аналитика</h2><p>Ваши деньги в деталях</p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Ваши деньги в деталях <span class="ap-date-range">${periodRange(data, period).first} — ${periodRange(data, period).last}</span></p></div><div class="ftx-ap">${renderPeriodControls()}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    if (focusKey) {
+      const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
+      next?.focus({ preventScroll: true });
+    }
     window.FintexBehavior?.bind(container);
     container.querySelector('#analytics-tools').addEventListener('toggle', event => { toolsOpen = event.target.open; });
     const toolActions = { purchase: () => window.openCanIBuyModal?.(), prices: () => window.openPriceTrackerModal?.(), limits: () => window.openCatLimitModal?.() };
@@ -401,6 +422,9 @@
       button.addEventListener('click', () => { activeSubtab = button.dataset.subtab; renderProAnalytics(container); });
     });
     container.querySelectorAll('[data-cat]').forEach(card => {
+      card.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); card.click(); }
+      });
       card.addEventListener('click', () => {
         const name = card.dataset.cat;
         expandedCategory = expandedCategory === name ? null : name;
