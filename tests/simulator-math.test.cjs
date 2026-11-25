@@ -46,3 +46,9 @@ test('snapshot excludes future/old history and paid bills from variable costs; r
   const sim=engine({balance:10000,goal:{saved:2000},payday:'2026-12-04',transactions:[tx('expense',100),tx('expense',100,'2026-11-23'),tx('expense',100,'2026-10-26'),tx('expense',10000,'2026-10-25'),tx('expense',10000,'2026-12-01'),tx('expense',1000,'2026-11-24',{source:'Платёж'}),tx('income',10000)],bills:[{amount:500,is_recurring:true,due_date:'2026-12-01'},{amount:1000,is_recurring:false,due_date:'2026-12-01'}]});
   const snap=sim.captureRealitySnapshot();assert.equal(snap.estMonthlyVariableSpend,300);assert.equal(snap.activeBillsMonthly,500);assert.equal(snap.oneOffBills.length,1);assert.equal(snap.liquidBalance,8000);
 });
+test('multiple savings goals reduce liquid cash but do not disappear from net worth',()=>{
+  const sim=engine({balance:10000,goal:{title:'Подушка',saved:1000,target:10000,pockets:[{saved:2500}]},transactions:[],bills:[]});
+  const snap=sim.captureRealitySnapshot();assert.equal(snap.liquidBalance,6500);assert.equal(snap.cushionSaved,1000);assert.equal(snap.otherGoalsReserved,2500);
+  sim.captureRealitySnapshot=()=>({...snap,estMonthlyIncome:0,estMonthlyVariableSpend:0,activeBillsMonthly:0});
+  const result=sim.simulateScenario({horizonDays:30});assert.equal(result.endCash,6500);assert.equal(result.endNetWorth,10000);assert.equal(result.netWorthDelta,0);
+});

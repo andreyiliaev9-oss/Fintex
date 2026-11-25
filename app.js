@@ -812,6 +812,7 @@ function renderAll(animateFromZero = false) {
   renderAnalytics();
   renderSettings();
   try { window.FINTEX_EXT?.onAfterRender?.(); } catch (e) {}
+  window.FintexGoals?.render();
   lucide.createIcons();
 }
 
@@ -3326,6 +3327,7 @@ function openSmartHubModal() {
 }
 
 function closeModals() {
+  document.getElementById('savings-goals-dialog')?.close();
   ['modal-smart-hub', 'modal-scan', 'modal-autopilot', 'modal-can-buy', 'modal-sub-guide', 'modal-forecast-info', 'modal-goal-detail', 'modal-today', 'modal-tx', 'modal-cat-limit', 'modal-balance', 'modal-payday', 'modal-bill', 'modal-add', 'modal-ios-shortcuts', 'modal-price-tracker', 'modal-voice'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
