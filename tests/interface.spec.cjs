@@ -907,14 +907,14 @@ test('Sapphire uses the reference colours with readable controls and no Lagoon d
     const palette=await page.evaluate(() => {
       const css=getComputedStyle(document.documentElement),rgb=s=>s.match(/\d+/g).slice(0,3).map(Number);
       const colours = selector => {const s=getComputedStyle(document.querySelector(selector));return {text:rgb(s.color),bg:rgb(s.backgroundColor)};};
-      return {canvas:css.getPropertyValue('--bg-canvas').trim(),surface:css.getPropertyValue('--surface-2').trim(),accent:css.getPropertyValue('--accent').trim(),budget:colours('.daily-budget'),nav:colours('.nav-tab.is-active-tab'),swatch:getComputedStyle(document.querySelector('.swatch-sapphire')).backgroundImage};
+      return {canvas:css.getPropertyValue('--bg-canvas').trim(),surface:css.getPropertyValue('--surface-2').trim(),accent:css.getPropertyValue('--accent').trim(),budget:colours('.daily-budget'),nav:colours('.nav-tab.is-active-tab'),navPill:colours('#nav-active-pill'),swatch:getComputedStyle(document.querySelector('.swatch-sapphire')).backgroundImage};
     });
     expect(palette.canvas).toBe(mode==='light'?'#f6f6f6':'#153073');
     expect(palette.surface).toBe(mode==='light'?'#d7e3ef':'#244784');
     expect(palette.accent).toBe(mode==='light'?'#1f57a1':'#d7e3ef');
     expect(contrast(palette.budget.text,palette.budget.bg)).toBeGreaterThan(4.5);
-    // Active tab text overlays the independent blue sliding pill.
-    expect(contrast(palette.nav.text,[31,87,161])).toBeGreaterThan(4.5);
+    // Text contrast is measured against the actual theme-aware selected surface.
+    expect(contrast(palette.nav.text,palette.navPill.bg)).toBeGreaterThan(4.5);
     expect(palette.swatch).toContain('rgb(246, 246, 246)');
     expect(palette.swatch).toContain('rgb(215, 227, 239)');
     expect(palette.swatch).toContain('rgb(31, 87, 161)');

@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>FINTEX — Личные финансы</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/brand/fintex-icon-32.png?v=49" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/brand/fintex-touch-icon.png?v=49" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="./assets/utilities.css?v=33" />
+  <link rel="stylesheet" href="./assets/utilities.css?v=49" />
   <script src="./assets/icons.js?v=21"></script>
   <!-- Бесплатные автономные движки распознавания в браузере (QR + OCR + PDF) -->
   <script src="./assets/ocr/jsQR.js?v=43"></script>
@@ -16,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=48" />
+  <link rel="stylesheet" href="./design-system.css?v=49" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -33,7 +35,7 @@
     <div class="space-y-3 pt-1">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-[#00D6C3] text-[#041311] font-extrabold text-sm flex items-center justify-center">F</div>
+          <img class="fintex-onboarding-logo" src="./assets/brand/fintex-logo.webp?v=49" width="32" height="32" alt="" />
           <span class="text-sm font-extrabold tracking-wider text-white">FINTEX</span>
         </div>
         <button type="button" id="ob-skip-btn" onclick="jumpToOnboardingSetup()" class="text-xs font-semibold text-sub hover:text-white px-2.5 py-1 rounded-lg bg-white/5">
@@ -218,7 +220,7 @@
   <header aria-label="Профиль и быстрые действия" id="home-header" class="px-4 pt-3.5 pb-2 flex items-center justify-between">
     <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="goTab('settings')" title="Профиль и настройки">
       <div id="fintex-ai-orb" class="ai-orb ai-orb-calm shrink-0" title="Состояние FINTEX AI">
-        <span class="w-2 h-2 rounded-full bg-white/90"></span>
+        <img class="fintex-brand-logo" src="./assets/brand/fintex-logo.webp?v=49" width="48" height="48" alt="Логотип FINTEX — золотая F с листом" decoding="async" /><span class="fintex-brand-status" aria-hidden="true"></span>
       </div>
       <div class="min-w-0">
         <div class="app-wordmark">FINTEX <span>Личные финансы</span></div>
@@ -969,24 +971,24 @@
   <div id="tx-batch-dock" class="hidden"></div>
 
   <!-- ==================== НИЖНЯЯ НАВИГАЦИЯ (ЕДИНАЯ КАПСУЛА-ДОК) ==================== -->
-  <nav aria-label="Основная навигация" class="app-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto px-3.5 pt-1.5 z-30 pointer-events-none" style="padding-bottom: calc(10px + env(safe-area-inset-bottom));">
+  <nav id="fintex-navigation" aria-label="Основная навигация" class="app-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto px-3.5 pt-1.5 z-30 pointer-events-none" style="padding-bottom: calc(10px + env(safe-area-inset-bottom));">
     <div class="pointer-events-auto relative rounded-[22px] border border-[#00D6C3]/25 bg-[#081311]/92 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.10)] p-1.5 flex items-center justify-around">
       <div id="nav-active-pill" class="nav-pill-slider" style="top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 4); transform: translateX(0%);"></div>
-      <button type="button" data-nav="home" aria-current="page" onclick="goTab('home')" class="nav-tab is-active-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-brand nav-active-glow tap">
-        <i data-lucide="wallet" class="w-5 h-5"></i>
-        <span class="text-[10px] font-semibold">Главная</span>
+      <button type="button" data-nav="home" aria-current="page" onclick="goTab('home')" class="nav-tab is-active-tab flex-1 flex flex-col items-center tap">
+        <span class="nav-icon nav-icon-brand" aria-hidden="true"><img src="./assets/brand/fintex-logo.webp?v=49" width="30" height="30" alt="" /></span>
+        <span class="nav-label">Главная</span>
       </button>
-      <button type="button" data-nav="calendar" onclick="goTab('calendar')" class="nav-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-sub tap">
-        <i data-lucide="calendar" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Календарь</span>
+      <button type="button" data-nav="calendar" onclick="goTab('calendar')" class="nav-tab flex-1 flex flex-col items-center tap">
+        <span class="nav-icon" aria-hidden="true"><i data-lucide="calendar-days"></i></span>
+        <span class="nav-label">Календарь</span>
       </button>
-      <button type="button" data-nav="analytics" onclick="goTab('analytics')" class="nav-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-sub tap">
-        <i data-lucide="pie-chart" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Аналитика</span>
+      <button type="button" data-nav="analytics" onclick="goTab('analytics')" class="nav-tab flex-1 flex flex-col items-center tap">
+        <span class="nav-icon" aria-hidden="true"><i data-lucide="chart-no-axes-combined"></i></span>
+        <span class="nav-label">Аналитика</span>
       </button>
-      <button type="button" data-nav="settings" onclick="goTab('settings')" class="nav-tab flex-1 flex flex-col items-center gap-1 py-1.5 text-sub tap">
-        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Настройки</span>
+      <button type="button" data-nav="settings" onclick="goTab('settings')" class="nav-tab flex-1 flex flex-col items-center tap">
+        <span class="nav-icon" aria-hidden="true"><i data-lucide="sliders-horizontal"></i></span>
+        <span class="nav-label">Настройки</span>
       </button>
     </div>
   </nav>
@@ -1860,7 +1862,7 @@
   <script src="./finance-math.js?v=34"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=42"></script>
-  <script src="./app.js?v=47"></script>
+  <script src="./app.js?v=49"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=44"></script>

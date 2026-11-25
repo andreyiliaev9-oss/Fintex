@@ -712,7 +712,10 @@ function renderBalanceCardFeedback(m, hasAnomaly) {
   badge.dataset.tone = tone;
   badge.textContent = tone === 'risk' ? 'Нужен контроль' : tone === 'caution' ? 'Обратите внимание' : 'Всё спокойно';
   const orb = document.getElementById('fintex-ai-orb');
-  if (orb) orb.className = `ai-orb ai-orb-${tone === 'risk' ? 'alert' : tone === 'caution' ? 'amber' : 'calm'} shrink-0`;
+  if (orb) {
+    orb.className = `ai-orb ai-orb-${tone === 'risk' ? 'alert' : tone === 'caution' ? 'amber' : 'calm'} shrink-0`;
+    orb.title = `FINTEX · ${badge.textContent}`;
+  }
 
   const used = Math.max(0, Math.min(100, Number(m.pct) || 0));
   const bar = document.getElementById('hero-bar');
