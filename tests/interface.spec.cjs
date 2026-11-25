@@ -201,7 +201,8 @@ test('calendar keeps expenses coral, income green, shows both on mixed days and 
   await expect(cell).toHaveAttribute('aria-pressed','true');
   const colours = await cell.evaluate(el => ({expense:getComputedStyle(el.querySelector('.cal-expense')).color, income:getComputedStyle(el.querySelector('.cal-income')).color}));
   expect(colours.expense).not.toBe(colours.income);
-  expect(await page.locator('#cal-day-txs [data-operation-type="expense"]').count()).toBe(2);
+  await expect(page.locator('#cal-day-txs [data-operation-row]')).toHaveCount(0);
+  await expect(page.locator('#cal-day-count')).toContainText('Операции: 3');
   await expect(page.locator('[data-cal-date="2026-11-23"] .cal-day-amounts')).toBeEmpty();
   await page.locator('[data-cal-filter="expense"]').click();
   await expect(page.locator('#cal-day-txs [data-operation-type="income"]')).toHaveCount(0);
@@ -211,7 +212,9 @@ test('calendar keeps expenses coral, income green, shows both on mixed days and 
   await expect(page.locator('#cal-day-bills')).toContainText('Подписка');
   await expect(page.locator('#cal-day-txs [data-operation-row]')).toHaveCount(0);
   await page.locator('[data-cal-filter="all"]').click();
-  await page.locator('#cal-day-txs [data-operation-row="cal-e1"]').click();
+  await page.locator('#cal-open-journal').click();
+  await expect(page.locator('#view-home')).toBeVisible();
+  await page.locator('#tx-feed [data-operation-row="cal-e1"]').click();
   await expect(page.locator('#modal-tx')).toBeVisible();
 });
 
@@ -231,32 +234,13 @@ test('calendar selection, month boundaries and semantic colours work in both the
   await expect(page.locator('[data-cal-date="2025-12-31"]')).toHaveAttribute('aria-pressed','true');
 });
 
-test('operation reveal is staggered, only new rows replay on sync, and reduced motion disables it', async ({page}) => {
-  await openApp(page);
-  await page.emulateMedia({reducedMotion:'no-preference'});
-  await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});
-  await seedCalendar(page);
-  await page.evaluate(() => renderCalendar()); // Sync before the offscreen rows enter view.
-  await page.locator('#cal-day-txs').scrollIntoViewIfNeeded();
-  await expect.poll(() => page.locator('#cal-day-txs').evaluate(el => el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(3);
-  const initial = await page.evaluate(()=>Array.from(document.querySelectorAll('#cal-day-txs [data-operation-row]')).map(row=>{
-    const animation=row.getAnimations().find(a=>a.id==='fintex-operation-reveal');
-    animation?.pause(); return animation?.effect.getTiming().delay;
-  }));
-  expect(initial).toEqual([0,65,130]);
-  const fresh = await page.evaluate(()=>{
-    state.transactions.push({id:'cal-new',date:'2026-11-24',merchant:'Новый расход',amount:99,type:'expense',category:'other',items:[]});
-    renderCalendar();
-    return [...document.querySelectorAll('#cal-day-txs [data-operation-row]')].filter(el=>el.getAnimations().some(a=>a.id==='fintex-operation-reveal')).map(el=>el.dataset.operationRow);
-  });
-  expect(fresh).toEqual(['cal-new']);
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await page.evaluate(()=>renderCalendar());
-  expect(await page.locator('#cal-day-txs').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(0);
-  await expect(page.locator('#cal-day-txs [data-operation-row="cal-new"]')).toHaveCSS('opacity','1');
-  await page.emulateMedia({reducedMotion:'no-preference'});
-  await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();pickCalDay('2026-11-22');});
-  expect(await page.locator('#cal-day-txs').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-operation-reveal').length)).toBe(0);
+test('calendar links to a single dated journal without duplicating records or hiding the active filter',async({page})=>{
+  await openApp(page);await seedCalendar(page);const before=await page.evaluate(()=>JSON.stringify(state.transactions));
+  await page.locator('[data-cal-filter="expense"]').click();await page.locator('#cal-open-journal').click();
+  await expect(page.locator('#journal-day-filter')).toContainText('Расходы');await expect(page.locator('#tx-feed [data-operation-row]')).toHaveCount(2);await expect(page.locator('#cal-day-txs [data-operation-row]')).toHaveCount(0);
+  await page.locator('#journal-day-filter button').click();await expect(page.locator('#journal-day-filter')).toBeHidden();await expect(page.locator('#tx-feed [data-operation-row]')).toHaveCount(4);
+  await page.evaluate(()=>{goTab('calendar');pickCalDay('2026-11-23');});await page.locator('#cal-open-journal').click();await expect(page.locator('#tx-feed')).toContainText('За выбранный день операций нет');await expect(page.locator('#journal-day-filter')).toBeVisible();
+  expect(await page.evaluate(()=>JSON.stringify(state.transactions))).toBe(before);
 });
 
 test('home operation arrivals share the animation without replaying existing rows', async ({page}) => {
