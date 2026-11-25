@@ -455,68 +455,103 @@ body .cal-upcoming > summary:focus-visible { outline: 2px solid var(--accent); o
 }
 
 /* Sprout entrance: a five-second growth sequence, not a loading indicator. */
+/* v61 · one finite botanical brand sequence, not a loading indicator. */
 body #returning-splash.sprout-stage {
-  --leaf-light: #d5ee99;
-  --leaf-deep: #54995b;
-  --stem-deep: #507745;
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; flex-direction: column; justify-content: space-between;
+  --leaf-light: #d5ee99; --leaf-deep: #54995b; --stem-deep: #507745;
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; justify-content: space-between;
   padding: max(24px, env(safe-area-inset-top)) 26px max(28px, env(safe-area-inset-bottom));
-  overflow: hidden; isolation: isolate; cursor: pointer;
-  background: var(--bg-canvas); color: var(--text-primary);
-  -webkit-tap-highlight-color: transparent;
+  overflow: hidden; isolation: isolate; cursor: pointer; background: var(--bg-canvas); color: var(--text-primary); -webkit-tap-highlight-color: transparent;
 }
 body #returning-splash.sprout-stage.hidden { display: none; }
 html:not(.dark) body #returning-splash { --leaf-light: #91bb4f; --leaf-deep: #2c7338; --stem-deep: #6e883d; }
-body .sprout-light { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 53% 40%, rgba(155,194,82,.18), transparent 54%), radial-gradient(ellipse at 95% 0%, rgba(233,199,109,.09), transparent 52%); }
+body .sprout-light { position: absolute; z-index: -1; inset: -5%; pointer-events: none; background: radial-gradient(ellipse at 53% 40%, rgba(155,194,82,.23), transparent 54%), radial-gradient(ellipse at 95% 0%, rgba(233,199,109,.12), transparent 52%); }
+body .sprout-canopy { position: absolute; z-index: -1; pointer-events: none; width: 230px; height: 310px; border: 1px solid var(--border-active); border-radius: 100% 0 100% 0; opacity: .12; }
+body .sprout-canopy-top { top: -155px; right: -70px; transform: rotate(27deg); }
+body .sprout-canopy-bottom { bottom: -140px; left: -100px; transform: rotate(35deg); }
 body .sprout-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-body .sprout-top > span { font-size: 9px; font-weight: 600; letter-spacing: .2em; color: var(--text-muted); }
+body .sprout-top > span { font-size: 9px; font-weight: 650; letter-spacing: .2em; color: var(--text-muted); }
 body #sprout-skip { min-height: 44px; padding: 8px 0 8px 12px; font-size: 11px; color: var(--text-secondary); border-radius: 8px; }
 body #sprout-skip > span { margin-left: 7px; color: var(--accent); }
 body #sprout-skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
-body .sprout-scene { width: 100%; max-width: 340px; margin: auto; text-align: center; padding-bottom: 30px; }
-body .sprout-art { width: min(280px, 76vw); margin: 0 auto -8px; }
+body .sprout-scene { width: 100%; max-width: 340px; margin: auto; text-align: center; padding-bottom: 24px; }
+body .sprout-art { position: relative; width: min(280px,76vw); margin: 0 auto 30px; }
 body .sprout-art svg { display: block; width: 100%; overflow: visible; }
 body .sprout-leaf-light { stop-color: var(--leaf-light); }
 body .sprout-leaf-deep { stop-color: var(--leaf-deep); }
 body .sprout-stem-deep { stop-color: var(--stem-deep); }
 body .sprout-soil-glow { fill: var(--accent); opacity: .1; }
 body .sprout-ground { stroke: var(--gold); stroke-width: 1; stroke-linecap: round; opacity: .5; fill: none; }
+body .sprout-seed { fill: var(--gold); }
+body .sprout-growth { transform-origin: 140px 230px; }
 body .sprout-stem { stroke: url(#sprout-stem-colour); stroke-width: 4; stroke-linecap: round; fill: none; }
 body .sprout-vein { stroke: var(--bg-canvas); stroke-width: 1; stroke-linecap: round; opacity: .25; }
 body .sprout-dew { fill: #f7f5cf; opacity: .8; }
-body #sprout-title { font-size: clamp(48px, 15vw, 62px); line-height: 1.1; font-weight: 550; letter-spacing: -.065em; margin: 0; }
-body #sprout-title > span { color: var(--accent); }
-body #sprout-tagline { margin: 16px 0 0; color: var(--text-secondary); font-size: 14px; font-weight: 400; letter-spacing: .015em; }
-body .sprout-rule { width: 28px; height: 1px; background: var(--gold); opacity: .65; margin: 26px auto 0; }
+body .sprout-orbit { transform-origin: 140px 145px; }
+body .sprout-orbit-track { stroke: var(--border-active); stroke-width: .6; opacity: .3; }
+body .sprout-orbit-arc { stroke: var(--gold); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 1; opacity: .65; }
+body .sprout-orbit-point { fill: var(--gold); }
+body .sprout-brand { position: absolute; bottom: -1px; left: calc(50% - 29px); width: 58px; height: 58px; border-radius: 18px; background: #174b36; box-shadow: 0 12px 30px rgba(24,60,36,.15), 0 0 0 1px var(--border-active); overflow: hidden; }
+body .sprout-logo { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
+body .sprout-brand-glint { position: absolute; inset: -20%; pointer-events: none; background: linear-gradient(112deg,transparent 30%,rgba(255,240,182,.35) 48%,transparent 64%); transform: translateX(-130%); }
+body .sprout-mote { position: absolute; left: 50%; top: 50%; width: 5px; height: 9px; border-radius: 80% 0 80% 0; background: var(--gold); opacity: 0; pointer-events: none; }
+body #sprout-title { font-size: clamp(48px,15vw,62px); line-height: 1.12; font-weight: 650; letter-spacing: -.06em; margin: 0; overflow: hidden; padding: 2px 0 5px; }
+body .sprout-name { display: inline; color: inherit; }
+body .sprout-name > span, body .sprout-title-dot { display: inline-block; }
+body .sprout-title-dot { color: var(--gold); }
+body #sprout-tagline { margin: 10px 0 0; color: var(--text-secondary); font-size: 14px; font-weight: 450; letter-spacing: .015em; }
+body .sprout-rule { width: 66px; height: 1px; background: linear-gradient(90deg,transparent,var(--gold),transparent); opacity: .75; margin: 24px auto 0; transform-origin: center; }
 body .sprout-hint { text-align: center; color: var(--text-muted); font-size: 10px; letter-spacing: .04em; margin: 0; }
 @keyframes sproutDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes sproutLeaf { from { opacity: 0; transform: rotate(var(--leaf-turn)) scale(.08); } to { opacity: 1; transform: rotate(0deg) scale(1); } }
-@keyframes sproutAppear { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes sproutLight { from { opacity: .2; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
-@keyframes sproutExit { to { opacity: 0; } }
-body .is-growing .sprout-light { animation: sproutLight 3.6s ease-out both; }
-body .is-growing .sprout-ground { stroke-dasharray: 1; animation: sproutDraw .9s .1s ease-out both; }
-body .is-growing .sprout-stem { stroke-dasharray: 1; animation: sproutDraw 1.6s .35s cubic-bezier(.3,0,.25,1) both; }
-body .is-growing .sprout-left { --leaf-turn: 32deg; transform-origin: 143px 171px; animation: sproutLeaf 1.35s 1.15s cubic-bezier(.2,.6,.2,1) both; }
-body .is-growing .sprout-right { --leaf-turn: -24deg; transform-origin: 145px 147px; animation: sproutLeaf 1.5s 1.7s cubic-bezier(.2,.6,.2,1) both; }
-body .is-growing .sprout-dew { animation: sproutAppear .9s 2.9s both; }
-body .is-growing #sprout-title { animation: sproutAppear 1s 2.3s both; }
-body .is-growing #sprout-tagline { animation: sproutAppear 1s 2.85s both; }
-body .is-growing .sprout-rule { animation: sproutAppear .8s 3.2s both; }
+@keyframes sproutLeaf { 0% { opacity: 0; transform: rotate(var(--leaf-turn)) scale(.06); } 72% { opacity: 1; transform: rotate(-3deg) scale(1.035); } 100% { opacity: 1; transform: rotate(0deg) scale(1); } }
+@keyframes sproutAppear { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sproutCanopy { from { opacity: 0; } to { opacity: .12; } }
+@keyframes sproutSeed { 0% { opacity: 0; transform: translateY(-15px) scale(.5); } 55% { opacity: 1; transform: translateY(1px) scale(1.12); } 100% { opacity: 0; transform: translateY(0) scale(.65); } }
+@keyframes sproutBreeze { 0%,100% { transform: rotate(0); } 28% { transform: rotate(-3deg); } 68% { transform: rotate(2deg); } }
+@keyframes sproutLight { from { opacity: .2; transform: scale(.9) translateY(15px); } to { opacity: 1; transform: scale(1.04) translateY(-6px); } }
+@keyframes sproutOrbit { from { opacity: 0; transform: rotate(-22deg) scale(.88); } to { opacity: 1; transform: rotate(0) scale(1); } }
+@keyframes sproutBrand { 0% { opacity: 0; transform: translateY(12px) scale(.7) rotate(-8deg); } 72% { opacity: 1; transform: translateY(-2px) scale(1.04) rotate(1deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
+@keyframes sproutGlint { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+@keyframes sproutLetter { from { transform: translateY(110%); opacity: .25; } to { transform: translateY(0); opacity: 1; } }
+@keyframes sproutDot { 0% { transform: translateY(-15px) scale(.4); opacity: 0; } 65% { transform: translateY(2px) scale(1.12); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes sproutMote { 0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 20px)) rotate(-25deg); } 25%,65% { opacity: .5; } 100% { opacity: 0; transform: translate(calc(var(--mx) + var(--drift)),calc(var(--my) - 30px)) rotate(60deg); } }
+@keyframes sproutRule { from { opacity: 0; transform: scaleX(.05); } to { opacity: .75; transform: scaleX(1); } }
+@keyframes sproutExit { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sproutSceneExit { to { opacity: 0; transform: translateY(-12px) scale(1.025); } }
+body .is-growing .sprout-light { animation: sproutLight 4.4s ease-out both; }
+body .is-growing .sprout-canopy { animation: sproutCanopy 1.5s .2s both; }
+body .is-growing .sprout-seed { transform-origin: 140px 231px; animation: sproutSeed .9s .05s both; }
+body .is-growing .sprout-orbit { animation: sproutOrbit 2.5s .45s cubic-bezier(.2,.7,.2,1) both; }
+body .is-growing .sprout-orbit-arc { animation: sproutDraw 2.1s .65s ease-out both; }
+body .is-growing .sprout-ground { stroke-dasharray: 1; animation: sproutDraw .8s .2s ease-out both; }
+body .is-growing .sprout-stem { stroke-dasharray: 1; animation: sproutDraw 1.45s .4s cubic-bezier(.3,0,.25,1) both; }
+body .is-growing .sprout-left { --leaf-turn: 38deg; transform-origin: 143px 171px; animation: sproutLeaf 1.3s 1s cubic-bezier(.2,.6,.2,1) both; }
+body .is-growing .sprout-right { --leaf-turn: -32deg; transform-origin: 145px 147px; animation: sproutLeaf 1.4s 1.35s cubic-bezier(.2,.6,.2,1) both; }
+body .is-growing .sprout-growth { animation: sproutBreeze 3.1s 1.4s ease-in-out both; }
+body .is-growing .sprout-dew { animation: sproutAppear .8s 2.6s both; }
+body .is-growing .sprout-brand { animation: sproutBrand .85s 2.1s cubic-bezier(.2,.7,.2,1) both; }
+body .is-growing .sprout-brand-glint { animation: sproutGlint 1s 3s ease-in-out both; }
+body .is-growing .sprout-mote { animation: sproutMote 3.1s var(--delay) ease-in-out both; }
+body .is-growing .sprout-name > span { animation: sproutLetter .75s calc(1.9s + var(--letter) * .055s) cubic-bezier(.2,.8,.2,1) both; }
+body .is-growing .sprout-title-dot { animation: sproutDot .65s 2.5s both; }
+body .is-growing #sprout-tagline { animation: sproutAppear .85s 2.7s both; }
+body .is-growing .sprout-rule { animation: sproutRule .9s 2.95s both; }
 body .is-growing .sprout-hint { animation: sproutAppear .8s .7s both; }
 body #returning-splash.is-leaving { pointer-events: none; animation: sproutExit .4s ease-out both; }
+body #returning-splash.is-leaving .sprout-scene { animation: sproutSceneExit .4s ease-in both; }
+body #returning-splash.has-brand-handoff .sprout-brand { visibility: hidden; }
+body .sprout-handoff { position: fixed; z-index: 101; pointer-events: none; border-radius: 16px; object-fit: contain; transform-origin: top left; }
 @media(max-height:600px) {
-  body .sprout-art { width: min(180px, 36vh); }
+  body #returning-splash.sprout-stage { padding-block: max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-bottom)); }
+  body .sprout-art { width: min(180px,30dvh); margin-bottom: 17px; }
   body .sprout-scene { padding-bottom: 0; }
-  body #sprout-title { font-size: 40px; }
-  body #sprout-tagline { margin-top: 10px; }
+  body .sprout-brand { width: 44px; height: 44px; left: calc(50% - 22px); border-radius: 13px; }
+  body #sprout-title { font-size: 38px; }
+  body #sprout-tagline { margin-top: 8px; font-size: 12px; }
   body .sprout-rule { margin-top: 14px; }
+  body .sprout-mote { width: 3px; height: 6px; }
 }
-@media(prefers-reduced-motion:reduce) {
-  body #returning-splash * { animation: none !important; }
-}
-html.no-motion body #returning-splash * { animation: none !important; }
+@media(prefers-reduced-motion:reduce) { body #returning-splash, body #returning-splash * { animation: none !important; } }
+html.no-motion body #returning-splash, html.no-motion body #returning-splash * { animation: none !important; }
 
 /* Free investment learning: no market prices until a permitted free feed exists. */
 body .inv-entry { display: flex; align-items: center; gap: 12px; width: 100%; padding: 20px; text-align: left; margin-top: 20px; }

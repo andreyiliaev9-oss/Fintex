@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=60" />
+  <link rel="stylesheet" href="./design-system.css?v=61" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -186,6 +186,7 @@
   <!-- Living Forest entrance. Decorative SVG, no personal or financial data. -->
   <div id="returning-splash" class="sprout-stage hidden" role="dialog" aria-modal="true" aria-labelledby="sprout-title" aria-describedby="sprout-tagline" tabindex="-1">
     <div class="sprout-light" aria-hidden="true"></div>
+    <div class="sprout-canopy sprout-canopy-top" aria-hidden="true"></div><div class="sprout-canopy sprout-canopy-bottom" aria-hidden="true"></div>
     <div class="sprout-top"><span>ЛИЧНЫЕ ФИНАНСЫ</span><button id="sprout-skip" type="button">Пропустить <span aria-hidden="true">↗</span></button></div>
     <div class="sprout-scene">
       <div class="sprout-art" aria-hidden="true">
@@ -195,8 +196,11 @@
             <linearGradient id="sprout-leaf-right" x1="214" y1="66" x2="142" y2="155" gradientUnits="userSpaceOnUse"><stop class="sprout-leaf-light"/><stop offset="1" class="sprout-leaf-deep"/></linearGradient>
             <linearGradient id="sprout-stem-colour" x1="140" y1="99" x2="140" y2="229" gradientUnits="userSpaceOnUse"><stop class="sprout-leaf-light"/><stop offset="1" class="sprout-stem-deep"/></linearGradient>
           </defs>
+          <g class="sprout-orbit" aria-hidden="true"><circle class="sprout-orbit-track" cx="140" cy="145" r="106"/><path class="sprout-orbit-arc" d="M49 198 A106 106 0 0 1 206 62" pathLength="1"/><circle class="sprout-orbit-point" cx="206" cy="62" r="3"/></g>
           <ellipse class="sprout-soil-glow" cx="140" cy="232" rx="61" ry="8"/>
           <path class="sprout-ground" d="M86 232 Q140 224 194 232" pathLength="1"/>
+          <circle class="sprout-seed" cx="140" cy="231" r="4"/>
+          <g class="sprout-growth">
           <path class="sprout-stem" d="M140 230 C137 203 148 186 143 163 C138 144 147 123 160 105" pathLength="1"/>
           <g class="sprout-left">
             <path d="M143 171 C103 176 70 148 64 114 C104 108 142 128 143 171Z" fill="url(#sprout-leaf-left)"/>
@@ -207,9 +211,12 @@
             <path class="sprout-vein" d="M146 145 C163 120 181 96 201 76"/>
           </g>
           <circle class="sprout-dew" cx="192" cy="87" r="3"/>
+          </g>
         </svg>
+        <span class="sprout-mote" style="--mx:-92px;--my:-62px;--drift:22px;--delay:.4s"></span><span class="sprout-mote" style="--mx:95px;--my:-15px;--drift:-18px;--delay:.8s"></span><span class="sprout-mote" style="--mx:-65px;--my:46px;--drift:-14px;--delay:1s"></span><span class="sprout-mote" style="--mx:67px;--my:66px;--drift:20px;--delay:1.2s"></span><span class="sprout-mote" style="--mx:15px;--my:-111px;--drift:16px;--delay:.7s"></span><span class="sprout-mote" style="--mx:-110px;--my:6px;--drift:12px;--delay:1.35s"></span>
+        <span class="sprout-brand"><img class="sprout-logo" src="./assets/brand/fintex-logo.webp?v=49" width="58" height="58" alt="" decoding="async"/><span class="sprout-brand-glint"></span></span>
       </div>
-      <h1 id="sprout-title">Fintex<span aria-hidden="true">.</span></h1>
+      <h1 id="sprout-title" aria-label="Fintex"><span class="sprout-name" aria-hidden="true"><span style="--letter:0">F</span><span style="--letter:1">i</span><span style="--letter:2">n</span><span style="--letter:3">t</span><span style="--letter:4">e</span><span style="--letter:5">x</span></span><span class="sprout-title-dot" aria-hidden="true">.</span></h1>
       <p id="sprout-tagline">Расти в своём темпе</p>
       <div class="sprout-rule" aria-hidden="true"></div>
     </div>
@@ -1864,7 +1871,7 @@
   </div>
 
   <script src="./scanner.js?v=47"></script>
-  <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
+  <script src="./cosmic_intro.js?v=61" data-fintex-mod="cosmic_intro.js"></script>
   <script src="./finance-math.js?v=58"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=59"></script>
@@ -1876,7 +1883,7 @@
   <script src="./savings-goals.js?v=58"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=59"></script>
+  <script src="./extensions.js?v=61"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>
