@@ -1103,12 +1103,21 @@ function renderHome() {
 
   const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
   const rows = FM.transactions(state.transactions).filter(t => {
-    if (q && !t.merchant.toLowerCase().includes(q) && !String(t.amount).includes(q)) return false;
+    if (state.journalDay && (t.date !== state.journalDay.date || (state.journalDay.type !== 'all' && t.type !== state.journalDay.type))) return false;
+    if (q && !String(t.merchant || '').toLowerCase().includes(q) && !String(t.amount).includes(q)) return false;
     return true;
   });
 
   const feed = document.getElementById('tx-feed');
   if (!feed) return;
+  let dayBanner = document.getElementById('journal-day-filter');
+  if (!dayBanner) { dayBanner = document.createElement('div'); dayBanner.id = 'journal-day-filter'; feed.before(dayBanner); }
+  dayBanner.hidden = !state.journalDay;
+  if (state.journalDay) {
+    const label = new Date(`${state.journalDay.date}T12:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+    const type = state.journalDay.type === 'expense' ? 'Расходы' : state.journalDay.type === 'income' ? 'Доходы' : 'Операции';
+    dayBanner.innerHTML = `<span>${type} · ${escapeHtml(label)}</span><button type="button" onclick="clearJournalDay()">Все операции <span aria-hidden="true">×</span></button>`;
+  }
 
   let moreWrap = document.getElementById('home-tx-more-wrap');
   if (!moreWrap) {
@@ -1121,7 +1130,7 @@ function renderHome() {
   if (!rows.length) {
     feed.innerHTML = `
       <div class="card-surface p-6 text-center space-y-1.5">
-        <div class="text-sm font-semibold text-main">Операций пока нет</div>
+        <div class="text-sm font-semibold text-main">${state.journalDay ? 'За выбранный день операций нет' : 'Операций пока нет'}</div>
         <div class="text-xs text-sub">Добавьте первую покупку или пополнение</div>
       </div>
     `;
@@ -1660,21 +1669,28 @@ function renderCalendar(forceReveal = false) {
   document.getElementById('cal-day-total').innerHTML = totalBadges.length ? totalBadges.join(' · ') : '0 ₽';
 
   document.getElementById('cal-day-count').textContent = `Операции: ${dayTxs.length}${dayBills.length ? ` · Платежи: ${dayBills.length}` : ''}`;
-  document.getElementById('cal-day-txs').innerHTML = dayTxs.length
-    ? dayTxs.map(t => {
-        const income = t.type === 'income';
-        const catName = income ? 'Пополнение' : (CATS[t.category]?.name || 'Прочее');
-        return `<button type="button" data-operation-row="${escapeHtml(t.id)}" data-operation-type="${income ? 'income' : 'expense'}" class="cal-operation">
-          <span class="cal-operation-icon" aria-hidden="true"><i data-lucide="${income ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i></span>
-          <span class="cal-operation-copy"><span class="cal-operation-title">${escapeHtml(t.merchant || 'Операция')}</span><span class="cal-operation-meta">${escapeHtml(catName)}${t.time ? ` · ${escapeHtml(t.time)}` : ''}</span></span>
-          <span class="cal-operation-amount money-val ${income ? 'cal-income' : 'cal-expense'}">${fmtR(t.amount, income ? '+' : '−')}</span>
-        </button>`;
-      }).join('')
-    : `<div class="cal-empty"><i data-lucide="${calFilter === 'bills' ? 'calendar-check' : 'leaf'}" class="w-6 h-6" aria-hidden="true"></i><p>${calFilter === 'bills' ? (dayBills.length ? 'Платежи на этот день показаны выше' : 'На этот день платежей нет') : 'В этот день пока нет операций'}</p><button type="button" onclick="openAddModalForDate('${state.calSelected}')" class="btn-teal-soft">+ Добавить операцию</button></div>`;
-  document.querySelectorAll('#cal-day-txs [data-operation-row]').forEach(row => row.addEventListener('click', () => openTxModal(row.dataset.operationRow)));
-  animateOperationRows(document.getElementById('cal-day-txs'), `${state.calSelected}:${calFilter}`, forceReveal);
+  const journalBox = document.getElementById('cal-day-txs');
+  journalBox.innerHTML = calFilter === 'bills'
+    ? `<p class="cal-journal-note">${dayBills.length ? 'Запланированные платежи показаны выше.' : 'На выбранную дату нет запланированных платежей.'}</p>`
+    : `<div class="cal-journal-icon" aria-hidden="true"><i data-lucide="notebook-tabs"></i></div><div class="cal-journal-copy"><strong>${dayTxs.length ? 'Операции — в едином журнале' : 'За этот день пока нет операций'}</strong><p>В календаре — суммы и планы. Просмотр и редактирование записей — на главной.</p></div><button id="cal-open-journal" type="button" onclick="openCalendarDayInJournal()">Открыть журнал <span aria-hidden="true">↗</span></button>`;
 
   if (window.lucide) lucide.createIcons();
+}
+
+function clearJournalDay() { state.journalDay = null; renderHome(); }
+
+function openCalendarDayInJournal() {
+  if (FM.ordinal(state.calSelected) === null) return;
+  state.journalDay = { date: state.calSelected, type: ['income','expense'].includes(state.calFilter) ? state.calFilter : 'all' };
+  state.homeShowAllTx = true;
+  const search = document.getElementById('search-input');
+  if (search) search.value = '';
+  goTab('home');
+  renderHome();
+  const heading = document.querySelector('#view-home .feed-heading');
+  heading?.setAttribute('tabindex','-1');
+  heading?.focus({preventScroll:true});
+  heading?.scrollIntoView({block:'start',behavior:'auto'});
 }
 
 function setAnalyticsMode(idx, mode) {
@@ -4205,13 +4221,15 @@ function initHeatmapScrubbing() {
 function initPullToRefresh() {
   const ptr = document.getElementById('ptr-indicator');
   if (!ptr) return;
-  let startY = 0;
+  let startY = 0, startX = 0;
   let pulling = false;
   let armed = false;
 
   document.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { pulling = false; armed = false; return; }
     if (window.scrollY > 2) return;
     if (document.querySelector('.modal-sheet') && Array.from(document.querySelectorAll('[id^="modal-"]')).some(m => !m.classList.contains('hidden'))) return;
+    startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     pulling = true;
     armed = false;
@@ -4219,6 +4237,9 @@ function initPullToRefresh() {
 
   document.addEventListener('touchmove', (e) => {
     if (!pulling) return;
+    if (e.touches.length !== 1 || (Math.abs(e.touches[0].clientX - startX) > 12 && Math.abs(e.touches[0].clientX - startX) > Math.abs(e.touches[0].clientY - startY))) {
+      pulling = false; armed = false; ptr.style.opacity = '0'; ptr.style.transform = 'translate(-50%, -16px)'; return;
+    }
     const dy = e.touches[0].clientY - startY;
     if (dy > 18 && window.scrollY <= 2) {
       const clamped = Math.min(90, dy);

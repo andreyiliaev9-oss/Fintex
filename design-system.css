@@ -1528,3 +1528,15 @@ body .ap-expense-hero .ap-flow-summary { margin-top: 14px; padding-top: 14px; }
 body .ap-expense-hero .ap-flow-value { font-size: 17px; }
 @media(max-width:359px) { body .ftx-ap .ftx-ap-card.ap-expense-hero { padding: 18px 16px; } body .ap-expense-hero .ftx-ap-big { font-size: 32px; } }
 body .ap-bar-trend .ap-trend-readout > button:disabled { opacity: .4; cursor: default; }
+
+/* v56 · one journal, calendar for daily totals/plans. */
+body .cal-journal-summary { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 18px; }
+body .cal-journal-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--surface-2); color: var(--accent); }
+body .cal-journal-icon svg { width: 17px; height: 17px; }
+body .cal-journal-copy strong { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+body .cal-journal-copy p, body .cal-journal-note { font-size: 11px; line-height: 1.7; color: var(--text-secondary); margin-top: 7px; }
+body #cal-open-journal { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; min-height: 44px; border-radius: 12px; color: var(--nav-icon-ink); background: var(--nav-icon-bg); font-size: 11px; font-weight: 600; }
+body .cal-journal-note { grid-column: 1 / -1; }
+body #journal-day-filter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px; background: var(--surface-2); border-radius: 14px; color: var(--text-primary); font-size: 11px; line-height: 1.6; }
+body #journal-day-filter[hidden] { display: none; }
+body #journal-day-filter button { min-height: 44px; padding: 8px 10px; border: 1px solid var(--border-active); border-radius: 10px; color: var(--text-primary); }

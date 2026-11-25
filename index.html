@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=55" />
+  <link rel="stylesheet" href="./design-system.css?v=56" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -548,7 +548,7 @@
 
       <!-- Ритм до зарплаты и предстоящие платежи -->
 
-      <!-- Операции выбранного дня -->
+      <!-- Сводка выбранного дня; единый журнал — на главной -->
       <div id="cal-day-section" class="space-y-2">
         <div class="flex items-center justify-between gap-2 px-0.5">
           <div class="flex items-center gap-2 min-w-0 flex-wrap">
@@ -561,7 +561,7 @@
           </button>
         </div>
         <div id="cal-day-bills" class="space-y-2"></div>
-        <div id="cal-day-txs" class="card-surface overflow-hidden" aria-label="Операции выбранного дня"></div>
+        <div id="cal-day-txs" class="card-surface cal-journal-summary" aria-label="Сводка дня и переход к журналу"></div>
       </div>
     </section>
 
@@ -1862,7 +1862,8 @@
   <script src="./finance-math.js?v=34"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=42"></script>
-  <script src="./app.js?v=49"></script>
+  <script src="./app.js?v=56"></script>
+  <script src="./navigation.js?v=56"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=55"></script>
