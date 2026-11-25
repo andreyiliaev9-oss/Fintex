@@ -52,3 +52,17 @@ test('onboarding uses the same logo; reduced motion leaves panel selection insta
   await open(page,{first:true});await expect(page.locator('#onboarding-screen')).toBeVisible();const logo=page.locator('.fintex-onboarding-logo');await expect(logo).toBeVisible();expect(await logo.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);
   await expect(page.locator('#nav-active-pill')).toHaveCSS('transition-duration','0s');
 });
+
+test('each panel button has a separated outline, with a stronger current outline in every theme',async({page})=>{
+  await open(page);await page.setViewportSize({width:320,height:740});
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    for(const tab of ['calendar','analytics','settings','home']){
+      await page.locator(`#fintex-navigation [data-nav="${tab}"]`).click();
+      const outlines=await page.locator('#fintex-navigation .nav-tab').evaluateAll(buttons=>buttons.map(button=>{
+        const s=getComputedStyle(button,'::after');return {current:button.getAttribute('aria-current')==='page',width:s.borderTopWidth,style:s.borderTopStyle,color:s.borderTopColor,inset:s.top,pointer:s.pointerEvents,transition:s.transitionDuration};
+      }));
+      for(const o of outlines){expect(o.width).toBe(o.current?'2px':'1px');expect(o.style).toBe('solid');expect(o.color).not.toBe('rgba(0, 0, 0, 0)');expect(o.inset).toBe('3px');expect(o.pointer).toBe('none');expect(o.transition).toBe('0s');}
+    }
+  }
+});
