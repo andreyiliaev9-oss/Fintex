@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=59" />
+  <link rel="stylesheet" href="./design-system.css?v=60" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -412,7 +412,7 @@
         </div>
 
         <div id="search-bar-wrap" class="hidden">
-          <input id="search-input" type="text" oninput="renderHome(false)" placeholder="Магазин, товар из чека или сумма..." class="w-full input-surface px-3.5 py-2 text-xs font-medium" />
+          <input id="search-input" type="text" oninput="renderHome(false)" aria-label="Поиск по магазину, товару из чека или сумме" placeholder="Магазин, товар из чека или сумма..." class="w-full input-surface px-3.5 py-2 text-xs font-medium" />
         </div>
 
         <!-- Выбор дат / периода -->
@@ -1463,7 +1463,7 @@
       </div>
 
       <!-- Тактильная кнопка удержания для пополнения подушки -->
-      <button type="button" id="goal-hold-btn" onpointerdown="startGoalHold(event)" onpointerup="stopGoalHold()" onpointerleave="stopGoalHold()" onpointercancel="stopGoalHold()" style="touch-action: none;" class="relative w-full py-2.5 rounded-xl border border-[#F2C65D]/40 bg-[#F2C65D]/10 text-gold text-xs font-bold overflow-hidden select-none">
+      <button type="button" id="goal-hold-btn" onpointerdown="startGoalHold(event)" onpointerup="stopGoalHold()" onpointerleave="cancelGoalHold()" onpointercancel="cancelGoalHold()" style="touch-action: none;" class="relative w-full py-2.5 rounded-xl border border-[#F2C65D]/40 bg-[#F2C65D]/10 text-gold text-xs font-bold overflow-hidden select-none">
         <div id="goal-hold-fill" class="absolute inset-y-0 left-0 bg-[#F2C65D]/25 pointer-events-none transition-all duration-75" style="width: 0%;"></div>
         <span id="goal-hold-label" class="relative z-10">Удерживайте, чтобы отложить (+100 ₽/тик)</span>
       </button>
@@ -1868,9 +1868,10 @@
   <script src="./finance-math.js?v=58"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=59"></script>
-  <script src="./app.js?v=59"></script>
+  <script src="./app.js?v=60"></script>
   <script src="./navigation.js?v=57"></script>
   <script src="./interface-motion.js?v=59"></script>
+  <script src="./modal-accessibility.js?v=60"></script>
   <script src="./goals-model.js?v=58"></script>
   <script src="./savings-goals.js?v=58"></script>
   <script src="./investment-market.js?v=27"></script>
