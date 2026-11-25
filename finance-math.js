@@ -17,6 +17,7 @@
   function nextMonth(iso,anchor){if(ordinal(iso)===null)return null;const [y,m,d]=iso.split('-').map(Number);const last=new Date(Date.UTC(y,m+1,0)).getUTCDate();return new Date(Date.UTC(y,m,Math.min(Math.max(1,Math.trunc(finite(anchor,d))),last))).toISOString().slice(0,10);}
   function transactions(list,from,to){return (Array.isArray(list)?list:[]).filter(t=>t&&['income','expense'].includes(t.type)&&minor(t.amount)>0&&(!t.currency||['RUB','₽','РУБ'].includes(String(t.currency).toUpperCase()))).map(t=>({...t,amount:money(t.amount),date:txKey(t)})).filter(t=>t.date&&(!from||t.date>=from)&&(!to||t.date<=to));}
   const isBill=t=>!!t.bill_id || /^Платёж(?:$| \+)/.test(String(t.source||''));
+  function goalSavings(goal){return add(Math.max(0,money(goal?.saved)),sum(Array.isArray(goal?.pockets)?goal.pockets:[],g=>Math.max(0,money(g?.saved))));}
   function metrics(state,today){
     const history=transactions(state.transactions,null,today).filter(t=>t.type==='expense');
     const variable=history.filter(t=>!isBill(t));
@@ -24,7 +25,7 @@
     const totalTodaySpent=sum(history.filter(t=>t.date===today),t=>t.amount);
     const days=daysUntil(state.payday,today),horizon=shift(today,days);
     const billsReserved=sum((state.bills||[]).filter(b=>!b.is_paid&&ordinal(b.due_date)!==null&&b.due_date<=horizon),b=>Math.max(0,finite(b.amount)));
-    const goalReserved=Math.max(0,money(state.goal?.saved));
+    const goalReserved=goalSavings(state.goal);
     const reserved=add(billsReserved,goalReserved), balance=money(state.balance);
     const freePool=Math.max(0,add(balance,-reserved));
     const dailyCap=Math.floor(Math.max(0,minor(balance)-minor(reserved)+minor(todaySpent))/days)/100;
@@ -64,7 +65,7 @@
       return [{date,merchant,amount:Math.abs(amount),type:String(raw).startsWith('+')?'income':'expense'}];
     });
   }
-  const api={finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
+  const api={goalSavings,finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.FintexMath=api;
 })(typeof window==='undefined'?globalThis:window);

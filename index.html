@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=41"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=57" />
+  <link rel="stylesheet" href="./design-system.css?v=58" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -372,6 +372,8 @@
         <span id="goal-target-label">10 000 ₽</span>
         <div id="goal-bar" style="width: 0%;"></div>
       </div>
+
+      <section id="savings-goals" data-ftx-keep="1" aria-labelledby="savings-goals-title"></section>
 
       <!-- Слот для премиальной карточки Дерева будущего -->
       <div id="sim-home-anchor"></div>
@@ -1423,6 +1425,7 @@
         <span class="text-base font-bold text-main" id="gd-title">Финансовая подушка</span>
         <button type="button" onclick="closeModals()" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
+      <button type="button" class="sg-manage" onclick="FintexGoals.open()">Все цели · обложки и план накоплений <span aria-hidden="true">↗</span></button>
       <div class="fintex-hero rounded-2xl p-4 text-white space-y-2">
         <div class="flex justify-between items-baseline">
           <div>
@@ -1852,6 +1855,8 @@
     </div>
   </dialog>
 
+  <dialog id="savings-goals-dialog" class="sg-dialog" aria-labelledby="sg-dialog-title"><div id="sg-dialog-body"></div></dialog>
+
   <!-- Уведомление -->
   <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 rounded-xl fintex-hero text-white text-xs font-semibold opacity-0 pointer-events-none transition-opacity duration-200">
     <span id="toast-msg">Готово</span>
@@ -1859,17 +1864,19 @@
 
   <script src="./scanner.js?v=47"></script>
   <script src="./cosmic_intro.js?v=25" data-fintex-mod="cosmic_intro.js"></script>
-  <script src="./finance-math.js?v=34"></script>
+  <script src="./finance-math.js?v=58"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=42"></script>
-  <script src="./app.js?v=57"></script>
+  <script src="./app.js?v=58"></script>
   <script src="./navigation.js?v=57"></script>
-  <script src="./interface-motion.js?v=57"></script>
+  <script src="./interface-motion.js?v=58"></script>
+  <script src="./goals-model.js?v=58"></script>
+  <script src="./savings-goals.js?v=58"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=57"></script>
   <script src="./quick_add.js?v=19" data-fintex-mod="quick_add.js"></script>
-  <script src="./sim_engine.js?v=34" data-fintex-mod="sim_engine.js"></script>
+  <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>
   <script src="./sim_charts.js?v=34" data-fintex-mod="sim_charts.js"></script>
   <script src="./sim_pro.js?v=34" data-fintex-mod="sim_pro.js"></script>

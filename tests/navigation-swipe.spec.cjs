@@ -82,8 +82,8 @@ test('finite chart and disclosure effects do not alter data and respect reduced 
   await page.emulateMedia({reducedMotion:'reduce'});await expect.poll(()=>page.evaluate(()=>document.getAnimations().filter(a=>a.id==='fintex-interface-motion').length)).toBe(0);expect(await page.evaluate(()=>JSON.stringify({balance:state.balance,transactions:state.transactions,goal:state.goal}))).toBe(before);
 });
 test('chart growth is finite and disabling motion cancels all pending interface effects',async({page})=>{
-  await open(page);await motionOn(page);await page.evaluate(()=>{state.transactions=Array.from({length:8},(_,i)=>({id:'motion'+i,type:'expense',amount:100+i*20,category:'food',merchant:'Покупка',date:FintexMath.shift(TODAY,-i)}));goTab('analytics');});await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();
-  await expect.poll(()=>page.locator('.ap-day-bar').evaluateAll(els=>els.flatMap(el=>el.getAnimations()).filter(a=>a.id==='fintex-interface-motion').length)).toBeGreaterThan(0);
-  const timings=await page.locator('.ap-day-bar').evaluateAll(els=>els.flatMap(el=>el.getAnimations()).map(a=>a.effect.getTiming()));for(const t of timings){expect(t.iterations).toBe(1);expect(t.duration).toBeLessThanOrEqual(500);}
+  await open(page);await motionOn(page);await page.evaluate(()=>{window.__barEffects=[];const originalAnimate=Element.prototype.animate;Element.prototype.animate=function(...args){const a=originalAnimate.apply(this,args);if(this.matches('.ap-day-bar'))window.__barEffects.push(a);return a;};state.transactions=Array.from({length:8},(_,i)=>({id:'motion'+i,type:'expense',amount:100+i*20,category:'food',merchant:'Покупка',date:FintexMath.shift(TODAY,-i)}));goTab('analytics');});await page.locator('.ap-plot-surface').scrollIntoViewIfNeeded();
+  await expect.poll(()=>page.evaluate(()=>window.__barEffects.filter(a=>a.id==='fintex-interface-motion').length)).toBeGreaterThan(0);
+  const timings=await page.evaluate(()=>window.__barEffects.map(a=>a.effect.getTiming()));for(const t of timings){expect(t.iterations).toBe(1);expect(t.duration).toBeLessThanOrEqual(500);}
   await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});expect(await page.evaluate(()=>document.getAnimations().filter(a=>a.id==='fintex-interface-motion').length)).toBe(0);
 });

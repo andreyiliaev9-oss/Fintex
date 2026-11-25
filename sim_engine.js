@@ -48,7 +48,8 @@ window.FINTEX_SIM = window.SIM = Object.assign(window.FINTEX_SIM || {}, {
       capturedAt: new Date().toISOString(),
       balance,
       cushionSaved,
-      liquidBalance: M.add(balance,-cushionSaved),
+      otherGoalsReserved: M.add(M.goalSavings(goal),-cushionSaved),
+      liquidBalance: M.add(balance,-M.goalSavings(goal)),
       oneOffBills: bills.filter(b=>!b.is_paid && !b.is_recurring && M.ordinal(b.due_date)!==null).map(b=>({amount:Math.max(0,M.money(b.amount)),day:Math.max(0,M.ordinal(b.due_date)-M.ordinal(today))})),
       goalTitle: goal.title || 'Финансовая подушка',
       goalTarget: Math.max(0.01, M.money(goal.target) || 10000),
@@ -92,6 +93,7 @@ window.FINTEX_SIM = window.SIM = Object.assign(window.FINTEX_SIM || {}, {
 
     let cash = M.money(snap.liquidBalance ?? M.add(snap.balance,-snap.cushionSaved));
     let cushion = snap.cushionSaved;
+    const otherGoalsReserved = Math.max(0,M.money(snap.otherGoalsReserved));
     let assetsValue = 0;
     let debtRemaining = 0;
     let monthlyIncome = snap.estMonthlyIncome * mult.inc;
@@ -161,13 +163,13 @@ window.FINTEX_SIM = window.SIM = Object.assign(window.FINTEX_SIM || {}, {
         timeline.push({
           day,
           cash: Math.round(cash),
-          netWorth: Math.round(cash + cushion + assetsValue - debtRemaining)
+          netWorth: Math.round(cash + cushion + otherGoalsReserved + assetsValue - debtRemaining)
         });
       }
     }
 
     const endCash = Math.round(cash);
-    const endNetWorth = Math.round(cash + cushion + assetsValue - debtRemaining);
+    const endNetWorth = Math.round(cash + cushion + otherGoalsReserved + assetsValue - debtRemaining);
     const startNetWorth = Math.round(snap.balance);
     const totalMonthlyOutflow = Math.max(0,monthlyExpenses + monthlyDebtService);
     const cushionMonths = totalMonthlyOutflow>0 ? Math.round((Math.max(0,endCash+cushion)/totalMonthlyOutflow)*10)/10 : null;
