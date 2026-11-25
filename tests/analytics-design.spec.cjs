@@ -19,8 +19,8 @@ test('editorial overview plots real daily expenses, preserves amounts, periods a
     const data=await page.evaluate(days=>{const d=FintexAnalyticsPro.analyze(days);return {spent:d.spent,income:d.income,categories:d.categories,net:d.net};},days);
     await expect(page.locator('.ftx-ap-big')).toHaveText(data.spent.toLocaleString('ru-RU')+' ₽');
     const path=await page.locator('.ap-chart-line').getAttribute('d');expect((path.match(/L/g)||[]).length).toBe(days-1);expect(path).not.toMatch(/NaN|Infinity/);
-    expect(await page.locator('.ap-composition > span').count()).toBe(data.categories.length);
-    const widths=await page.locator('.ap-composition > span').evaluateAll(els=>els.reduce((sum,el)=>sum+parseFloat(el.style.width),0));expect(widths).toBeCloseTo(100,5);
+    expect(await page.locator('.ap-donut-segment').count()).toBe(data.categories.length);
+    const widths=await page.locator('.ap-donut-segment').evaluateAll(els=>els.reduce((sum,el)=>sum+parseFloat(el.getAttribute('stroke-dasharray')),0));expect(widths).toBeCloseTo(100,5);
     expect(await page.locator('.ap-category-amount').first().textContent()).toBe(Math.round(data.categories[0].total).toLocaleString('ru-RU')+' ₽');
   }
   await page.locator('[data-period="month"]').click();await page.locator('.ap-forecast-method summary').click();await expect(page.locator('.ap-forecast-method p')).toBeVisible();
@@ -46,9 +46,9 @@ test('all analytics subviews fit 320px in every palette and mode, including long
   expect(errors).toEqual([]);
 });
 test('empty analytics has honest designed placeholders and privacy hides the new data graphics',async({page})=>{
-  await open(page,{empty:true});await expect(page.locator('.ap-trend-empty')).toBeVisible();await expect(page.locator('.ap-chart-line')).toHaveCount(0);await expect(page.locator('.ap-composition')).toHaveCount(0);await expect(page.locator('.ftx-ap-empty')).toContainText('Добавьте расходы');
+  await open(page,{empty:true});await expect(page.locator('.ap-trend-empty')).toBeVisible();await expect(page.locator('.ap-chart-line')).toHaveCount(0);await expect(page.locator('.ap-distribution-visual')).toHaveCount(0);await expect(page.locator('.ftx-ap-empty')).toContainText('Добавьте расходы');
   await page.evaluate(()=>{state.transactions=[{id:'e',date:'2026-11-24',amount:900,type:'expense',category:'Продукты'}];FintexAnalyticsPro.render();togglePrivacy();});
-  await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ap-composition')).toBeHidden();await expect(page.locator('.ftx-ap-big')).toHaveCSS('filter',/blur/);
+  await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ap-distribution-visual')).toBeHidden();await expect(page.locator('.ftx-ap-big')).toHaveCSS('filter',/blur/);
 });
 test('analytics previews reflect populated light and dark complementary themes',async({page})=>{
   await open(page);await page.setViewportSize({width:390,height:1100});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});
@@ -56,4 +56,27 @@ test('analytics previews reflect populated light and dark complementary themes',
     await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);goTab('analytics');window.scrollTo(0,0);},{style,mode});
     await page.screenshot({path:`docs/${file}.png`,fullPage:false});
   }
+});
+test('spending-period controls show exact dates, equal prior windows and no misleading calendar labels',async({page})=>{
+  await open(page);
+  for(const [id,days]of [['week',7],['month',30],['quarter',90],['year',365]]){
+    await page.locator(`[data-period="${id}"]`).click();await expect(page.locator(`[data-period="${id}"]`)).toHaveText(`${days} дней`);
+    await expect(page.locator('.ap-period-dates')).toContainText(`Включая сегодня · ${days} дн.`);
+    const first=M.shift('2026-11-24',1-days),previousEnd=M.shift(first,-1),previousStart=M.shift(first,-days);
+    const label=key=>new Date(key+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'}).replace('.','');
+    await expect(page.locator('.ap-period-dates strong')).toHaveText(`${label(first)} — ${label('2026-11-24')}`);
+    await page.locator('.ap-comparison summary').click();await expect(page.locator('.ap-comparison')).toContainText(`${label(previousStart)} — ${label(previousEnd)}`);
+    const data=await page.evaluate(days=>FintexAnalyticsPro.analyze(days),days);await expect(page.locator('.ap-comparison strong')).toHaveText(Math.round(data.prevSpent).toLocaleString('ru-RU')+' ₽');
+  }
+});
+test('distribution uses Russian built-in names, matching ring shares and works in all six themes',async({page})=>{
+  await open(page);await page.evaluate(()=>{state.transactions=['food','taxi','cafe','fun','subs','shop','health','other'].map((category,i)=>({id:'c'+i,category,date:'2026-11-24',type:'expense',amount:(i+1)*100}));FintexAnalyticsPro.render();});
+  for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+    const card=page.locator('.ap-distribution');const text=await card.innerText();expect(text).not.toMatch(/[a-z]/i);await expect(card.locator('.ap-donut-segment')).toHaveCount(8);
+    const total=await card.locator('.ap-donut-segment').evaluateAll(els=>els.reduce((s,el)=>s+parseFloat(el.getAttribute('stroke-dasharray')),0));expect(total).toBeCloseTo(100,5);
+    await expect(card.locator('.ap-distribution-rest')).toContainText('Ещё 4 катег.');
+    await page.setViewportSize({width:320,height:740});expect(await card.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  }
+  await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.setViewportSize({width:390,height:1000});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.locator('.ap-distribution').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-structure-preview.png'});
 });

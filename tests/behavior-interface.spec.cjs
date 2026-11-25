@@ -67,3 +67,14 @@ test('malicious transaction labels stay plain text and storage failure gives rec
   await expect(page.locator('.behavior-unusual h4')).toContainText('<img');expect(await page.evaluate(()=>window.__unsafe)).toBeUndefined();
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new Error('quota');};});await page.locator('[data-behavior-useful="delivery"]').click();await expect(page.locator('.behavior-status')).toContainText('Не удалось');
 });
+test('refined observations have Russian labels and accessible evidence disclosures that survive reactions',async({page})=>{
+  await open(page);const panel=page.locator('#fintex-behavior');await expect(panel.locator('h3')).toContainText('Поведенческий');
+  expect(await panel.innerText()).not.toMatch(/[a-z]/i);
+  await expect(panel.locator('.behavior-metrics > div')).toHaveCount(3);
+  const evidence=panel.locator('[data-behavior-detail="delivery"]');await evidence.locator('summary').click();await expect(evidence.locator('.behavior-evidence')).toBeVisible();
+  await panel.locator('[data-behavior-useful="delivery"]').click();await expect(evidence).toHaveAttribute('open');
+  const profile=panel.locator('[data-behavior-detail="profile-unusual"]');await profile.locator('summary').click();await expect(profile.locator('.behavior-evidence')).toBeVisible();
+  const unusual=panel.locator('.behavior-unusual-list');await unusual.locator('summary').click();await expect(unusual).not.toHaveAttribute('open');
+  await page.locator('[data-period="week"]').click();await expect(profile).toHaveAttribute('open');await expect(unusual).not.toHaveAttribute('open');
+  await page.evaluate(()=>{setVisualStyle('forest');setTheme('light');});await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.setViewportSize({width:390,height:1000});await panel.locator('.behavior-insights').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/behavior-observations-preview.png'});
+});
