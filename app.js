@@ -1182,8 +1182,8 @@ function renderHome() {
 
     const dayTotalsHtml = `
       <div class="tx-day-totals" title="По показанным записям">
-        ${dayInc > 0 ? `<span class="money-val operation-income" data-journal-amount="${dayInc}" data-journal-prefix="+">${fmtR(dayInc, '+')}</span>` : ''}
-        ${dayExp > 0 ? `<span class="money-val operation-expense" data-journal-amount="${dayExp}" data-journal-prefix="−">${fmtR(dayExp, '−')}</span>` : ''}
+        ${dayInc > 0 ? `<span class="tx-day-total"><span class="tx-total-label">Доходы</span><span class="money-val operation-income" data-journal-amount="${dayInc}" data-journal-prefix="+">${fmtR(dayInc, '+')}</span></span>` : ''}
+        ${dayExp > 0 ? `<span class="tx-day-total"><span class="tx-total-label">Расходы</span><span class="money-val operation-expense" data-journal-amount="${dayExp}" data-journal-prefix="−">${fmtR(dayExp, '−')}</span></span>` : ''}
       </div>
     `;
 
@@ -1272,7 +1272,7 @@ function renderHome() {
     moreWrap.innerHTML = '';
   }
 
-  feed.querySelectorAll('[data-journal-amount]').forEach(el=>window.FintexNumerals.render(el,Number(el.dataset.journalAmount),el.dataset.journalPrefix));
+  feed.querySelectorAll('[data-journal-amount]').forEach(el=>window.FintexNumerals.renderJournal(el,Number(el.dataset.journalAmount),el.dataset.journalPrefix));
   if (typeof renderBatchActionDock === 'function') renderBatchActionDock(visibleRows);
   animateOperationRows(feed, 'home');
   lucide.createIcons();
