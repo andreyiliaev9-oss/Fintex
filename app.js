@@ -2487,6 +2487,7 @@ function quickTopupGoal(amt) {
   openGoalDetailsModal();
   updateSyncQueueUI();
   renderAll(false);
+  window.dispatchEvent(new CustomEvent('fintex:goal-funded', {detail: {completed: prev < target && state.goal.saved >= target}}));
   if (prev < target && state.goal.saved >= target) {
     const celeb = document.getElementById('goal-celebrate-overlay');
     if (celeb) { celeb.classList.remove('hidden'); setTimeout(() => celeb.classList.add('hidden'), 1000); }

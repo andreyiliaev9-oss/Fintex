@@ -49,6 +49,7 @@
     if(!commit(next))return;
     window.FintexBehavior?.recordSaving(release?-amount:amount);show('detail',selected);
     const completed=!release&&previous<M.money(g.target)&&M.add(previous,amount)>=M.money(g.target);
+    if(!release)window.dispatchEvent(new CustomEvent('fintex:goal-funded',{detail:{completed}}));
     status(completed?'Цель достигнута! Отличная работа.':release?`${fmtR(amount)} снова доступны.`:`Отложено ${fmtR(amount)}. Ещё шаг к цели!`);
     window.FintexMotion?.goalPulse(body,completed);body.querySelector('#sg-amount')?.focus({preventScroll:true});
   }
