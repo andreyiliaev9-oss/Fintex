@@ -1810,7 +1810,7 @@ function renderSettings() {
   const adCb = document.getElementById('auto-delta-toggle'); if (adCb) adCb.checked = localStorage.getItem('fp_auto_delta') !== '0';
 
   const syncLabel = document.getElementById('st-sync-label');
-  if (syncLabel) syncLabel.textContent = window.FintexCloud.canSync() ? 'Облако: подключение через Telegram' : 'Локальные данные · для облака войдите через Telegram';
+  if (syncLabel) syncLabel.textContent = localStorage.getItem('fp_cloud_paused_restore')==='1' ? 'Облако на паузе после восстановления копии' : window.FintexCloud.canSync() ? 'Облако: подключение через Telegram' : 'Локальные данные · для облака войдите через Telegram';
   const scansList = document.getElementById('saved-scans-list');
   scansList.innerHTML = state.scanHistory.length
     ? state.scanHistory.map(s => `
@@ -3613,7 +3613,7 @@ async function flushSyncQueue() {
 }
 
 async function syncWithBackend(notify = false) {
-  if (!window.FintexCloud.canSync() || !state.gasUrl) { if(notify)toast('Для облака войдите через Telegram.'); return; }
+  if (!window.FintexCloud.canSync() || !state.gasUrl) { if(notify)toast(localStorage.getItem('fp_cloud_paused_restore')==='1'?'Облако на паузе после восстановления. Откройте настройки резервной копии.':'Для облака войдите через Telegram.'); return; }
   await flushSyncQueue();
   try {
     const data = await window.FintexCloud.request('init',{user_id:USER_ID});
