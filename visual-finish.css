@@ -1,0 +1,111 @@
+/* v76 · finishing pass. Presentation only; numeric grouping and theme semantics stay owned by their components. */
+:root {
+  --ui-action-ink: #fff;
+  --ui-motion-duration: 260ms;
+  --ui-motion-ease: cubic-bezier(.2,.8,.2,1);
+}
+html.dark { --ui-action-ink: var(--accent-ink); }
+
+/* One clear hero: today's allowance first, account total and reserves second. */
+body #hero-balance-card .balance-card-top { margin-bottom: 16px; }
+body #hero-balance-card .daily-budget { padding: 20px; border-radius: 20px; }
+body #hero-daily-left.number-display { font-size: clamp(36px,10.5vw,46px); line-height: 1.15; }
+body #hero-balance-card .balance-explanation { margin: 9px 1px 16px; font-size: 11px; }
+body #hero-balance-card .balance-total { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; min-height: 44px; margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+body #hero-balance.number-display { width: auto; max-width: 100%; margin: 0 0 0 auto; font-size: clamp(23px,6.8vw,29px); font-weight: 600; }
+body #hero-balance.number-display[data-number-size=medium] { font-size: clamp(21px,6.4vw,26px); }
+body #hero-balance.number-display[data-number-size=wide] { font-size: clamp(18px,5.3vw,23px); }
+body #hero-daily-left.number-display[data-number-size=medium] { font-size: clamp(27px,8vw,36px); }
+body #hero-daily-left.number-display[data-number-size=wide] { font-size: clamp(21px,6vw,27px); }
+body #hero-balance-card .balance-breakdown { gap: 10px; }
+body #hero-balance-card .balance-detail-amount { font-weight: 600; }
+body #hero-balance-card .balance-forecast { margin-top: 14px; padding-top: 12px; min-height: 56px; }
+body #hero-balance-card .balance-forecast-value { font-size: 14px; font-weight: 600; }
+body #hero-balance-card .balance-detail-note { font-size: 11px; line-height: 1.5; }
+
+/* Separate days, not every digit. Never change the journal-number contract. */
+body #tx-feed .tx-day-card + .tx-day-card { margin-top: 20px; }
+body #tx-feed .tx-day-heading { padding: 16px; gap: 12px; }
+body #tx-feed .tx-day-date strong { font-size: 14px; }
+body #tx-feed .tx-day-kicker { font-size: 9px; letter-spacing: .07em; }
+body #tx-feed .tx-swipe-content { padding-block: 19px; column-gap: 8px; }
+body #tx-feed .tx-row-open { column-gap: 14px; }
+body #tx-feed .tx-row-main { gap: 10px; }
+body #tx-feed .tx-merchant-copy { flex: 1; }
+body #tx-feed .tx-merchant-name { font-size: 13px; font-weight: 650; }
+body #tx-feed .tx-merchant-meta { margin-top: 5px; font-size: 11px; font-weight: 400; }
+body #tx-feed .tx-row-menu > span { border-color: transparent; background: transparent; color: var(--text-secondary); }
+body #tx-feed .tx-row-menu[aria-expanded=true] > span { border-color: var(--border-active); background: var(--accent-soft); }
+
+/* A common form language without changing focus, submit or close ownership. */
+body :is(.modal-sheet,.daily-dialog,.sg-dialog,.work-dialog) { border-color: var(--border-subtle); box-shadow: var(--shadow-float); }
+body [id^=modal-] > .modal-sheet { padding-inline: 20px; border-radius: 24px 24px 0 0; }
+body :is(.daily-dialog,.sg-dialog,.work-dialog) { border-radius: 24px; padding: 20px; }
+body :is(.sheet-heading,.flow-header h2,.sg-dialog-header h2,.work-header h2,#capture-title) { font-size: 20px; line-height: 1.3; font-weight: 700; letter-spacing: -.025em; overflow-wrap: anywhere; }
+body :is(.flow-header,.sg-dialog-header,.work-header) { gap: 16px; align-items: flex-start; }
+body :is(.modal-sheet button[onclick*="closeModals"],.flow-header [data-flow-close],.sg-close,.work-close,.capture-header [data-capture-close]) { flex-shrink: 0; width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 14px; border: 1px solid var(--border-subtle); background: var(--surface-2); color: var(--text-primary); }
+body :is(.modal-sheet,.daily-dialog,.sg-dialog,.work-dialog,#capture-dialog) :is(input,select,textarea):not([type=checkbox],[type=range],[type=file],[type=radio]) {
+  border-radius: 14px; min-height: 48px;
+  border-color: color-mix(in srgb,var(--text-primary) 55%,var(--surface-1));
+  background-color: var(--surface-1); color: var(--text-primary); font-size: 16px;
+}
+body :is(.modal-sheet,.daily-dialog,.sg-dialog,.work-dialog,#capture-dialog) :is(input,textarea)::placeholder { color: var(--text-secondary); opacity: 1; }
+body :is(.flow-primary,.sg-primary,.work-save,.capture-primary), body .modal-sheet .btn-turquoise:not(#voice-mic-toggle-btn) { min-height: 48px; border-radius: 14px; background: var(--accent); color: var(--ui-action-ink); border: 1px solid transparent; box-shadow: none; font-size: 14px; font-weight: 700; }
+body :is(.sg-secondary,.flow-secondary,.capture-secondary) { min-height: 48px; border-radius: 14px; background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); box-shadow: none; font-size: 13px; font-weight: 500; }
+/* Recognition's amount is deliberately larger than ordinary form values. */
+body :is(#modal-voice,#capture-dialog) .recognition-card .recognition-amount input { font-size: 25px; }
+body #capture-form [data-review-check=suggested] :is(input,select) { border-inline-start-color: var(--accent); }
+
+/* The primary goal is a single generous cover, not another ring of decoration. */
+body .sg-card { box-shadow: none; border-radius: 20px; }
+body .sg-card .sg-cover { height: 160px; background: var(--surface-2); }
+body .sg-card[data-sg-open=primary] { grid-column: 1 / -1; background: var(--surface-2); border-color: transparent; }
+body .sg-card[data-sg-open=primary] .sg-cover { height: 190px; }
+body .sg-card-body { gap: 10px; padding: 16px; }
+body .sg-card[data-sg-open=primary] .sg-card-body { grid-template-columns: minmax(0,1fr) auto; gap: 9px 18px; padding: 18px; }
+body .sg-priority { grid-column: 1 / -1; font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+body .sg-card[data-sg-open=primary] .sg-card-body > strong { grid-column: 1 / -1; font-size: 18px; }
+body .sg-card-amount { gap: 4px; font-size: 19px; font-weight: 650; }
+body .sg-card-amount b { font-weight: 650; }
+body .sg-card-amount small { font-size: 11px; font-weight: 400; }
+body .sg-card-remaining { display: grid; align-content: center; gap: 4px; font-size: 11px; color: var(--text-secondary); overflow-wrap: anywhere; }
+body .sg-card-remaining b { font-size: 14px; color: var(--text-primary); font-weight: 550; }
+body .sg-card[data-sg-open=primary] :is(.sg-track,.sg-estimate) { grid-column: 1 / -1; }
+body .sg-track { height: 5px; background: color-mix(in srgb,var(--accent) 18%,var(--surface-1)); }
+body .sg-track > span { background: var(--accent); }
+body .sg-estimate { font-size: 11px; line-height: 1.5; }
+body .sg-detail-art { height: 230px; border-radius: 20px; }
+body.stealth-mode .sg-card-remaining { filter: blur(8px); user-select: none; }
+
+/* Readable secondary text retains each palette, never reduced opacity. */
+body :is(.balance-detail-note,.balance-explanation,.tx-merchant-meta,.sg-note,.sg-estimate,.sg-priority,.sg-card-remaining,.flow-note,.budget-note,.voice-review-note) { color: color-mix(in srgb,var(--text-primary) 78%,var(--surface-1)); }
+body :is(.sg-note,.flow-note,.budget-note) { font-size: 12px; line-height: 1.65; }
+body .daily-budget-caption, body .daily-budget-footer { opacity: 1; }
+
+/* No height/width transitions; preserve tree physics and celebratory effects. */
+body :is(.sg-card,.sg-cover img,.sg-add,.sg-primary,.sg-secondary,.flow-primary,.capture-primary,.modal-sheet button) { transition-duration: var(--ui-motion-duration); transition-timing-function: var(--ui-motion-ease); }
+@media(max-width:360px) {
+  body #hero-balance-card .daily-budget { padding: 16px; }
+  body #tx-feed .tx-row-open { column-gap: 10px; }
+  body #tx-feed .tx-row-main { gap: 8px; }
+  body #tx-feed .tx-swipe-content { padding-inline: 12px; }
+  body .sg-card[data-sg-open=primary] .sg-card-body { grid-template-columns: minmax(0,1fr); }
+  body .sg-card[data-sg-open=primary] .sg-cover { height: 170px; }
+  body .sg-card .sg-cover { height: 140px; }
+  body .sg-card-body { padding: 12px; }
+  body :is(.daily-dialog,.sg-dialog,.work-dialog) { padding: 18px 16px; }
+}
+html.no-motion body :is(.sg-card,.sg-cover img,.sg-add,.sg-primary,.sg-secondary,.flow-primary,.capture-primary,.modal-sheet button) { transition: none !important; }
+@media(prefers-reduced-motion:reduce) {
+  body :is(.sg-card,.sg-cover img,.sg-add,.sg-primary,.sg-secondary,.flow-primary,.capture-primary,.modal-sheet button) { transition: none !important; }
+}
+body #savings-goals .sg-new-tile { grid-column: 1 / -1; min-height: 96px; padding: 16px; }
+body #savings-goals .sg-card:not([data-sg-open=primary]) { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(88px,.8fr) minmax(0,1.2fr); }
+body #savings-goals .sg-card:not([data-sg-open=primary]) .sg-cover { height: 100%; min-height: 160px; }
+body #tx-feed .tx-merchant-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
+body .work-dialog { padding: 0; margin: auto; }
+body :is(.sg-dialog,.work-dialog) { max-height: min(92dvh,calc(var(--form-viewport-height,100dvh) - 24px)); transform: translateY(calc(var(--form-viewport-bottom,0px) / -2)); scroll-padding-block: 24px; }
+body #tx-feed .tx-sync-state { margin-top: 3px; font-size: 10px; line-height: 1.5; color: var(--text-secondary); }
+/* Switch the canvas with its text atomically: a light-to-dark colour tween can
+ * otherwise put white header labels on a still-light background for 250ms. */
+body { transition: none; }

@@ -1072,15 +1072,15 @@ function animateOperationRows(container, context, force = false) {
     if (!motionAllowed() || !row.isConnected || typeof row.animate !== 'function') return;
     row.getAnimations({subtree:true}).filter(animation => animation.id.startsWith('fintex-operation-')).forEach(animation => animation.cancel());
     record.pendingIds.delete(row.dataset.operationRow);
-    const delay=Math.min(index*48,192),income=row.dataset.operationType==='income';
+    const delay=Math.min(index*30,120),income=row.dataset.operationType==='income';
     function effect(el,frames,options,id='fintex-operation-detail'){
-      if(!el)return;const a=el.animate(frames,{duration:480,delay,easing:'cubic-bezier(.16,1,.3,1)',...options});a.id=id;operationRevealEffects.add(a);a.finished.catch(()=>{}).finally(()=>operationRevealEffects.delete(a));
+      if(!el)return;const a=el.animate(frames,{duration:320,delay,easing:'cubic-bezier(.2,.8,.2,1)',...options});a.id=id;operationRevealEffects.add(a);a.finished.catch(()=>{}).finally(()=>operationRevealEffects.delete(a));
     }
-    effect(row,[{opacity:.18,transform:'translateY(18px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],{fill:'backwards'},'fintex-operation-reveal');
-    effect(row.querySelector('.tx-merchant-mark'),[{transform:`translateY(${income?9:-9}px) scale(.65) rotate(${income?-9:9}deg)`},{transform:'translateY(-2px) scale(1.06) rotate(0deg)',offset:.7},{transform:'translateY(0) scale(1) rotate(0deg)'}],{duration:560});
+    effect(row,[{opacity:.18,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{fill:'backwards'},'fintex-operation-reveal');
+    effect(row.querySelector('.tx-merchant-mark'),[{transform:`translateY(${income?3:-3}px) scale(.94) rotate(${income?-3:3}deg)`},{transform:'translateY(-2px) scale(1.02) rotate(0deg)',offset:.7},{transform:'translateY(0) rotate(0deg)'}],{duration:360});
     // The true amount is present throughout; reveal it, never count through invented values.
-    effect(row.querySelector('.tx-amount'),[{opacity:.3,clipPath:'inset(0 0 85% 0)',transform:'translateY(6px)'},{opacity:1,clipPath:'inset(0 0 0% 0)',transform:'translateY(0)'}],{duration:460,delay:delay+45});
-    effect(row.querySelector('.tx-arrival-glow'),[{opacity:0,transform:'translateX(-100%)'},{opacity:.65,offset:.35},{opacity:0,transform:'translateX(100%)'}],{duration:720,delay:delay+30});
+    effect(row.querySelector('.tx-amount'),[{opacity:.3,clipPath:'inset(0 0 85% 0)',transform:'translateY(6px)'},{opacity:1,clipPath:'inset(0 0 0% 0)',transform:'translateY(0)'}],{duration:320,delay:delay+45});
+    effect(row.querySelector('.tx-arrival-glow'),[{opacity:0,transform:'translateX(-100%)'},{opacity:.25,offset:.35},{opacity:0,transform:'translateX(100%)'}],{duration:480,delay:delay+30});
   };
   // Rows below the calendar grid should animate when scrolled into view, not offscreen.
   let pending = 0;
