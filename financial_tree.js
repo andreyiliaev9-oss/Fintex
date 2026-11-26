@@ -50,7 +50,7 @@
         const img=event.currentTarget;
         img.hidden=true;
         const wrap=card.querySelector('.ft-art-motion');
-        if (!wrap.querySelector('svg')) wrap.insertAdjacentHTML('beforeend','<svg class="ft-svg-art" viewBox="0 0 160 180" role="img" aria-label="Молодое дерево, резервная иллюстрация"><ellipse cx="80" cy="164" rx="48" ry="9" fill="#6c9450" opacity=".3"/><path d="M80 162Q86 110 78 52M81 120L49 84M80 97L111 57" stroke="#967045" stroke-width="7" fill="none" stroke-linecap="round"/><g fill="#75a750"><ellipse cx="45" cy="72" rx="22" ry="30" transform="rotate(-35 45 72)"/><ellipse cx="116" cy="50" rx="23" ry="30" transform="rotate(30 116 50)"/><ellipse cx="76" cy="35" rx="22" ry="30"/></g></svg>');
+        if (!wrap.querySelector('svg')) wrap.insertAdjacentHTML('beforeend','<svg class="ft-svg-art" viewBox="0 0 160 180" role="img" aria-label="Молодое дерево, резервная иллюстрация"><ellipse cx="80" cy="164" rx="48" ry="9" fill="#6c9450" opacity=".3"/><path d="M80 162Q86 110 78 52M81 120L49 84M80 97L111 57" stroke="#967045" stroke-width="7" fill="none" stroke-linecap="round"/><g fill="#75a750"><ellipse cx="45" cy="72" rx="22" ry="30" transform="rotate(-35 45 72)"/><ellipse cx="116" cy="50" rx="23" ry="30" transform="rotate(30 116 50)"/><ellipse cx="76" cy="35" rx="22" ry="30"/></g><g class="ft-fallback-snow" fill="none" stroke="#edf9ff" stroke-width="5" stroke-linecap="round"><path d="M26 57Q40 36 55 49M59 17Q76 4 92 18M100 29Q119 14 132 28M51 82L76 109M87 85L108 57M46 160Q80 151 114 161"/></g></svg>');
       });
       if ('IntersectionObserver' in window) {
         observer=new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;pauseMotion();},{rootMargin:'40px'});
@@ -82,12 +82,16 @@
     const bar=card.querySelector('.ft-bar');bar.hidden=!target;bar.querySelector('span').style.width=`${pct}%`;
     text('.ft-note',privacy?'Вид дерева отражает соотношение записанных доходов и расходов за 30 дней.':flow.note);
     text('.ft-flow',privacy?'Суммы и доля расходов скрыты режимом «Стелс».':`Период: ${flow.from} — ${flow.to}. Доходы: ${money(flow.income)}. Расходы: ${money(flow.expenses)}.${flow.ratio===null?' Для сравнения нужны и доходы, и расходы.':` Доля расходов: ${(flow.ratio*100).toLocaleString('ru-RU',{maximumFractionDigits:1})}%.`}`);
-    if (card.dataset.treeVariant!==flow.variant) {
+    const winter = document.documentElement.dataset.visualStyle === 'sapphire';
+    const artwork = `${flow.variant}-${winter ? 'winter' : 'green'}`;
+    card.dataset.season = winter ? 'winter' : document.documentElement.dataset.visualStyle === 'growth' ? 'blossom' : 'leaf';
+    if (card.dataset.artwork!==artwork) {
+      card.dataset.artwork=artwork;
       card.dataset.treeVariant=flow.variant;
       const img=card.querySelector('.ft-img');
       img.hidden=false;card.querySelector('.ft-svg-art')?.remove();
       img.alt=`${flow.name} — ваше финансовое дерево`;
-      img.src=`./assets/trees/${flow.variant}.svg?v=33`;
+      img.src=winter ? `./assets/trees/winter/${flow.variant}.svg?v=62` : `./assets/trees/${flow.variant}.svg?v=33`;
     }
     updateDetails();pauseMotion();
   }
@@ -120,6 +124,7 @@
     window.addEventListener('storage',event=>{if(event.key===null || ['fp_local_tx','fp_goal','fp_privacy'].includes(event.key))scheduleRender();});
     document.addEventListener('visibilitychange',()=>{pauseMotion();if(!document.hidden){scheduleRender();scheduleMidnight();}});
     window.addEventListener('fintex:motionchange',pauseMotion);
+    window.addEventListener('fintex:appearancechange',scheduleRender);
     motion.addEventListener?.('change',pauseMotion);
     window.FilelyFinancialTree={refresh:scheduleRender};
   }

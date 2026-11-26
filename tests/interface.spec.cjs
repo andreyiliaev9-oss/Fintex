@@ -857,7 +857,7 @@ test('forest apricot companion is distinct from semantic financial colours', asy
   }
 });
 
-test('legacy Lagoon preference opens Sapphire without resetting mode or budget', async ({ page }) => {
+test('legacy Lagoon preference opens the winter Lagoon palette without resetting mode or budget', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('fp_visual_style','lagoon');
     localStorage.setItem('fp_theme','light');
@@ -871,15 +871,15 @@ test('legacy Lagoon preference opens Sapphire without resetting mode or budget',
   await page.locator('#settings-appearance > summary').click();
   await expect(page.locator('[data-visual-style-choice]')).toHaveCount(3);
   const sapphire = page.locator('[data-visual-style-choice="sapphire"]');
-  await expect(sapphire).toContainText('Сапфир');
+  await expect(sapphire).toContainText('Лагуна');
   await expect(sapphire).toHaveAttribute('aria-pressed','true');
-  await expect(page.locator('#settings-appearance')).not.toContainText('Лагуна');
+  await expect(sapphire).toContainText('Снег');
   await sapphire.click();
   expect(await page.evaluate(() => localStorage.getItem('fp_visual_style'))).toBe('sapphire');
   expect(await page.evaluate(() => localStorage.getItem('fp_local_tx'))).toBe(before);
 });
 
-test('Sapphire uses the reference colours with readable controls and no Lagoon decoration', async ({ page }) => {
+test('winter Lagoon retains the Sapphire reference colours and readable controls', async ({ page }) => {
   await openApp(page);
   await page.evaluate(() => setVisualStyle('sapphire'));
   const contrast = (a,b) => {
