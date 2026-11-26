@@ -2028,3 +2028,31 @@ html.no-motion body #filely-financial-tree .ft-root-light { display: none; }
 html.no-motion body #filely-financial-tree,
 html.no-motion body #filely-financial-tree * { transition: none !important; }
 @media(prefers-reduced-motion:reduce) { body #filely-financial-tree, body #filely-financial-tree * { transition: none !important; } }
+
+/* v66 · journal amounts: explicit grouping, calm weight and a stable right edge.
+ * Keep accounting signs/colours, exact values and accessible stealth labels. */
+body #tx-feed .journal-number,
+body #tx-feed .journal-number * { letter-spacing: 0; }
+body #tx-feed .journal-number { white-space: nowrap; line-height: 1.35; }
+body #tx-feed .tx-amount.journal-number { display: inline-flex; align-items: baseline; justify-content: flex-end; justify-self: end; font-size: 17px; font-weight: 700; }
+body #tx-feed .journal-number .number-major { display: inline-block; white-space: pre; }
+body #tx-feed .journal-number .number-separator { display: inline-block; width: .24em; }
+body #tx-feed .journal-number .number-sign { display: inline-block; margin-right: .12em; font-size: .9em; font-weight: 650; }
+body #tx-feed .journal-number .number-minor { font-size: .85em; font-weight: 650; }
+body #tx-feed .journal-number .number-currency { display: inline-block; white-space: pre; margin-left: .12em; font-size: .76em; font-weight: 600; }
+body #tx-feed .tx-row-open { column-gap: 12px; }
+body #tx-feed .tx-swipe-content { column-gap: 9px; }
+body #tx-feed .tx-day-heading { display: grid; grid-template-columns: minmax(0,1fr); gap: 13px; }
+body #tx-feed .tx-day-totals { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; width: 100%; }
+body #tx-feed .tx-day-total { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+body #tx-feed .tx-day-total + .tx-day-total { border-left: 1px solid var(--border-subtle); padding-left: 12px; }
+body #tx-feed .tx-total-label { font-size: 9px; font-weight: 550; letter-spacing: .035em; color: var(--text-secondary); }
+body #tx-feed .tx-day-total > .journal-number { font-size: 13px; font-weight: 650; }
+body #tx-feed .tx-day-totals:has([data-number-size=wide],[data-number-size=medium]) { grid-template-columns: minmax(0,1fr); }
+body #tx-feed .tx-day-totals:has([data-number-size=wide],[data-number-size=medium]) .tx-day-total + .tx-day-total { border-left: 0; padding-left: 0; }
+body #tx-feed .tx-amount.journal-number:is([data-number-size=wide],[data-number-size=medium]) { font-size: 17px; }
+@media(max-width:360px) {
+  body #tx-feed .tx-amount.journal-number { font-size: 16px; }
+  body #tx-feed .tx-day-total > .journal-number { font-size: 12px; }
+  body #tx-feed .tx-row-open { row-gap: 7px; }
+}
