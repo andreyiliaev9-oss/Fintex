@@ -6,7 +6,7 @@
   let observer=null,frame=0;
   function play(el,frames,options){
     if(!enabled()||!el?.isConnected)return;
-    const a=el.animate(frames,{duration:340,easing:'cubic-bezier(.2,.8,.2,1)',...options});a.id='fintex-interface-motion';running.add(a);a.finished.catch(()=>{}).finally(()=>running.delete(a));return a;
+    const a=el.animate(frames,{duration:260,easing:'cubic-bezier(.2,.8,.2,1)',...options});a.id='fintex-interface-motion';running.add(a);a.finished.catch(()=>{}).finally(()=>running.delete(a));return a;
   }
   function stop(){observer?.disconnect();cancelAnimationFrame(frame);frame=0;running.forEach(a=>a.cancel());running.clear();}
   function refresh(){
@@ -28,7 +28,7 @@
           }
           else if(entry.target.matches('.ap-category-row')){play(entry.target,[{opacity:.3,transform:'translateX(-8px)'},{opacity:1,transform:'translateX(0)'}],{delay:Math.min(i++*40,160)});play(entry.target.querySelector('.ap-category-rail > span'),[{transform:'scaleX(.05)'},{transform:'scaleX(1)'}],{duration:550});}
           else if(entry.target.matches('.ap-donut'))play(entry.target,[{transform:'scale(.92)',opacity:.35},{transform:'scale(1)',opacity:1}],{duration:460});
-          else play(entry.target,[{transform:'translateY(9px)',opacity:.4},{transform:'translateY(0)',opacity:1}],{delay:Math.min(i++*35,140)});
+          else play(entry.target,[{transform:'translateY(6px)',opacity:.4},{transform:'translateY(0)',opacity:1}],{delay:Math.min(i++*35,140)});
         }
       },{threshold:.12});targets.forEach(el=>{if(!seen.has(el))observer.observe(el);});
     });
@@ -44,7 +44,7 @@
   window.addEventListener('fintex:motionchange',()=>{stop();refresh();});media.addEventListener?.('change',()=>{stop();refresh();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else refresh();});
   function reveal(root){
-    [...root.children].filter(el=>!el.matches('header')).slice(0,7).forEach((el,i)=>play(el,[{opacity:.35,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}],{duration:360,delay:i*22}));
+    [...root.children].filter(el=>!el.matches('header')).slice(0,7).forEach((el,i)=>play(el,[{opacity:.35,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:260,delay:i*14}));
   }
   function goalPulse(root,completed){
     play(root.querySelector('.sg-detail-art img'),[{transform:'scale(1.07)'},{transform:'scale(1)'}],{duration:650});
@@ -62,12 +62,21 @@
   const modalObserver=new MutationObserver(entries=>{
     for(const el of new Set(entries.map(entry=>entry.target))){
       const open=!el.classList.contains('hidden');
-      if(open&&!modalState.get(el))play(el.querySelector('.modal-sheet'),[{transform:'translateY(22px)',opacity:.45},{transform:'translateY(0)',opacity:1}],{duration:320});
+      if(open&&!modalState.get(el))play(el.querySelector('.modal-sheet'),[{transform:'translateY(10px)',opacity:.45},{transform:'translateY(0)',opacity:1}],{duration:260});
       if(!open)el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-interface-motion').forEach(a=>a.cancel());
       modalState.set(el,open);
     }
   });
   document.querySelectorAll('[id^="modal-"]').forEach(el=>{modalState.set(el,!el.classList.contains('hidden'));modalObserver.observe(el,{attributes:true,attributeFilter:['class']});});
+  // Native dialogs use opacity only: preserve keyboard viewport positioning.
+  const nativeObserver=new MutationObserver(entries=>{
+    for(const el of new Set(entries.map(entry=>entry.target))){
+      if(!el.matches('dialog'))continue;
+      if(el.open)play(el,[{opacity:.35},{opacity:1}],{duration:260});
+      else el.getAnimations({subtree:true}).filter(a=>a.id==='fintex-interface-motion').forEach(a=>a.cancel());
+    }
+  });
+  nativeObserver.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
   document.addEventListener('click',event=>{
     if(!event.target.closest('[data-cal-date]'))return;
     play(document.querySelector('#cal-cells .is-selected'),[{transform:'scale(.9)'},{transform:'scale(1)'}],{duration:290});

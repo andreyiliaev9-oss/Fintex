@@ -40,7 +40,7 @@
   roots.forEach((root,i)=>{
     root.setAttribute('role','dialog');
     const sheet=root.querySelector('.modal-sheet'),heading=sheet.querySelector('h1,h2,h3,.text-base.font-bold,.text-sm.font-bold');
-    if(heading){if(!heading.id)heading.id=`sheet-title-${i}`;root.setAttribute('aria-labelledby',heading.id);}else root.setAttribute('aria-label','Окно Fintex');
+    if(heading){heading.classList.add('sheet-heading');if(!heading.id)heading.id=`sheet-title-${i}`;root.setAttribute('aria-labelledby',heading.id);}else root.setAttribute('aria-label','Окно Fintex');
     const close=sheet.querySelector('button[onclick*="closeModals"]');if(close&&!close.hasAttribute('aria-label')&&!close.textContent.trim())close.setAttribute('aria-label','Закрыть окно');
     if(!visible(root))root.setAttribute('aria-hidden','true');
   });

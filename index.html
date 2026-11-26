@@ -19,6 +19,7 @@
   <script src="./cloud.js?v=73"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=75" />
+  <link rel="stylesheet" href="./visual-finish.css?v=76" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -264,10 +265,6 @@
             <span id="stealth-pill" class="hidden text-brand">Скрыто</span>
             <span id="status-badge" class="balance-status" data-tone="calm">Всё спокойно</span>
           </div>
-          <button type="button" onclick="openBalanceModal()" class="balance-total" aria-label="Изменить баланс">
-            <span class="balance-label">Всего на счёте <i data-lucide="pencil" class="w-3 h-3"></i></span>
-            <span id="hero-balance" class="money-val balance-amount">0 ₽</span>
-          </button>
           <div class="daily-budget" id="hero-daily-budget">
             <div class="daily-budget-heading">
               <span class="daily-budget-label">Доступно сегодня</span>
@@ -281,6 +278,10 @@
             <div class="daily-budget-footer"><span>Потрачено <span id="hero-today-spent" class="money-val">0 ₽</span></span><span id="hero-budget-used">0% лимита</span></div>
           </div>
           <div id="hero-limit-explain" class="balance-explanation">Свободные средства распределены до зарплаты</div>
+          <button type="button" onclick="openBalanceModal()" class="balance-total" aria-label="Изменить баланс">
+            <span class="balance-label">Всего на счёте <i data-lucide="pencil" class="w-3 h-3"></i></span>
+            <span id="hero-balance" class="money-val balance-amount">0 ₽</span>
+          </button>
           <div class="balance-breakdown">
             <button type="button" onclick="openGoalDetailsModal()" class="balance-detail">
               <span class="balance-detail-label"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Отложено <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
@@ -1888,13 +1889,13 @@
   <script src="./daily-model.js?v=72"></script>
   <script src="./ledger-sync.js?v=74"></script>
   <script src="./operation-undo.js?v=74"></script>
-  <script src="./app.js?v=75"></script>
+  <script src="./app.js?v=76"></script>
   <script src="./navigation.js?v=57"></script>
-  <script src="./interface-motion.js?v=59"></script>
+  <script src="./interface-motion.js?v=76"></script>
   <script src="./mobile-forms.js?v=75"></script>
-  <script src="./modal-accessibility.js?v=75"></script>
+  <script src="./modal-accessibility.js?v=76"></script>
   <script src="./goals-model.js?v=58"></script>
-  <script src="./savings-goals.js?v=65"></script>
+  <script src="./savings-goals.js?v=76"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=74"></script>
