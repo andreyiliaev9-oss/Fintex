@@ -53,12 +53,15 @@ test('all tabs fit 320, 390 and 448px in both themes, including late-loaded modu
 test('quick add, balance, reserve and simulator still open; privacy still hides amounts', async ({ page }) => {
   await openApp(page, true);
   await page.locator('#hdr-plus-btn').click();
+  await expect(page.locator('#daily-flow')).toBeVisible();
+  await expect(page.locator('#flow-amount')).toBeFocused();
+  await page.locator('#flow-tools').click();
   await expect(page.locator('#modal-smart-hub')).toBeVisible();
   await page.locator('[data-qact="manual-expense"]').click();
-  await expect(page.locator('#modal-add')).toBeVisible();
+  await expect(page.locator('#daily-flow')).toBeVisible();
   await page.evaluate(() => closeModals());
   await page.locator('.balance-total').click();
-  await expect(page.locator('#modal-balance')).toBeVisible();
+  await expect(page.locator('#daily-reconcile')).toBeVisible();
   await page.evaluate(() => closeModals());
   await page.locator('.balance-detail').first().click();
   await expect(page.locator('#modal-goal-detail')).toBeVisible();
@@ -590,8 +593,8 @@ test('settings groups preferences without duplicate finance or investment entrie
   await page.locator('#theme-seg').getByRole('button',{name:'Светлая',exact:true}).click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await page.locator('#settings-advanced > summary').click();
-  await page.locator('#auto-delta-toggle').uncheck();
-  expect(await page.evaluate(()=>localStorage.getItem('fp_auto_delta'))).toBe('0');
+  await expect(page.locator('#settings-advanced')).toContainText('только после подтверждения');
+  await expect(page.locator('#auto-delta-toggle')).toHaveCount(0);
 });
 
 test('calendar owns salary, goals and all payments, and a payment opens its day',async({page})=>{

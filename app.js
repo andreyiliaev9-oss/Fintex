@@ -329,6 +329,8 @@ let state = {
   gasUrl: window.FintexCloud.getEndpoint(),
   apiToken: localStorage.getItem('fp_api_token') || '',
   syncQueue: safeJsonParse(localStorage.getItem('fp_sync_queue'), []),
+  ledgerOffset: FM.money(localStorage.getItem('fp_ledger_offset')),
+  localDeletedIds: safeJsonParse(localStorage.getItem('fp_local_deleted_ids'), []),
   autopilotLogs: safeJsonParse(localStorage.getItem('fp_ap_logs'), []),
   autopilotLogFilter: 'ALL',
   pendingSmsOcrOp: null,
@@ -354,6 +356,8 @@ function persistAll() {
   localStorage.setItem('fp_name', state.name);
   localStorage.setItem('fp_bank', state.bank);
   localStorage.setItem('fp_balance', String(state.balance));
+  localStorage.setItem('fp_ledger_offset', String(state.ledgerOffset||0));
+  localStorage.setItem('fp_local_deleted_ids', JSON.stringify(state.localDeletedIds||[]));
   localStorage.setItem('fp_payday', state.payday);
   localStorage.setItem('fp_goal', JSON.stringify(state.goal));
   localStorage.setItem('fp_cat_limits', JSON.stringify(state.catLimits));
@@ -1125,7 +1129,7 @@ function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
 
   const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  const rows = FM.transactions(state.transactions).filter(t => {
+  const rows = FM.ledgerTransactions(state.transactions).filter(t => {
     if (state.journalDay && (t.date !== state.journalDay.date || (state.journalDay.type !== 'all' && t.type !== state.journalDay.type))) return false;
     if (q && !matchesJournalQuery(t,q)) return false;
     return true;
@@ -1197,18 +1201,20 @@ function renderHome() {
       const dispMerchant = normalizeMerchantName(t.merchant);
       const dispCatId = CATS[t.category] && t.category !== 'other' ? t.category : classifyCategory(dispMerchant);
       const inc = t.type === 'income';
+      const neutral = t.type === 'transfer' || t.type === 'adjustment';
+      const prefix = neutral ? (t.type==='adjustment'?(FM.ledgerEffect(t)>0?'+':'−'):'↔') : inc?'+':'−';
       const cat = CATS[dispCatId] || CATS.other;
       const rowDateText = formatFeedRowDate(t.date);
 
-      const metaSub = inc
+      const metaSub = neutral ? `${t.type==='transfer'?'Между своими счетами':'Корректировка остатка'} · ${rowDateText}` : inc
         ? `Доход · ${rowDateText}`
         : `${cat.name} · ${rowDateText}`;
 
-      const rowAccentCls = inc
+      const rowAccentCls = neutral ? 'operation-neutral-row' : inc
         ? 'border-l-[3px] border-emerald-400 bg-emerald-500/[0.05]'
         : 'border-l-[3px] border-rose-400/75';
 
-      const amountCls = inc
+      const amountCls = neutral ? 'operation-neutral' : inc
         ? 'operation-income'
         : 'operation-expense';
 
@@ -1239,14 +1245,14 @@ function renderHome() {
             <button type="button" class="tx-row-open" data-tx-open="${escapeHtml(t.id)}" ${isSelectMode?`aria-pressed="${isSelected}"`: ''}>
             <span class="tx-row-main flex items-center gap-3.5 min-w-0">
               ${selectCheckHtml}
-              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type).replace(/<div/g,'<span').replace(/<\/div>/g,'</span>')}<span class="tx-direction">${inc?'↙':'↗'}</span></span>
+              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type).replace(/<div/g,'<span').replace(/<\/div>/g,'</span>')}<span class="tx-direction">${neutral?'↔':inc?'↙':'↗'}</span></span>
               <span class="tx-merchant-copy min-w-0">
                 <span class="tx-merchant-name">${escapeHtml(dispMerchant)}</span>
-                <span class="tx-merchant-meta">${metaSub}</span>
+                <span class="tx-merchant-meta">${metaSub}${t.local_only?' · На устройстве':''}</span>
               </span>
             </span>
-            <span data-journal-amount="${t.amount}" data-journal-prefix="${inc?'+':'−'}" class="tx-amount money-val text-sm font-extrabold tabular-nums shrink-0 ${amountCls}">
-              ${fmtR(t.amount, inc ? '+' : '−')}
+            <span data-journal-amount="${t.amount}" data-journal-prefix="${prefix}" class="tx-amount money-val text-sm font-extrabold tabular-nums shrink-0 ${amountCls}">
+              ${fmtR(t.amount, prefix)}
             </span>
             </button>
             <button type="button" class="tx-row-menu" aria-label="Действия с операцией: ${escapeHtml(dispMerchant)}" aria-expanded="false" aria-controls="tx-actions-${escapeHtml(t.id)}" onclick="event.stopPropagation();toggleTxActions(this.closest('.tx-swipe-content'))"><span aria-hidden="true">⋯</span></button>
@@ -2602,12 +2608,9 @@ function setTxCat(cid) {
 }
 
 function repeatTxById(id) {
-  const t = state.transactions.find(x => x.id === id);
-  if (!t) return;
-  addOrMergeTransactions([{ merchant: t.merchant, amount: t.amount, category: t.category, type: t.type, date: TODAY }], 'Повтор');
-  updateSyncQueueUI();
-renderAll(false); toast('Операция повторена');
+  if(window.FintexDaily)window.FintexDaily.open({repeat:id});
 }
+
 function repeatSelectedTx() { const id = state.editTxId; closeModals(); repeatTxById(id); }
 
 let lastDeletedTxsBackup = [];
@@ -2617,7 +2620,9 @@ function undoLastTxDelete() {
   // Restore dependent bill cycles oldest first, regardless of feed ordering.
   [...lastDeletedTxsBackup].sort((a,b)=>String(a.bill_after?.last_paid_date||a.date).localeCompare(String(b.bill_after?.last_paid_date||b.date))).forEach(t => {
     if (!state.transactions.some(x => x.id === t.id)) {
-      state.balance = FM.add(state.balance, t.type === 'income' ? t.amount : -t.amount);
+      state.balance = FM.add(state.balance, FM.ledgerEffect(t));
+      state.ledgerOffset=FM.add(state.ledgerOffset,FM.ledgerEffect(t));
+      state.localDeletedIds=(state.localDeletedIds||[]).filter(id=>id!==t.id);
       state.transactions.push(t);
       if(t.goal_withdrawal) { state.goal.saved=FM.add(state.goal.saved,-t.goal_withdrawal); window.FintexBehavior?.recordSaving(-t.goal_withdrawal); }
       if (t.bill_after) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].due_date===t.bill_before?.due_date && state.bills[i].last_paid_tx_id===t.bill_before?.last_paid_tx_id) state.bills[i]={...t.bill_after}; }
@@ -2636,7 +2641,9 @@ function deleteTxsBatch(ids) {
   if (!removed.length) return;
   lastDeletedTxsBackup = removed.map(x => ({ ...x }));
   [...removed].sort((a,b)=>String(b.bill_after?.last_paid_date||b.date).localeCompare(String(a.bill_after?.last_paid_date||a.date))).forEach(t => {
-    state.balance = FM.add(state.balance, t.type === 'income' ? -t.amount : t.amount);
+    state.balance = FM.add(state.balance, -FM.ledgerEffect(t));
+    state.ledgerOffset=FM.add(state.ledgerOffset,-FM.ledgerEffect(t));
+    state.localDeletedIds=[...new Set([...(state.localDeletedIds||[]),t.id])];
     if(t.goal_withdrawal) { state.goal.saved=FM.add(state.goal.saved,t.goal_withdrawal); window.FintexBehavior?.recordSaving(t.goal_withdrawal); }
     if (t.bill_before) { const i=state.bills.findIndex(b=>b.id===t.bill_id); if(i>=0 && state.bills[i].last_paid_tx_id===t.id) state.bills[i]={...t.bill_before}; }
   });
@@ -2807,36 +2814,10 @@ function selectDetectedBalance(screenVal) {
 }
 
 function applyReconcile() {
-  const nextVal = FM.parse(document.getElementById('inp-reconcile').value);
-  if (nextVal === null) { toast('Укажите корректный остаток'); return; }
-  const effectiveDiff = FM.add(nextVal, -state.balance);
-  const autoDeltaEnabled = localStorage.getItem('fp_auto_delta') !== '0';
-  const wrapVisible = !document.getElementById('bal-log-diff-wrap').classList.contains('hidden');
-  const shouldLogExpense = effectiveDiff < 0 && (
-    wrapVisible ? document.getElementById('bal-log-diff-chk').checked : autoDeltaEnabled
-  );
-
-  if (shouldLogExpense) {
-    const spentDiff = Math.abs(effectiveDiff);
-    state.transactions.unshift({
-      id: 'delta_' + Date.now(),
-      merchant: detectedScreenBank ? `Авто-дельта (${detectedScreenBank})` : 'Авто-дельта баланса',
-      amount: spentDiff,
-      category: 'other',
-      type: 'expense',
-      source: 'Авто-дельта',
-      date: TODAY,
-      items: []
-    });
-  }
-
-  state.balance = nextVal;
-  persistAll();
-  pushTransactionsToBackend(state.transactions.slice(0, 5));
-  closeModals();
-  updateSyncQueueUI();
-renderAll(false);
-  toast(shouldLogExpense ? `Авто-дельта: записано -${fmtR(Math.abs(effectiveDiff))}` : 'Остаток на карте обновлён');
+  const value=FM.parse(document.getElementById('inp-reconcile').value);
+  if(value===null){toast('Укажите корректный остаток');return;}
+  if(window.FintexDaily)window.FintexDaily.reconcileWithValue(value);
+  else toast('Форма сверки ещё загружается. Попробуйте снова.');
 }
 
 function toggleAutoDeltaPref() {
@@ -3597,7 +3578,7 @@ async function pushTransactionsToBackend(txSubset) {
   if (Array.isArray(txSubset) && txSubset.length) {
     const queuedIds = new Set(state.syncQueue.map(x => String(x.id)));
     txSubset.forEach(tx => {
-      if (tx && tx.id && !queuedIds.has(String(tx.id))) {
+      if (tx && tx.id && !tx.local_only && ['income','expense'].includes(tx.type) && !queuedIds.has(String(tx.id))) {
         state.syncQueue.push(tx);
         queuedIds.add(String(tx.id));
       }
@@ -3614,9 +3595,10 @@ async function flushSyncQueue() {
     return;
   }
   try {
-    const batch = state.syncQueue.slice(0, 30);
+    const batch = state.syncQueue.filter(tx=>!tx.local_only&&['income','expense'].includes(tx.type)).slice(0,30);
+    if(!batch.length)return;
     const data = await window.FintexCloud.request('push_tx',{
-      user_id:USER_ID,balance:state.balance,
+      user_id:USER_ID,balance:FM.add(state.balance,-state.ledgerOffset),
       user:{name:state.name,bank:state.bank,payday:state.payday},transactions:batch
     });
     if (data && data.ok) {
@@ -3642,7 +3624,7 @@ async function syncWithBackend(notify = false) {
         const localIds = new Set(state.transactions.map(t => String(t.id)));
         const localHashes = new Set(state.transactions.filter(t => t.dedup_hash).map(t => String(t.dedup_hash)));
         const freshRemote = data.transactions.filter(rt =>
-          rt.id && !localIds.has(String(rt.id)) && (!rt.dedup_hash || !localHashes.has(String(rt.dedup_hash)))
+          rt.id && !(state.localDeletedIds||[]).includes(String(rt.id)) && !localIds.has(String(rt.id)) && (!rt.dedup_hash || !localHashes.has(String(rt.dedup_hash)))
         );
         if (freshRemote.length) {
           freshRemote.forEach(rt => {
@@ -3686,7 +3668,7 @@ async function syncWithBackend(notify = false) {
       }
 
       if (typeof data.user.balance === 'number' && Number.isFinite(data.user.balance) && pulledNew > 0) {
-        state.balance = FM.money(data.user.balance);
+        state.balance = FM.add(data.user.balance,state.ledgerOffset);
       }
 
       const now = new Date();

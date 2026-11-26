@@ -28,7 +28,7 @@ test('navigation buttons work by keyboard, keep exactly one current destination 
     const bounds=await button.boundingBox(),pill=await nav.locator('#nav-active-pill').boundingBox();expect(Math.abs(bounds.x-pill.x)).toBeLessThanOrEqual(1.5);expect(Math.abs(bounds.width-pill.width)).toBeLessThanOrEqual(1.5);
   }
   expect(await page.evaluate(()=>JSON.stringify({balance:state.balance,transactions:state.transactions,goal:state.goal}))).toBe(before);
-  await page.locator('#hdr-plus-btn').click();await expect(page.locator('#modal-smart-hub')).toBeVisible();
+  await page.locator('#hdr-plus-btn').click();await expect(page.locator('#daily-flow')).toBeVisible();
 });
 test('panel fits narrow screens and preserves label/icon contrast in all complementary palettes',async({page})=>{
   await open(page);await page.setViewportSize({width:320,height:740});const nav=page.locator('#fintex-navigation');
