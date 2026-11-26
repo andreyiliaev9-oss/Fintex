@@ -17,7 +17,7 @@ test('a real touch rustles instead of opening savings; four fast taps make one b
   for(let i=0;i<3;i++)await button(page).tap();await expect(page.locator('.ft-burst-particle')).toHaveCount(36);await expect(page.locator('.ft-storm-particle')).toHaveCount(56);await expect(tree(page)).toHaveAttribute('data-snow-shed','true');await expect(page.locator('.ft-shed-art')).toHaveCount(1);await expect(page.locator('.ft-shed-art')).toHaveAttribute('src',/winter-bare\/sapling.svg\?v=64/);await expect(tree(page).locator('.ft-img')).toHaveCSS('opacity','0');await expect(tree(page).locator('.ft-reaction-status')).toContainText('Вьюга');
   const all=await page.locator('.ft-storm-layer,.ft-burst-layer').evaluateAll(els=>els.map(el=>({inert:el.inert,aria:el.getAttribute('aria-hidden'),pointer:getComputedStyle(el).pointerEvents})));expect(all.every(x=>x.inert&&x.aria==='true'&&x.pointer==='none')).toBe(true);
   expect(await page.locator('.ft-storm-particle').first().evaluate(el=>el.getAnimations()[0].effect.getTiming().iterations)).toBe(1);
-  await page.clock.runFor(3300);await gone(page);await expect(tree(page).locator('.ft-img')).toHaveCSS('opacity','1');await expect(button(page)).toBeFocused();expect(await financial(page)).toBe(before);
+  await page.clock.runFor(12500);await gone(page);await expect(tree(page).locator('.ft-img')).toHaveCSS('opacity','1');await expect(button(page)).toBeFocused();expect(await financial(page)).toBe(before);
   await tree(page).locator('.ft-topup').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
 });
 test('extra taps during a storm cannot stack particles, restart its timer, or write any finance data',async({page})=>{
@@ -59,7 +59,7 @@ test('disabled/reduced motion taps do nothing, but the explicit savings button r
 test('all five winter species have bare branches during shedding; the model species and savings never change',async({page})=>{
   await open(page,'sapphire');
   for(const [amount,variant]of [[null,'sapling'],[11000,'birch'],[9500,'spruce'],[8000,'maple'],[5000,'oak']]){
-    await page.evaluate(amount=>{state.transactions=amount===null?[]:[{id:'tap-income',type:'income',amount:10000,date:TODAY},{id:'tap-expense',type:'expense',amount,date:TODAY}];persistAll();},amount);await expect(tree(page)).toHaveAttribute('data-tree-variant',variant);const before=await financial(page);await combo(page);await expect(page.locator('.ft-shed-art')).toHaveAttribute('src',new RegExp(`winter-bare/${variant}.svg`));await expect(tree(page)).toHaveAttribute('data-tree-variant',variant);const response=await page.request.get(`/assets/trees/winter-bare/${variant}.svg?v=64`);expect(response.ok()).toBe(true);expect(await response.text()).not.toContain('id="winter-snow"');await page.clock.runFor(3300);await gone(page);expect(await financial(page)).toBe(before);
+    await page.evaluate(amount=>{state.transactions=amount===null?[]:[{id:'tap-income',type:'income',amount:10000,date:TODAY},{id:'tap-expense',type:'expense',amount,date:TODAY}];persistAll();},amount);await expect(tree(page)).toHaveAttribute('data-tree-variant',variant);const before=await financial(page);await combo(page);await expect(page.locator('.ft-shed-art')).toHaveAttribute('src',new RegExp(`winter-bare/${variant}.svg`));await expect(tree(page)).toHaveAttribute('data-tree-variant',variant);const response=await page.request.get(`/assets/trees/winter-bare/${variant}.svg?v=64`);expect(response.ok()).toBe(true);expect(await response.text()).not.toContain('id="winter-snow"');await page.clock.runFor(12500);await gone(page);expect(await financial(page)).toBe(before);
   }
 });
 test('all three thematic storms fit 320px in light/dark modes, keep taps pass-through and produce review previews',async({page})=>{
@@ -73,7 +73,7 @@ test('all three thematic storms fit 320px in light/dark modes, keep taps pass-th
   }
 });
 test('failed bare-snow artwork retains the original tree and still cleans up the blizzard',async({page})=>{
-  await open(page,'sapphire');await page.route('**/assets/trees/winter-bare/*.svg*',r=>r.abort());await combo(page);await expect(page.locator('.ft-storm-particle')).toHaveCount(56);await expect(tree(page).locator('.ft-img')).toHaveCSS('opacity','1');await expect(tree(page).locator('.ft-img')).toBeVisible();await page.clock.runFor(3300);await gone(page);
+  await open(page,'sapphire');await page.route('**/assets/trees/winter-bare/*.svg*',r=>r.abort());await combo(page);await expect(page.locator('.ft-storm-particle')).toHaveCount(56);await expect(tree(page).locator('.ft-img')).toHaveCSS('opacity','1');await expect(tree(page).locator('.ft-img')).toBeVisible();await page.clock.runFor(12500);await gone(page);
 });
 
 test('scrolling the tree away and changing its cashflow species cancel the old reaction without delayed revival',async({page})=>{
