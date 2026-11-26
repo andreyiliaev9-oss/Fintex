@@ -309,6 +309,7 @@ if (document.readyState === 'loading') {
   };
 
   window.showUndoDeleteToast = function (count) {
+    if(window.FintexUndo)return;
     let banner = document.getElementById('fintex-undo-banner');
     if (!banner) {
       banner = document.createElement('div');

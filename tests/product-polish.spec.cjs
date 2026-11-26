@@ -17,7 +17,7 @@ async function swipe(page,{dx=-190,dy=0,cancel=false,multi=false}={}){
 test('a long operation swipe reveals explicit actions, never deletes or changes sections, and supports undo',async({page})=>{
   await open(page);const before=await snapshot(page);await page.locator('#tx-feed').scrollIntoViewIfNeeded();await swipe(page);
   await expect(page.locator('.nav-tab[aria-current=page]')).toHaveAttribute('data-nav','home');expect(await snapshot(page)).toBe(before);const row=page.locator('[data-operation-row=shop]');await expect(row.locator('.tx-row-menu')).toHaveAttribute('aria-expanded','true');await expect(row.locator('.tx-swipe-actions')).toHaveAttribute('aria-hidden','false');
-  await row.locator('button[aria-label="Удалить операцию: Магазин"]').click();await expect(page.locator('[data-operation-row=shop]')).toHaveCount(0);await page.locator('#fintex-undo-banner button').click();const normalize=s=>{const v=JSON.parse(s);v.transactions.sort((a,b)=>a.id.localeCompare(b.id));return v;};expect(normalize(await snapshot(page))).toEqual(normalize(before));
+  await row.locator('button[aria-label="Удалить операцию: Магазин"]').click();await expect(page.locator('[data-operation-row=shop]')).toHaveCount(0);await page.locator('#operation-undo-apply').click();const normalize=s=>{const v=JSON.parse(s);v.transactions.sort((a,b)=>a.id.localeCompare(b.id));return v;};expect(normalize(await snapshot(page))).toEqual(normalize(before));
 });
 test('vertical, cancelled and multi-touch gestures keep records and reset row transforms',async({page})=>{
   await open(page);const before=await snapshot(page);

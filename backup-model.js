@@ -4,7 +4,7 @@
   const M=typeof module!=='undefined'&&module.exports?require('./finance-math.js'):root.FintexMath;
   const MAX_BYTES=12*1024*1024,JOURNAL='fp_restore_journal_v1';
   const fields={name:'fp_name',bank:'fp_bank',balance:'fp_balance',payday:'fp_payday',goal:'fp_goal',catLimits:'fp_cat_limits',transactions:'fp_local_tx',bills:'fp_bills',ledgerOffset:'fp_ledger_offset',localDeletedIds:'fp_local_deleted_ids',priceHistory:'fp_price_history',captureArchive:'fp_capture_archive',behavior:'fp_behavior_v1',workTime:'fp_work_time_v1'};
-  const runtimeKeys=['fp_sync_queue','fp_cloud_paused_restore','fp_onboarded','fp_backup_last_restore','fp_backup_restore_notice','fp_backup_cloud_owner'];
+  const runtimeKeys=['fp_sync_queue','fp_cloud_paused_restore','fp_onboarded','fp_backup_last_restore','fp_backup_restore_notice','fp_backup_cloud_owner','fp_ledger_sync_v1'];
   const allowedKeys=[...Object.values(fields),...runtimeKeys];
   const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
   function need(ok,message){if(!ok)throw Error(message||'Структура копии повреждена. Данные не заменены.');}
@@ -67,11 +67,11 @@
   }
   function storageMap(data,now,owner=null){
     const values={};for(const [field,key]of Object.entries(fields))values[key]=['name','bank','payday'].includes(field)?data[field]:JSON.stringify(data[field]);
-    return {...values,fp_sync_queue:'[]',fp_cloud_paused_restore:'1',fp_onboarded:'1',fp_backup_last_restore:now,fp_backup_restore_notice:'1',fp_backup_cloud_owner:owner||''};
+    return {...values,fp_sync_queue:'[]',fp_cloud_paused_restore:'1',fp_onboarded:'1',fp_backup_last_restore:now,fp_backup_restore_notice:'1',fp_backup_cloud_owner:owner||'',fp_ledger_sync_v1:'null'};
   }
   function recover(storage){
     const raw=storage.getItem(JOURNAL);if(raw===null)return false;
-    const before=JSON.parse(raw);need(obj(before)&&Object.keys(before).length===allowedKeys.length&&allowedKeys.every(k=>Object.hasOwn(before,k)&&(before[k]===null||typeof before[k]==='string')),'Не удалось проверить незавершённое восстановление.');
+    const before=JSON.parse(raw);need(obj(before)&&Object.keys(before).every(k=>allowedKeys.includes(k)&&(before[k]===null||typeof before[k]==='string'))&&allowedKeys.filter(k=>k!=='fp_ledger_sync_v1').every(k=>Object.hasOwn(before,k)),'Не удалось проверить незавершённое восстановление.');
     // Clear only allowlisted restore targets, then restore the saved values. The journal
     // remains until completion, so interruption during rollback is safe to retry.
     allowedKeys.forEach(k=>storage.removeItem(k));

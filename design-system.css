@@ -2205,3 +2205,18 @@ body .balance-detail-label > .balance-detail-arrow { width: 12px; height: 12px; 
 #backup-dialog .flow-equation-row>strong { max-width:58%; text-align:right; overflow-wrap:anywhere; }
 #backup-dialog .flow-secondary { border:1px solid var(--border-active); border-radius:12px; background:var(--surface-2); font-weight:700; }
 #backup-dialog .flow-check { margin:15px 0; }
+
+/* Truthful operation storage state and a single non-destructive undo action. */
+.ledger-sync-status { display:block; max-width:100%; margin:8px auto 0; padding:7px 10px; min-height:36px; border:1px solid var(--border-subtle); border-radius:11px; color:var(--text-secondary); font-size:10px; text-wrap:balance; }
+.tx-sync-state { display:block; font-size:9px; line-height:1.4; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ledger-conflict { border-top:1px solid var(--border-subtle); padding:14px 0; font-size:12px; overflow-wrap:anywhere; }
+.ledger-conflict p { margin:8px 0; font-size:11px; line-height:1.5; }
+.ledger-conflict button { min-height:44px; padding:9px; margin:4px; border:1px solid var(--border-active); border-radius:11px; background:var(--surface-2); color:var(--text-primary); }
+#operation-undo { position:fixed; z-index:68; bottom:calc(94px + env(safe-area-inset-bottom,0px)); left:12px; right:12px; max-width:420px; margin:auto; display:flex; align-items:center; gap:8px; padding:12px; background:var(--surface-1); color:var(--text-primary); border:1px solid var(--border-active); border-radius:17px; box-shadow:0 10px 35px #0003; }
+#operation-undo[hidden] { display:none; }
+#operation-undo span { flex:1; font-size:11px; }
+#operation-undo button { min-height:40px; padding:8px; font-size:12px; font-weight:700; border-radius:11px; background:var(--surface-2); }
+body:has(dialog[open]) #operation-undo { visibility:hidden; }
+
+body:has([id^="modal-"]:not(.hidden)) #operation-undo { visibility:hidden; }
+body:has(#view-home.hidden) #operation-undo { display:none; }
