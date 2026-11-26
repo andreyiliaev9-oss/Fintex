@@ -1,0 +1,57 @@
+const {test,expect}=require('@playwright/test');
+const tour=p=>p.locator('#fintex-tour');
+async function open(page,{fresh=false,pending=false}={}){
+  await page.route('**/*',r=>['localhost','127.0.0.1'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
+  await page.addInitScript(({fresh,pending})=>{if(sessionStorage.getItem('tour_fixture'))return;sessionStorage.setItem('tour_fixture','1');localStorage.setItem('fp_motion','0');if(!fresh)Object.entries({fp_name:'Анна',fp_onboarded:'1',fp_balance:'75420.51',fp_goal:JSON.stringify({title:'Подушка',saved:1000,target:10000}),fp_local_tx:JSON.stringify([{id:'tour-real',date:'2026-11-18',merchant:'Магазин',type:'expense',amount:350,category:'food'}])}).forEach(([k,v])=>localStorage.setItem(k,v));if(pending)localStorage.setItem('fp_tour_v1','pending');},{fresh,pending});
+  await page.goto('/');await page.waitForFunction(()=>!!window.FintexTour&&!!window.FintexAnalyticsPro&&!!window.FilelyFinancialTree);
+}
+const snapshot=p=>p.evaluate(()=>JSON.stringify(Object.fromEntries(Object.entries(localStorage).filter(([k])=>!['fp_tour_v1'].includes(k)).sort(([a],[b])=>a.localeCompare(b)))));
+async function ready(page,index){await expect(tour(page)).toBeVisible();await expect(tour(page)).toHaveAttribute('data-step',String(index));await expect(tour(page)).toHaveAttribute('data-ready','true');await page.evaluate(async()=>{await document.fonts.ready;await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});}
+async function next(page,index){await page.locator('#tour-next').click();await ready(page,index);}
+async function replay(page){await page.locator('[data-nav=settings]').click();await page.locator('#tour-replay').click();await ready(page,0);}
+test('new user gets a safe automatic tour only after successful first setup, and completion is remembered',async({page})=>{
+  await open(page,{fresh:true});await expect(tour(page)).toBeHidden();await page.locator('#ob-skip-btn').click();await page.locator('#ob-next-btn').click();await expect(tour(page)).toBeHidden();await page.locator('#setup-name').fill('Мария');await page.locator('#setup-balance').fill('25000');await page.locator('#ob-next-btn').click();await ready(page,0);await expect(page.locator('#onboarding-screen')).toBeHidden();expect(await page.evaluate(()=>localStorage.getItem('fp_tour_v1'))).toBe('pending');
+  const before=await snapshot(page);for(let i=1;i<10;i++)await next(page,i);await page.locator('#tour-next').click();await expect(tour(page)).toBeHidden();expect(await snapshot(page)).toBe(before);expect(await page.evaluate(()=>localStorage.getItem('fp_tour_v1'))).toBe('complete');await expect(page.locator('.nav-tab[aria-current=page]')).toHaveAttribute('data-nav','home');await expect(page.locator('#hdr-plus-btn')).toBeFocused();await page.reload();await page.waitForFunction(()=>!!window.FintexTour);await expect(tour(page)).toBeHidden();
+});
+test('existing users are not interrupted by an upgrade and can replay from a visible settings card without setup',async({page})=>{
+  await open(page);await expect(tour(page)).toBeHidden();expect(await page.evaluate(()=>localStorage.getItem('fp_tour_v1'))).toBeNull();const before=await snapshot(page);await replay(page);await expect(page.locator('#setup-name')).toBeHidden();await page.locator('#tour-next').click();await ready(page,1);await page.locator('#tour-skip').click();await expect(tour(page)).toBeHidden();await expect(page.locator('.nav-tab[aria-current=page]')).toHaveAttribute('data-nav','settings');await expect(page.locator('#tour-replay')).toBeFocused();expect(await snapshot(page)).toBe(before);expect(await page.evaluate(()=>localStorage.getItem('fp_tour_v1'))).toBe('skipped');await page.locator('#tour-replay').click();await ready(page,0);
+});
+test('route switches actual sections, highlights non-overlapping targets, supports Back and never opens financial actions',async({page})=>{
+  await open(page);await replay(page);const before=await snapshot(page);let rings=0;
+  const tabs=['home','home','home','home','calendar','analytics','home','home','settings','settings'];
+  for(let i=0;i<10;i++){
+    await ready(page,i);await expect(page.locator('.nav-tab[aria-current=page]')).toHaveAttribute('data-nav',tabs[i]);await expect(page.locator('.tour-progress')).toHaveAttribute('aria-valuenow',String(i+1));
+    if(await tour(page).getAttribute('data-spotlight')==='true'){
+      rings++;const a=await page.locator('.tour-focus').boundingBox(),b=await page.locator('.tour-panel').boundingBox();expect(a.y+a.height<=b.y-2||b.y+b.height<=a.y-2).toBe(true);expect(a.x).toBeGreaterThanOrEqual(0);expect(a.x+a.width).toBeLessThanOrEqual(390);
+      await page.mouse.click(a.x+a.width/2,a.y+a.height/2);await expect(page.locator('dialog[open]')).toHaveCount(1);
+    }
+    if(i<9)await next(page,i+1);
+  }
+  expect(rings).toBeGreaterThanOrEqual(5);await page.locator('#tour-back').click();await ready(page,8);await page.locator('#tour-skip').click();expect(await snapshot(page)).toBe(before);await expect(page.locator('.modal-overlay:visible')).toHaveCount(0);
+});
+test('native modal keeps focus inside, Arrow keys navigate and Escape restores scroll, focus and original overflow',async({page})=>{
+  await open(page);await page.locator('[data-nav=settings]').click();await page.locator('#tour-replay').scrollIntoViewIfNeeded();const original=await page.evaluate(()=>({scroll:scrollY,overflow:document.body.style.overflow}));await page.locator('#tour-replay').click();await ready(page,0);await expect(page.locator('#tour-title')).toBeFocused();
+  for(let i=0;i<10;i++){await page.keyboard.press(i%2?'Shift+Tab':'Tab');expect(await tour(page).evaluate(el=>el.contains(document.activeElement))).toBe(true);}
+  await page.keyboard.press('ArrowRight');await ready(page,1);await page.keyboard.press('ArrowLeft');await ready(page,0);await page.keyboard.press('Escape');await expect(tour(page)).toBeHidden();await expect(page.locator('#tour-replay')).toBeFocused();expect(await page.evaluate(()=>({scroll:scrollY,overflow:document.body.style.overflow}))).toEqual(original);
+});
+test('skipped tours stay skipped; pending new-user tours resume after reload and pagehide cleans up the modal',async({page})=>{
+  await open(page,{pending:true});await ready(page,0);await page.locator('#tour-skip').click();await page.reload();await page.waitForFunction(()=>!!window.FintexTour);await expect(tour(page)).toBeHidden();await replay(page);await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await expect(tour(page)).toBeHidden();expect(await page.evaluate(()=>document.documentElement.classList.contains('fintex-tour-open'))).toBe(false);expect(await page.evaluate(()=>document.body.style.overflow)).toBe('');
+});
+test('guide works in all palettes and short/narrow viewports, with a readable centered fallback when spotlight cannot fit',async({page})=>{
+  test.setTimeout(90000); // 180 real steps across 18 viewport/palette combinations.
+  await open(page);for(const [width,height]of [[320,568],[390,844],[600,360]]){await page.setViewportSize({width,height});for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+    await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});await replay(page);for(const i of [0,1,2,3,4,5,6,7,8,9]){
+      await ready(page,i);const b=await page.locator('.tour-panel').boundingBox();expect(b.x).toBeGreaterThanOrEqual(0);expect(b.y).toBeGreaterThanOrEqual(0);expect(b.x+b.width).toBeLessThanOrEqual(width);expect(b.y+b.height).toBeLessThanOrEqual(height+1);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);expect(await page.locator('.tour-panel').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);if(i<9)await next(page,i+1);
+    }await page.locator('#tour-next').click();await expect(tour(page)).toBeHidden();
+  }}
+});
+test('motion preference changes cancel the finite guide reveal, and blocked storage never prevents replay/skip',async({page})=>{
+  await open(page);await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});await replay(page);expect(await tour(page).evaluate(el=>el.getAnimations({subtree:true}).every(a=>a.effect.getTiming().iterations===1))).toBe(true);await page.emulateMedia({reducedMotion:'reduce'});expect(await tour(page).evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);await next(page,1);expect(await tour(page).evaluate(el=>el.getAnimations({subtree:true}).length)).toBe(0);
+  await page.evaluate(()=>{const real=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='fp_tour_v1')throw Error('quota');return real.call(this,k,v);};});await page.locator('#tour-skip').click();await expect(tour(page)).toBeHidden();await page.locator('#tour-replay').click();await ready(page,0);await page.keyboard.press('Escape');await expect(tour(page)).toBeHidden();
+});
+test('missing late-loaded targets degrade gracefully and restarting an open guide does not duplicate dialogs',async({page})=>{
+  await open(page);await replay(page);await page.evaluate(()=>{document.querySelector('#capture-fab')?.remove();FintexTour.start();FintexTour.start();});await ready(page,0);await expect(tour(page)).toHaveCount(1);await next(page,1);await next(page,2);await expect(page.locator('#tour-title')).toContainText('покупку');await page.keyboard.press('Escape');await expect(tour(page)).toBeHidden();
+});
+test('review previews show the contextual guide on the real interface',async({page})=>{
+  await open(page);await page.evaluate(()=>setTheme('light'));await replay(page);await next(page,1);await page.evaluate(async()=>{await document.fonts.ready;await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});await page.screenshot({path:'.cache/v67-tour-balance-light.png'});for(let i=2;i<=7;i++)await next(page,i);await page.evaluate(()=>setTheme('dark'));await page.screenshot({path:'.cache/v67-tour-tree-dark.png'});await page.locator('#tour-skip').click();await expect(tour(page)).toBeHidden();
+});

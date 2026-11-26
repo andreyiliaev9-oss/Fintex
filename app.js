@@ -453,6 +453,7 @@ function nextOnboardingStep() {
     document.getElementById('setup-name').focus();
     return;
   }
+  const firstSetup = localStorage.getItem('fp_onboarded') !== '1';
   state.name = nameVal;
   state.balance = Math.max(0, Number(document.getElementById('setup-balance').value) || 0);
   state.payday = document.getElementById('setup-payday').value || offsetDateISO(12);
@@ -463,6 +464,10 @@ function nextOnboardingStep() {
   vibro('success');
   renderAll(true);
   toast(`Добро пожаловать, ${state.name}!`);
+  if (firstSetup) {
+    try { localStorage.setItem('fp_tour_v1', 'pending'); } catch (_) {}
+    window.dispatchEvent(new Event('fintex:first-setup-complete'));
+  }
   syncWithBackend(false);
 }
 
