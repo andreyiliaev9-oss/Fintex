@@ -254,7 +254,7 @@
     sheet.querySelector('[data-qact="manual-income"]')?.addEventListener('click', () => {
       launchAction(() => {
         if (typeof openAddModal === 'function') openAddModal();
-        if (typeof switchAddMode === 'function') switchAddMode('income');
+        if(window.FintexDaily)window.FintexDaily.setKind('income');else if (typeof switchAddMode === 'function') switchAddMode('income');
       });
     });
     sheet.querySelector('[data-qact="scan"]')?.addEventListener('click', () => {

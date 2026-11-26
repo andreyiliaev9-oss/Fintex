@@ -16,6 +16,8 @@
   function daysUntil(iso,today){const end=ordinal(iso),start=ordinal(today);return end===null||start===null?1:Math.max(1,end-start);}
   function nextMonth(iso,anchor){if(ordinal(iso)===null)return null;const [y,m,d]=iso.split('-').map(Number);const last=new Date(Date.UTC(y,m+1,0)).getUTCDate();return new Date(Date.UTC(y,m,Math.min(Math.max(1,Math.trunc(finite(anchor,d))),last))).toISOString().slice(0,10);}
   function transactions(list,from,to){return (Array.isArray(list)?list:[]).filter(t=>t&&['income','expense'].includes(t.type)&&minor(t.amount)>0&&(!t.currency||['RUB','₽','РУБ'].includes(String(t.currency).toUpperCase()))).map(t=>({...t,amount:money(t.amount),date:txKey(t)})).filter(t=>t.date&&(!from||t.date>=from)&&(!to||t.date<=to));}
+  function ledgerEffect(tx){return tx?.type==='income'?money(tx.amount):tx?.type==='expense'?-money(tx.amount):tx?.type==='adjustment'?money(tx.balance_delta):0;}
+  function ledgerTransactions(list){return (Array.isArray(list)?list:[]).filter(t=>t&&['income','expense','transfer','adjustment'].includes(t.type)&&minor(t.amount)>0&&(!t.currency||['RUB','₽','РУБ'].includes(String(t.currency).toUpperCase()))).map(t=>({...t,amount:money(t.amount),date:txKey(t)})).filter(t=>t.date);}
   const isBill=t=>!!t.bill_id || /^Платёж(?:$| \+)/.test(String(t.source||''));
   function goalSavings(goal){return add(Math.max(0,money(goal?.saved)),sum(Array.isArray(goal?.pockets)?goal.pockets:[],g=>Math.max(0,money(g?.saved))));}
   function metrics(state,today){
@@ -65,7 +67,7 @@
       return [{date,merchant,amount:Math.abs(amount),type:String(raw).startsWith('+')?'income':'expense'}];
     });
   }
-  const api={goalSavings,finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
+  const api={ledgerEffect,ledgerTransactions,goalSavings,finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.FintexMath=api;
 })(typeof window==='undefined'?globalThis:window);

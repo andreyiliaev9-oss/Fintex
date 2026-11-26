@@ -54,10 +54,12 @@ test('reserve transfers do not create money; direct spending and undo restore bo
 test('reconciliation uses edited balance and preserves a sub-ruble adjustment; speech and SMS preserve kopecks',async({page})=>{
   await open(page);
   const result=await page.evaluate(()=>{
-    selectDetectedBalance(200);document.getElementById('inp-reconcile').value='99.75';document.getElementById('bal-log-diff-chk').checked=true;applyReconcile();
+    selectDetectedBalance(200);document.getElementById('inp-reconcile').value='99.75';applyReconcile();
+    if(state.balance!==100)throw Error('Screenshot must not write before confirmation');
+    document.getElementById('flow-confirm').checked=true;document.getElementById('reconcile-form').requestSubmit();
     return {balance:state.balance,amount:state.transactions[0]?.amount,type:state.transactions[0]?.type,voice:parseSpokenRussianExpenses('кофе 150,25').map(t=>t.amount),sms:parseBankSmsOrClipboard('Покупка 123,45 RUB. Магазин. Баланс 99,75 RUB')};
   });
-  expect(result.balance).toBe(99.75);expect(result.amount).toBe(.25);expect(result.type).toBe('expense');expect(result.voice).toEqual([150.25]);expect(result.sms.amount).toBe(123.45);expect(result.sms.cardBalance).toBe(99.75);
+  expect(result.balance).toBe(99.75);expect(result.amount).toBe(.25);expect(result.type).toBe('adjustment');expect(result.voice).toEqual([150.25]);expect(result.sms.amount).toBe(123.45);expect(result.sms.cardBalance).toBe(99.75);
 });
 test('simulator modules load once, without overwriting UI after initialization',async({page})=>{
   await open(page);const scripts=await page.evaluate(()=>['sim_engine.js','sim_ui.js','sim_charts.js','sim_pro.js'].map(name=>[...document.scripts].filter(s=>s.src.includes('/'+name)).length));expect(scripts).toEqual([1,1,1,1]);

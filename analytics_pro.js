@@ -76,6 +76,7 @@
     return `${window.FintexMath.money(num).toLocaleString('ru-RU',{maximumFractionDigits:2})} ${currency || '₽'}`;
   }
   function numberAttrs(value,currency,prefix='') {
+    if(value===null||value===undefined)return '';
     return `data-ap-number="${FintexMath.money(value)}" data-ap-prefix="${esc(prefix)}" data-ap-currency="${esc(currency||'₽')}"`;
   }
   function renderCashflow(data){
@@ -207,7 +208,8 @@
     const monthDailyRate = monthVariable / monthElapsed;
     const monthEnd = `${today.slice(0,7)}-${String(monthDays).padStart(2,'0')}`;
     const scheduled=M.sum((st.bills||[]).filter(b=>!b.is_paid && M.ordinal(b.due_date)!==null && b.due_date<=monthEnd),b=>Math.max(0,M.finite(b.amount)));
-    const projectedBalance = M.add(st.balance,-monthDailyRate*daysLeft,-scheduled);
+    const hasMonthExpenses=M.transactions(st.transactions,M.key(monthStart),today).some(tx=>tx.type==='expense'&&!M.isBill(tx));
+    const projectedBalance = hasMonthExpenses?M.add(st.balance,-monthDailyRate*daysLeft,-scheduled):null;
     const weekdayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const weekdayLong = ['воскресенье', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
     const peakIndex = byWeekday.indexOf(Math.max(...byWeekday));
@@ -331,11 +333,18 @@
     return `<div class="ap-distribution-visual"><div class="ap-donut" role="img" aria-label="Распределение записанных расходов по ${data.categories.length} категориям"><svg viewBox="0 0 128 128" aria-hidden="true"><circle class="ap-donut-track" cx="64" cy="64" r="52"/>${segments}</svg><div class="ap-donut-centre" aria-hidden="true"><strong>${data.categories.length}</strong><span>категорий</span></div></div><div class="ap-distribution-leader"><span>Больше всего</span><strong>${esc(leader.name)}</strong><div><b>${Math.round(leader.pct)}%</b><span>от расходов</span></div></div></div>`;
   }
 
+  function renderDailyAnswers(data) {
+    const M=FintexMath,today=M.key(new Date()),m=M.metrics(data.st,today),c=FintexDailyModel.monthComparison(data.st.transactions,today),top=data.categories[0];
+    const money=value=>`<span class="money-val">${fmt(value,data.currency)}</span>`;
+    const date=key=>new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    const comparison=c.comparable?`${c.delta>0?'На ':c.delta<0?'На ':''}${c.delta?money(Math.abs(c.delta))+' '+(c.delta>0?'больше':'меньше'):'Без изменений'}`:'Недостаточно записей для сравнения';
+    return `<section class="ap-daily-answers" aria-label="Главное о деньгах"><div class="ap-daily-answer"><span>Куда ушло больше всего · выбранный период</span><strong>${top?esc(top.name)+' · '+money(top.total):'Пока нет записанных расходов'}</strong></div><div class="ap-daily-answer"><span>Этот месяц и прошлый</span><strong>${comparison}</strong><p>${date(c.currentFrom)} — ${date(c.currentTo)}: ${money(c.spent)}. ${date(c.previousFrom)} — ${date(c.previousTo)}: ${money(c.prior)}.${c.shorterPrevious?' В прошлом месяце меньше дней.':''} Только записанные расходы; отсутствие записей не означает нулевые траты.</p></div><div class="ap-daily-answer"><span>До зарплаты · ${date(data.st.payday||today)}</span><strong>${money(m.freePool)} свободно</strong><p>После платежей ${money(m.billsReserved)} и отложенного ${money(m.goalReserved)}. ${m.days} дн.; ориентир ${money(m.freePool/m.days)} в день.${M.add(data.st.balance,-m.reserved)<0?' Общего остатка не хватает на все резервы.':''} Новые доходы не учтены.</p></div></section>`;
+  }
+
   function renderOverview(data, period) {
-    const deltaLabel = data.prevSpent > 0
+    const deltaLabel = data.prevSpent > 0 && data.currentTxs.some(t=>!t._inc)
       ? `${data.deltaPct > 0 ? '+' : ''}${data.deltaPct}% к предыдущему периоду`
       : 'Пока нет данных для сравнения';
-    const deltaClass = data.deltaPct > 0 ? 'warn' : '';
     const range = periodRange(data, period);
     const previous = periodRange({ now: new Date(`${FintexMath.shift(range.start, -1)}T12:00:00`) }, period);
     const topCats = data.categories.slice(0, 4).map(cat => `
@@ -344,14 +353,15 @@
       <div class="ftx-ap-card gold ap-expense-hero">
         <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
         <div class="ftx-ap-big money-val" ${numberAttrs(data.spent,data.currency)}>${fmt(data.spent, data.currency)}</div>
-        <span class="ftx-ap-delta ${deltaClass}">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
+        <span class="ftx-ap-delta">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
         <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
         ${renderExpenseTrend(data, period)}
       </div>
+      ${renderDailyAnswers(data)}
       ${renderCashflow(data)}
       <div class="ftx-ap-summary-row">
-        <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val" ${numberAttrs(data.burnRate,data.currency)}>${fmt(data.burnRate, data.currency)}</div></div>
-        <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}" ${numberAttrs(data.projectedBalance,data.currency)}>${fmt(data.projectedBalance, data.currency)}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val" ${numberAttrs(data.currentTxs.some(t=>!t._inc)?data.burnRate:null,data.currency)}>${data.currentTxs.some(t=>!t._inc)?fmt(data.burnRate, data.currency):'—'}</div></div>
+        <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}" ${numberAttrs(data.projectedBalance,data.currency)}>${data.projectedBalance===null?'Мало записей':fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
       <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details>
       <div class="ftx-ap-card ap-distribution">
