@@ -23,6 +23,7 @@
     if(!target?.isConnected&&record?.txId)target=[...document.querySelectorAll('[data-tx-open]')].find(el=>el.dataset.txOpen===record.txId);
     if(!target?.isConnected||!target.getClientRects().length)target=document.querySelector('.nav-tab[aria-current="page"]');
     target?.focus({preventScroll:true});
+    window.FintexFormViewport?.restore(record?.position,target);
   }
   function sync(){
     let closed;
@@ -30,7 +31,7 @@
     for(const root of [...stack])if(!visible(root)){closed=records.get(root);stack.splice(stack.indexOf(root),1);root.removeAttribute('aria-modal');root.setAttribute('aria-hidden','true');root.style.removeProperty('z-index');}
     for(const root of roots)if(visible(root)&&!stack.includes(root)){
       const active=document.activeElement,trigger=root.contains(active)?lastOutside:active;
-      records.set(root,{trigger,txId:trigger?.dataset?.txOpen});stack.push(root);
+      records.set(root,{trigger,txId:trigger?.dataset?.txOpen,position:closed?.position||window.FintexFormViewport?.remember(trigger)});stack.push(root);
       root.setAttribute('aria-modal','true');root.removeAttribute('aria-hidden');
     }
     stack.forEach((root,i)=>root.style.zIndex=String(50+i*2));lock();
@@ -58,5 +59,6 @@
       else if(!event.shiftKey&&(document.activeElement===last||!list.includes(document.activeElement))){event.preventDefault();first.focus();}
     }
   });
+  window.FintexSheets={returnPoint:()=>records.get(stack[0])?.position};
   sync();
 })();

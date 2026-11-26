@@ -56,3 +56,20 @@ test('adding receipt details to a paid bill cannot reclassify it as a second var
   const m=M.metrics(state({transactions:[tx(100,today,{source:'Платёж + Чек'})]}),today);
   assert.equal(m.totalTodaySpent,100);assert.equal(m.todaySpent,0);assert.equal(m.dailyBurn,0);
 });
+
+test('reservation explanation mirrors metrics with exact horizon, overdue bills and funded pockets',()=>{
+  const s=state({balance:1000.25,bills:[{id:'paid',amount:99,is_paid:true,due_date:today},{id:'later',amount:80,due_date:'2026-12-05'},{id:'edge',amount:50.15,due_date:'2026-12-04'},{id:'old',amount:30.10,due_date:'2026-11-01'},{id:'bad',amount:200,due_date:'bad'}],goal:{title:'Основная',saved:100.10,pockets:[{id:'one',title:'Отпуск',saved:200.20},{id:'empty',saved:0},{id:'bad',saved:-20}]}});
+  const before=JSON.stringify(s),m=M.reservations(s,today);
+  assert.deepEqual(m.bills.map(b=>b.id),['old','edge']);assert.equal(m.billsReserved,80.25);
+  assert.deepEqual(m.goals.map(g=>g.id),['primary','one']);assert.equal(M.sum(m.goals,g=>g.saved),m.goalReserved);
+  assert.equal(m.freePool,619.70);assert.equal(m.shortfall,0);assert.equal(m.horizon,s.payday);assert.equal(m.validPayday,true);
+  for(const [k,v] of Object.entries(M.metrics(s,today)))assert.deepEqual(m[k],v);
+  assert.equal(JSON.stringify(s),before);
+});
+test('reservation explanation uses existing one-day fallback, zero clamp and honest shortfall',()=>{
+  for(const payday of ['bad','2026-11-01',today]){
+    const m=M.reservations(state({balance:-20,payday,goal:{saved:10},bills:[{amount:100,due_date:'2026-11-25'},{amount:999,due_date:'2026-11-26'}]}),today);
+    assert.equal(m.horizon,'2026-11-25');assert.equal(m.freePool,0);assert.equal(m.shortfall,130);assert.equal(m.billsReserved,100);assert.equal(m.validPayday,false);
+  }
+  assert.equal(M.reservations({balance:0,transactions:[]},today).goals.length,0);
+});

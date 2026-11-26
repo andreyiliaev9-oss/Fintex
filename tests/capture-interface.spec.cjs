@@ -107,3 +107,14 @@ test('real local OCR reads a generated bank notification without external hosts'
   await expect(page.locator('#capture-amount')).toHaveValue('120.5');expect(await page.evaluate(()=>state.transactions.length)).toBe(0);
   expect(hosts.filter(h=>!['localhost','127.0.0.1','telegram.org','cdnjs.cloudflare.com'].includes(h))).toEqual([]);
 });
+
+test('recognition summary highlights unsure fields and preserves explicit category corrections',async({page})=>{
+  await open(page,{confidence:50});await upload(page);await expect(page.locator('#capture-review-title')).toBeFocused();
+  await expect(page.locator('#capture-amount').locator('..')).toHaveAttribute('data-review-check','suggested');
+  await page.locator('#capture-category').selectOption('health');await page.locator('#capture-merchant').fill('Аптека');await expect(page.locator('#capture-category')).toHaveValue('health');
+  await page.locator('#capture-amount').fill('125,25');await expect(page.locator('#capture-amount-hint')).toHaveText('Изменено');await page.locator('#capture-save').click();expect(await page.evaluate(()=>state.transactions[0])).toMatchObject({amount:125.25,category:'health',merchant:'Аптека'});
+});
+test('capture review fits small screen and validation stays visible outside folded details',async({page})=>{
+  await open(page,{confidence:50});await page.setViewportSize({width:320,height:568});await upload(page);
+  expect(await page.locator('#capture-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);await page.locator('#capture-amount').fill('-1');await expect(page.locator('#capture-save')).toBeDisabled();await expect(page.locator('#capture-validation')).not.toBeEmpty();expect(await page.locator('.recognition-details').evaluate(el=>el.open)).toBe(false);expect(await page.evaluate(()=>state.transactions.length)).toBe(0);
+});

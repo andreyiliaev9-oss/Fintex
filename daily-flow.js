@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const M=FintexMath,D=FintexDailyModel;
-  let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,busy=false,reconcileBalance=null;
+  let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,returnPoint=null,busy=false,reconcileBalance=null;
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid=()=>`tx_${crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2)}`;
@@ -55,7 +55,7 @@
     const tx=id?state.transactions.find(tx=>tx.id===id):repeat?state.transactions.find(tx=>tx.id===repeat):null;
     if((id||repeat)&&!tx)return;
     if(tx?.type==='adjustment'){toast('Корректировку можно удалить через историю и выполнить сверку заново.');return;}
-    priorFocus=document.activeElement;closeModals();editing=id;signature=id?JSON.stringify(tx):'';busy=false;
+    priorFocus=document.activeElement;returnPoint=window.FintexSheets?.returnPoint()||window.FintexFormViewport?.remember(priorFocus);closeModals();editing=id;signature=id?JSON.stringify(tx):'';busy=false;
     $('flow-form').reset();$('flow-title').textContent=id?'Изменить операцию':repeat?'Повторить операцию':'Добавить операцию';$('flow-save').textContent=id?'Сохранить изменения':'Записать';
     $('flow-date').value=id?tx.date:date;$('flow-date').max=TODAY;$('flow-amount').value=tx?tx.amount:'';$('flow-name').value=tx?.merchant||'';
     $('flow-category').querySelectorAll('[data-custom-category]').forEach(o=>o.remove());
@@ -89,7 +89,7 @@
     $('flow-confirm-row').hidden=delta===null||delta===0;$('reconcile-save').disabled=delta===null||delta===0;
   }
   function openReconcile(){
-    priorFocus=document.activeElement;closeModals();busy=false;
+    priorFocus=document.activeElement;returnPoint=window.FintexSheets?.returnPoint()||window.FintexFormViewport?.remember(priorFocus);closeModals();busy=false;
     const r=D.reconciliation(state.balance,state.transactions);
     $('flow-equation').innerHTML=moneyRow('Начало по текущей истории',r.opening)+moneyRow('+ Доходы',r.income)+moneyRow('− Расходы',r.expense)+moneyRow('± Корректировки',r.adjustments)+moneyRow('= В приложении',r.balance);
     $('flow-equation').querySelectorAll('[data-flow-money]').forEach(el=>FintexNumerals.render(el,Number(el.dataset.flowMoney)));
@@ -112,7 +112,7 @@
     document.body.append(dialog,reconcile);
     [dialog,reconcile].forEach(el=>{
       el.querySelector('[data-flow-close]').addEventListener('click',()=>el.close());
-      el.addEventListener('close',()=>{if(priorFocus?.isConnected&&priorFocus.getClientRects().length)priorFocus.focus({preventScroll:true});else $('hdr-plus-btn')?.focus({preventScroll:true});});
+      el.addEventListener('close',()=>{if(window.FintexFormViewport)window.FintexFormViewport.restore(returnPoint,$('hdr-plus-btn'));else priorFocus?.focus({preventScroll:true});});
     });
     dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.addEventListener('click',()=>setKind(b.dataset.flowKind)));
     $('flow-form').addEventListener('submit',submit);$('flow-form').addEventListener('input',preview);

@@ -1959,6 +1959,7 @@ function initHeroCard3D() {
 let speechRec = null;
 let isListeningVoice = false;
 let parsedVoiceItems = [];
+let voiceReviewEpoch=0;
 
 function wordsToNumbersRu(text) {
   let s = ' ' + text.toLowerCase().replace(/ё/g, 'е') + ' ';
@@ -2057,8 +2058,10 @@ function parseSpokenRussianExpenses(rawSpeech) {
 function openVoiceModal() {
   vibro('medium');
   parsedVoiceItems = [];
+  document.getElementById('modal-voice').classList.remove('has-voice-review');
   document.getElementById('voice-transcript-inp').value = '';
   document.getElementById('voice-parsed-list').innerHTML = '';
+  document.getElementById('voice-review-status').textContent = '';
   document.getElementById('voice-commit-btn').classList.add('hidden');
   document.getElementById('modal-voice').classList.remove('hidden');
   resetVoiceCordSpring();
@@ -2224,12 +2227,13 @@ function toggleVoiceListening() {
 }
 
 function startVoiceRecognition() {
+  const session=++voiceReviewEpoch;
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const statusEl = document.getElementById('voice-status-label');
   const waveEl = document.getElementById('voice-wave-box');
 
   if (!SpeechRec) {
-    statusEl.textContent = 'Диктовка недоступна в этом окне — введите или надиктуйте текст с клавиатуры iPhone ниже';
+    statusEl.textContent = 'Диктовка недоступна — введите текст ниже';
     document.getElementById('voice-transcript-inp').focus();
     return;
   }
@@ -2242,6 +2246,7 @@ function startVoiceRecognition() {
     speechRec.maxAlternatives = 1;
 
     speechRec.onstart = () => {
+      if(session!==voiceReviewEpoch)return;
       isListeningVoice = true;
       document.getElementById('voice-mic-toggle-btn')?.classList.add('is-listening');
       waveEl.classList.remove('hidden');
@@ -2249,6 +2254,7 @@ function startVoiceRecognition() {
     };
 
     speechRec.onresult = (event) => {
+      if(session!==voiceReviewEpoch||document.getElementById('modal-voice').classList.contains('hidden'))return;
       let transcript = '';
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
@@ -2258,6 +2264,7 @@ function startVoiceRecognition() {
     };
 
     speechRec.onerror = (ev) => {
+      if(session!==voiceReviewEpoch)return;
       isListeningVoice = false;
       document.getElementById('voice-mic-toggle-btn')?.classList.remove('is-listening');
       waveEl.classList.add('hidden');
@@ -2267,6 +2274,7 @@ function startVoiceRecognition() {
     };
 
     speechRec.onend = () => {
+      if(session!==voiceReviewEpoch)return;
       isListeningVoice = false;
       document.getElementById('voice-mic-toggle-btn')?.classList.remove('is-listening');
       waveEl.classList.add('hidden');
@@ -2284,53 +2292,55 @@ function startVoiceRecognition() {
 }
 
 function stopVoiceRecognition() {
+  voiceReviewEpoch++;
+  const status=document.getElementById('voice-status-label');
+  if(status)status.textContent=parsedVoiceItems.length?'Проверьте поля перед записью':'Диктовка остановлена';
   isListeningVoice = false;
   document.getElementById('voice-mic-toggle-btn')?.classList.remove('is-listening');
   document.getElementById('voice-wave-box')?.classList.add('hidden');
   try { if (speechRec) speechRec.stop(); } catch (e) {}
 }
 
-function parseVoiceDraftText() {
-  const txt = document.getElementById('voice-transcript-inp').value.trim();
-  parsedVoiceItems = parseSpokenRussianExpenses(txt);
-  const listEl = document.getElementById('voice-parsed-list');
-  const btn = document.getElementById('voice-commit-btn');
-
-  if (!parsedVoiceItems.length) {
-    listEl.innerHTML = '';
-    btn.classList.add('hidden');
-    return;
+function readVoiceReview() {
+  const rows=[...document.querySelectorAll('[data-voice-row]')],items=[];
+  for(const row of rows){
+    const field=name=>row.querySelector(`[data-voice-field="${name}"]`),amount=FM.parse(field('amount').value),date=field('date').value,merchant=field('merchant').value.trim(),category=field('category').value;
+    let invalid=null,message='';
+    if(!merchant){invalid=field('merchant');message='Укажите, где или за что покупка.';}
+    else if(amount===null||amount<=0){invalid=field('amount');message='Укажите сумму больше нуля, до двух знаков после запятой.';}
+    else if(FM.ordinal(date)===null||date>TODAY){invalid=field('date');message='Выберите дату не позднее сегодня.';}
+    else if(!CATS[category]){invalid=field('category');message='Выберите категорию.';}
+    if(invalid)return {error:message,invalid};
+    items.push({merchant,amount,category,date,type:'expense'});
   }
-
-  listEl.innerHTML = parsedVoiceItems.map(it => `
-    <div class="input-surface p-3 flex items-center justify-between text-xs">
-      <div class="flex items-center gap-2.5 min-w-0">
-        ${merchantBadge(it.merchant, it.category, 'expense')}
-        <div class="min-w-0">
-          <div class="font-bold text-main truncate">${escapeHtml(it.merchant)}</div>
-          <div class="text-[10px] text-sub">${(CATS[it.category] || CATS.other).name}</div>
-        </div>
-      </div>
-      <span class="font-extrabold text-gold tabular-nums">-${fmtR(it.amount)}</span>
-    </div>
-  `).join('');
-
-  btn.classList.remove('hidden');
-  btn.textContent = `Записать (${parsedVoiceItems.length} опер. на ${fmtR(FM.sum(parsedVoiceItems,x=>x.amount))})`;
-  lucide.createIcons();
+  return {items};
 }
-
+function updateVoiceReview() {
+  const result=readVoiceReview(),btn=document.getElementById('voice-commit-btn');
+  btn.disabled=!!result.error;
+  document.getElementById('voice-review-status').textContent=result.error||'';
+  btn.textContent=result.error?'Проверьте поля выше':`Записать ${result.items.length} · ${fmtR(FM.sum(result.items,t=>t.amount))}`;
+}
+function parseVoiceDraftText() {
+  const txt=document.getElementById('voice-transcript-inp').value.trim();
+  parsedVoiceItems=parseSpokenRussianExpenses(txt);
+  document.getElementById('modal-voice').classList.toggle('has-voice-review',parsedVoiceItems.length>0);
+  const list=document.getElementById('voice-parsed-list'),btn=document.getElementById('voice-commit-btn');
+  document.getElementById('voice-review-status').textContent='';
+  if(!parsedVoiceItems.length){list.replaceChildren();btn.classList.add('hidden');return;}
+  list.innerHTML=parsedVoiceItems.map((it,i)=>`<section class="voice-review-row" data-voice-row="${i}" aria-label="Покупка ${i+1}"><h3>Покупка ${i+1}</h3><div class="recognition-card"><label class="recognition-wide" data-review-check="suggested">Где или за что<small>Распознано из речи — проверьте</small><input data-voice-field="merchant" maxlength="100" value="${escapeHtml(it.merchant)}" autocomplete="off" aria-label="Покупка ${i+1}: где или за что"></label><label class="recognition-wide recognition-amount" data-review-check="suggested">Сколько, ₽<small>Проверьте сумму</small><input data-voice-field="amount" inputmode="decimal" value="${it.amount}" maxlength="20" autocomplete="off" aria-label="Покупка ${i+1}: сумма"></label><label data-review-check="suggested">Дата<small>Сегодня — можно изменить</small><input data-voice-field="date" type="date" value="${TODAY}" max="${TODAY}" aria-label="Покупка ${i+1}: дата"></label><label data-review-check="suggested">Категория<small>Подобрана автоматически</small><select data-voice-field="category" aria-label="Покупка ${i+1}: категория">${Object.values(CATS).map(c=>`<option value="${c.id}" ${it.category===c.id?'selected':''}>${c.name}</option>`).join('')}</select></label></div></section>`).join('');
+  list.onpointerdown=()=>{if(isListeningVoice)stopVoiceRecognition();};
+  list.oninput=event=>{stopVoiceRecognition();const label=event.target.closest('label');if(label){label.dataset.reviewCheck='ready';label.querySelector('small').textContent='Изменено';}updateVoiceReview();};
+  list.onchange=list.oninput;btn.classList.remove('hidden');updateVoiceReview();
+}
 function commitVoiceExpenses() {
-  if (!parsedVoiceItems.length) return;
-  stopVoiceRecognition();
-  const total = FM.sum(parsedVoiceItems,x=>x.amount);
-  addOrMergeTransactions(parsedVoiceItems, 'Голос');
-  parsedVoiceItems = [];
-  closeModals();
-  vibro('success');
-  updateSyncQueueUI();
-renderAll(false);
-  toast(`Записано голосом: -${fmtR(total)}`);
+  if(!parsedVoiceItems.length)return;
+  const review=readVoiceReview();
+  if(review.error){document.getElementById('voice-review-status').textContent=review.error;review.invalid.focus();return;}
+  if(!review.items.length)return;
+  stopVoiceRecognition();const total=FM.sum(review.items,t=>t.amount),result=addOrMergeTransactions(review.items,'Голос');
+  if(!result.addedCount){document.getElementById('voice-review-status').textContent='Записи не добавлены. Проверьте поля.';return;}
+  parsedVoiceItems=[];closeModals();vibro('success');updateSyncQueueUI();renderAll(false);toast(`Записано голосом: −${fmtR(total)}`);
 }
 
 // ==================== 4. ЭКСПОРТ ПЛАТЕЖЕЙ И ЗАРПЛАТЫ В КАЛЕНДАРЬ iOS (.ICS) ====================
@@ -2464,14 +2474,16 @@ function openSubscriptionGuide(title, annualCost, billId) {
 }
 
 function openForecastExplainModal() {
-  const m = calcMetrics();
-  document.getElementById('forecast-math-body').innerHTML = `
-    <div class="flex justify-between"><span>На карте:</span><strong>${fmtR(state.balance)}</strong></div>
-    <div class="flex justify-between"><span>Резерв и подушка:</span><strong class="text-gold">-${fmtR(m.reserved)}</strong></div>
-    <div class="flex justify-between pt-1 border-t divider-line"><span>Свободно:</span><strong class="text-brand">${fmtR(m.freePool)}</strong></div>
-    <div class="flex justify-between"><span>Норма (${m.days} дн.):</span><strong>${fmtR(m.dailyCap)} / день</strong></div>
-    <p class="text-xs text-sub">Дневной бюджет: (свободные деньги + сегодняшние повседневные траты) / дни до зарплаты, с округлением вниз до копейки. Платежи зарезервированы отдельно и в обычные траты не входят. Прогноз — оценка по доступной истории, не гарантия.</p>
-  `;
+  const m=FM.reservations(state,TODAY),box=document.getElementById('forecast-math-body');
+  const money=(label,value,prefix='')=>`<div class="budget-math-row"><span>${label}</span><strong class="money-val" data-budget-money="${value}" data-budget-prefix="${prefix}"></strong></div>`;
+  const item=(title,value,sub)=>`<li><span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(sub)}</small></span><b class="money-val" data-budget-money="${value}"></b></li>`;
+  box.innerHTML=`<div class="budget-equation">${money('Всего на счёте',state.balance)}${money('− На платежи',m.billsReserved)}${money('− На цели',m.goalReserved)}${money('= Можно тратить',m.freePool)}</div>
+    ${m.shortfall?`<p class="budget-shortfall">На все резервы не хватает <strong class="money-val" data-budget-money="${m.shortfall}"></strong>. Поэтому для трат показан ноль, а не отрицательная сумма.</p>`:''}
+    <p class="budget-note">${m.validPayday?`Платежи учтены до ${humanDate(m.horizon)} включительно. Более поздние и уже оплаченные сюда не входят.`:'Дата зарплаты прошла или не задана. Пока учитываем неоплаченные платежи до завтра.'} Цели — это ваши отложенные деньги, не отдельный расход.</p>
+    <section class="budget-reservations" aria-label="Учтённые платежи"><h3>На платежи <span>${m.bills.length}</span></h3><ul>${m.bills.map(b=>item(b.title,Math.max(0,FM.money(b.amount)),`${b.due_date<TODAY?'Просрочен · ':''}${humanDate(b.due_date)}`)).join('')||'<li class="budget-empty">Нет неоплаченных платежей до этой даты</li>'}</ul></section>
+    <section class="budget-reservations" aria-label="Отложено по целям"><h3>На цели <span>${m.goals.length}</span></h3><ul>${m.goals.map(g=>item(g.title||'Цель',Math.max(0,FM.money(g.saved)),'Уже отложено')).join('')||'<li class="budget-empty">В целях пока ничего не отложено</li>'}</ul></section>
+    <details class="budget-daily-method"><summary>Как получилась сумма на сегодня</summary><p class="budget-note">Из общего остатка вычитаем резервы, прибавляем сегодняшние повседневные траты и делим на ${m.days} дн. до зарплаты и округляем вниз до копейки. Затем вычитаем сегодняшние траты. Оплата зарезервированных платежей второй раз не вычитается.</p>${money('На сегодня осталось',m.dailyLeft)}${money('Дневной бюджет',m.dailyCap)}</details><p class="budget-note">Прогноз к зарплате — оценка по доступной истории трат, не гарантия.</p>`;
+  box.querySelectorAll('[data-budget-money]').forEach(el=>FintexNumerals.render(el,Number(el.dataset.budgetMoney),el.dataset.budgetPrefix||''));
   document.getElementById('modal-forecast-info').classList.remove('hidden');
 }
 

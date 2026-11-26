@@ -106,7 +106,7 @@
     // Fiscal operation n is seller-facing. Returns and non-sale directions require review.
     const refund=params.get('n')==='2'||/возврат\s+прихода|чек\s+возврата/i.test(text);
     const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText;
-    return {kind,raw:text,bank,confidence,fileHash,qr,merchant:data.merchant,amount:data.total,date:data.date,time:data.time,dateInferred:(data.low_confidence_fields||[]).includes('date'),ocrTotal:data.ocr_total,itemsSum:data.items_sum,items:data.items,uncertain,type:refund?'income':'expense',op_kind:refund?'refund':'expense',op_label:refund?'Возврат':'Покупка',category:classifyCategory(data.merchant),fiscalKey:M.fiscalKey(qr),dedup_hash:M.fiscalKey(qr)?'capture_fiscal_'+M.fiscalKey(qr):''};
+    return {kind,raw:text,bank,confidence,fileHash,qr,merchant:data.merchant,amount:data.total,date:data.date,time:data.time,dateInferred:(data.low_confidence_fields||[]).includes('date'),ocrTotal:data.ocr_total,itemsSum:data.items_sum,items:data.items,low_confidence_fields:data.low_confidence_fields||[],uncertain,type:refund?'income':'expense',op_kind:refund?'refund':'expense',op_label:refund?'Возврат':'Покупка',category:classifyCategory(data.merchant),fiscalKey:M.fiscalKey(qr),dedup_hash:M.fiscalKey(qr)?'capture_fiscal_'+M.fiscalKey(qr):''};
   }
   async function receive(file,mode){
     if(!file||busy)return;
@@ -132,20 +132,29 @@
     if(dataUrl){$('capture-preview').src=dataUrl;}
     $('capture-bank').value=candidate.bank||'';$('capture-merchant').value=candidate.merchant||'';$('capture-amount').value=candidate.amount>0?String(candidate.amount):'';$('capture-date').value=candidate.date||TODAY;$('capture-date').max=TODAY;$('capture-time').value=candidate.time||'';$('capture-kind').value=candidate.op_kind||candidate.type;
     $('capture-confidence').textContent=Number.isFinite(candidate.confidence)?`Качество текста OCR: ${Math.round(candidate.confidence)}%. Это не вероятность правильной операции.`:'Текст извлечён из PDF. Процент достоверности не придумываем.';
-    refreshReview();$('capture-merchant').focus({preventScroll:true});
+    candidate.reviewed={};$('capture-category').value=CATS[candidate.category]?candidate.category:classifyCategory(candidate.merchant);
+    refreshReview();$('capture-review-title').focus({preventScroll:true});
   }
   function formCandidate(){
     const kind=$('capture-kind').value,type=['income','refund','transfer_in'].includes(kind)?'income':'expense';
     const edited={...candidate,bank:$('capture-bank').value.trim(),merchant:$('capture-merchant').value.trim(),amount:FM.parse($('capture-amount').value),date:$('capture-date').value,time:$('capture-time').value,type,op_kind:kind};
     edited.op_label={income:'Пополнение',refund:'Возврат',transfer_in:'Перевод (вх.)',transfer_out:'Перевод (исх.)',expense:'Покупка',atm:'Наличные'}[kind];
-    edited.category=classifyCategory(edited.merchant);return edited;
+    edited.category=$('capture-category').value;return edited;
   }
   function refreshReview(){
     if(!candidate)return;
     const c=formCandidate(),policy=assess(c),list=$('capture-reasons');list.replaceChildren();
     for(const reason of policy.reasons){const li=document.createElement('li');li.textContent=reason;list.append(li);}
     $('capture-level').textContent=policy.duplicateId?'Дубликат — не записываем':policy.autoSave?'QR и текст совпали':'Нужно подтверждение';
-    $('capture-save').disabled=!policy.canSave;
+    const low=!Number.isFinite(candidate.confidence)||candidate.confidence<92,fields=candidate.low_confidence_fields||[];
+    for(const field of ['merchant','amount','date','category']){
+      const input=$('capture-'+field),hint=$('capture-'+field+'-hint'),changed=!!candidate.reviewed?.[field];
+      const uncertain=field==='category'||field==='merchant'&&(low||fields.includes('merchant')||!candidate.merchant||candidate.merchant==='Кассовый чек')||field==='amount'&&(low||fields.includes('total')||Number.isFinite(candidate.ocrTotal)&&Math.round(candidate.ocrTotal*100)!==Math.round(candidate.amount*100)||Number.isFinite(candidate.itemsSum)&&candidate.itemsSum>0&&Math.round(candidate.itemsSum*100)!==Math.round(candidate.amount*100))||field==='date'&&(candidate.dateInferred||fields.includes('date'));
+      hint.textContent=changed?'Изменено':field==='category'?'Подобрана автоматически':uncertain?'Проверьте по оригиналу':'';
+      input.closest('label').dataset.reviewCheck=uncertain&&!changed?'suggested':'ready';input.setAttribute('aria-describedby',hint.id);
+    }
+    $('capture-validation').textContent=policy.canSave?'':policy.reasons.join(' ');
+    $('capture-save').disabled=!policy.canSave||!CATS[c.category];
     $('capture-transfer-note').hidden=!c.op_kind.startsWith('transfer');
   }
   function save(automatic=false){
@@ -187,8 +196,10 @@
         <p class="capture-footnote">До 15 МБ · только рубли · без платных сервисов. Обработка в браузере; для первой загрузки OCR нужен интернет. Кнопка работает только внутри открытого FINTEX.</p>
       </section>
       <section data-capture-stage="processing" hidden><div class="capture-spinner" aria-hidden="true"></div><h3>Превращаем изображение в запись</h3><p class="capture-copy">Можно отменить: результат не будет сохранён после закрытия.</p><button type="button" class="capture-secondary" data-capture-close>Отменить</button></section>
-      <section data-capture-stage="review" hidden><span id="capture-level" class="capture-level"></span><p id="capture-confidence" class="capture-copy"></p><details class="capture-image"><summary>Посмотреть изображение</summary><img id="capture-preview" alt="Загруженное изображение для проверки"></details>
-        <form id="capture-form"><label>Банк<input id="capture-bank" maxlength="60" placeholder="Не определён"></label><label>Назначение<input id="capture-merchant" maxlength="100" required></label><label>Сумма, ₽<input id="capture-amount" inputmode="decimal" type="text" required></label><div class="capture-fields"><label>Дата<input id="capture-date" type="date" required></label><label>Время<input id="capture-time" type="time"></label></div><label>Вид операции<select id="capture-kind"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer_out">Перевод — исходящий</option><option value="transfer_in">Перевод — входящий</option><option value="refund">Возврат</option><option value="atm">Снятие наличных</option></select></label><p id="capture-transfer-note" class="capture-copy" hidden>Проверьте направление. Перевод между своими счетами не добавляйте как расход или доход общего капитала.</p><ul id="capture-reasons"></ul><button id="capture-save" class="capture-primary" type="submit">Подтвердить и записать</button></form>
+      <section data-capture-stage="review" hidden><h3 id="capture-review-title" tabindex="-1">Проверьте запись</h3><span id="capture-level" class="capture-level"></span>
+        <form id="capture-form"><div class="recognition-card" aria-label="Распознанная операция"><label class="recognition-wide">Где или за что<small id="capture-merchant-hint"></small><input id="capture-merchant" maxlength="100" required></label><label class="recognition-wide recognition-amount">Сколько, ₽<small id="capture-amount-hint"></small><input id="capture-amount" inputmode="decimal" type="text" autocomplete="off" required></label><label>Дата<small id="capture-date-hint"></small><input id="capture-date" type="date" required></label><label>Категория<small id="capture-category-hint"></small><select id="capture-category">${Object.values(CATS).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label></div>
+        <label>Вид операции<select id="capture-kind"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer_out">Перевод — исходящий</option><option value="transfer_in">Перевод — входящий</option><option value="refund">Возврат</option><option value="atm">Снятие наличных</option></select></label><p id="capture-transfer-note" class="capture-copy" hidden>Проверьте направление. Перевод между своими счетами не добавляйте как расход или доход общего капитала.</p>
+        <details class="recognition-details"><summary>Изображение и детали распознавания</summary><details class="capture-image"><summary>Посмотреть изображение</summary><img id="capture-preview" alt="Загруженное изображение для проверки"></details><p id="capture-confidence" class="capture-copy"></p><div class="capture-fields"><label>Банк<input id="capture-bank" maxlength="60" placeholder="Не определён"></label><label>Время<input id="capture-time" type="time"></label></div><ul id="capture-reasons"></ul></details><p id="capture-validation" class="flow-status" role="status" aria-live="polite"></p><button id="capture-save" class="capture-primary" type="submit">Подтвердить и записать</button></form>
       </section>
       <section data-capture-stage="done" hidden><div class="capture-success" aria-hidden="true">✓</div><h3 id="capture-done-title"></h3><p id="capture-done-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-close>Готово</button><button type="button" class="capture-secondary" data-capture-again>Добавить ещё</button></section>
       <section data-capture-stage="error" hidden><h3>Не получилось прочитать</h3><p id="capture-error-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-again>Выбрать другое изображение</button></section>
@@ -208,7 +219,7 @@
     });
     dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
     $('capture-auto').addEventListener('change',e=>localStorage.setItem('fp_capture_auto',e.target.checked?'1':'0'));
-    $('capture-form').addEventListener('input',refreshReview);$('capture-form').addEventListener('submit',e=>{e.preventDefault();if(!busy)save(false);});
+    $('capture-form').addEventListener('input',e=>{if(candidate){const field=e.target.id.replace('capture-','');candidate.reviewed=candidate.reviewed||{};candidate.reviewed[field]=true;if(field==='merchant'&&!candidate.reviewed.category)$('capture-category').value=classifyCategory(e.target.value);}refreshReview();});$('capture-form').addEventListener('change',e=>{if(candidate){candidate.reviewed=candidate.reviewed||{};candidate.reviewed[e.target.id.replace('capture-','')]=true;}refreshReview();});$('capture-form').addEventListener('submit',e=>{e.preventDefault();if(!busy)save(false);});
     let scheduled=false;new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;updateFab();});}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','hidden','open']});
     window.lucide?.createIcons();updateFab();
   }
