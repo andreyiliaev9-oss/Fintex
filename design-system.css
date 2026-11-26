@@ -2057,7 +2057,7 @@ body #tx-feed .tx-amount.journal-number:is([data-number-size=wide],[data-number-
   body #tx-feed .tx-row-open { row-gap: 7px; }
 }
 
-/* v69 · one short explanation, aligned controls and a stationary card. */
+/* v70 · precise target cutouts, an unobscured section dock and a compact guide. */
 body .tour-settings-card { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 16px; }
 body .tour-settings-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 22px; }
 body .tour-settings-card h3 { color: var(--text-primary); font-size: 15px; font-weight: 700; margin: 0 0 4px; }
@@ -2066,10 +2066,10 @@ body #tour-replay { grid-column: 1 / -1; display: flex; justify-content: space-b
 body #fintex-tour { position: fixed; inset: 0; margin: 0; padding: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; overflow: hidden; border: 0; background: transparent; color: var(--text-primary); }
 body #fintex-tour[open] { display: block; }
 body #fintex-tour::backdrop { background: transparent; }
-body #fintex-tour .tour-shade { position: fixed; inset: 0; background: rgba(1,14,11,.73); }
-body #fintex-tour .tour-focus { position: fixed; border: 2px solid var(--accent); border-radius: 16px; box-shadow: 0 0 0 200vmax rgba(1,14,11,.73); pointer-events: none; }
+body #fintex-tour .tour-scrim { position: fixed; inset: 0; pointer-events: none; fill: rgba(1,14,11,.58); }
+body #fintex-tour .tour-focus { position: fixed; border: 2px solid var(--accent); border-radius: 16px; box-shadow: 0 0 0 1px rgba(255,255,255,.14); pointer-events: none; }
 body #fintex-tour [hidden] { display: none !important; }
-body #fintex-tour .tour-panel { position: fixed; left: 14px; top: 14px; display: flex; flex-direction: column; width: min(360px,calc(100% - 28px)); height: 280px; max-height: calc(100dvh - 28px); padding: 12px 16px 16px; box-sizing: border-box; border: 1px solid var(--border-active); border-radius: 20px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 14px 48px rgba(0,0,0,.25); }
+body #fintex-tour .tour-panel { position: fixed; left: 14px; top: 14px; display: flex; flex-direction: column; width: min(360px,calc(100% - 28px)); height: 240px; max-height: calc(100dvh - 28px); padding: 8px 16px 14px; box-sizing: border-box; border: 1px solid var(--border-active); border-radius: 22px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,.2); }
 body #fintex-tour[data-map=true] .tour-panel { height: 380px; }
 body #fintex-tour button { font-family: inherit; cursor: pointer; touch-action: manipulation; }
 body #fintex-tour button:focus-visible, body #tour-replay:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
@@ -2079,14 +2079,14 @@ body #fintex-tour .tour-tools { display: flex; align-items: center; gap: 4px; }
 body #fintex-tour .tour-tools button { min-height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font-size: 12px; font-weight: 600; }
 body #tour-map-toggle { color: var(--accent); }
 body #tour-skip { color: var(--text-secondary); }
-body #fintex-tour .tour-progress { display: flex; flex-shrink: 0; gap: 4px; margin: 4px 0 16px; }
+body #fintex-tour .tour-progress { display: flex; flex-shrink: 0; gap: 4px; margin: 2px 0 12px; }
 body #fintex-tour .tour-progress i { flex: 1; height: 3px; border-radius: 3px; background: var(--border-subtle); }
 body #fintex-tour .tour-progress i[data-done=true] { background: var(--accent); }
 body #fintex-tour .tour-progress i[data-current=true] { background: var(--gold); }
 body #fintex-tour .tour-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 body #tour-title { font-size: 21px; line-height: 1.3; letter-spacing: -.02em; font-weight: 700; outline: none; }
 body #tour-text { margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
-body #fintex-tour .tour-actions { display: grid; flex-shrink: 0; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding-top: 12px; }
+body #fintex-tour .tour-actions { display: grid; flex-shrink: 0; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding-top: 8px; }
 body #fintex-tour .tour-actions button { min-height: 44px; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 650; }
 body #tour-back { border: 1px solid var(--border-subtle); background: var(--surface-2); color: var(--text-secondary); }
 body #tour-back:disabled { opacity: .4; cursor: default; }
@@ -2102,3 +2102,8 @@ body #fintex-tour [data-tour-jump][aria-current=step] { border-color: var(--acce
 html.fintex-tour-open { scroll-behavior: auto !important; }
 html.no-motion body #fintex-tour * { transition: none !important; }
 @media(prefers-reduced-motion:reduce) { body #fintex-tour * { transition: none !important; } }
+
+body #fintex-tour[data-peek=true] .tour-panel { height: 64px; }
+body #fintex-tour .tour-tools #tour-skip, body #fintex-tour .tour-tools #tour-peek { width: 44px; padding: 0; font-size: 23px; font-weight: 400; }
+body #fintex-tour .tour-sections button { position: fixed; margin: 0; padding: 0; border: 0; border-radius: 20px; background: transparent !important; box-shadow: none; }
+body #fintex-tour .tour-sections button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
