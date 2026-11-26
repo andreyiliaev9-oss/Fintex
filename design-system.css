@@ -2194,3 +2194,14 @@ body .balance-detail-label > .balance-detail-arrow { width: 12px; height: 12px; 
 @media(max-width:350px) { .daily-dialog { padding:15px; border-radius:22px; } .flow-header h2 { font-size:17px; } .flow-field-grid { gap:7px; } }
 
 .ftx-ap-stat-value:not([data-ap-number]) { font-size:13px; line-height:1.5; }
+
+/* Backup controls distinguish device files from optional append-only cloud sync. */
+.backup-copy { font-size:12px; line-height:1.65; color:var(--text-secondary); overflow-wrap:anywhere; }
+#backup-status:not(:empty) { padding:11px 12px; background:var(--surface-2); border-radius:12px; }
+#backup-cloud-pause { padding:12px; border:1px solid var(--border-active); border-radius:15px; }
+#backup-cloud-pause[hidden], #backup-dialog [hidden] { display:none!important; }
+#backup-dialog .flow-equation-row { align-items:flex-start; }
+#backup-dialog .flow-equation-row>span { flex:1; }
+#backup-dialog .flow-equation-row>strong { max-width:58%; text-align:right; overflow-wrap:anywhere; }
+#backup-dialog .flow-secondary { border:1px solid var(--border-active); border-radius:12px; background:var(--surface-2); font-weight:700; }
+#backup-dialog .flow-check { margin:15px 0; }

@@ -22,13 +22,14 @@
   }
   const initData=()=>window.Telegram?.WebApp?.initData||'';
   function canSync() {
-    if(!initData())return false;
+    if(window.FintexBackupRecoveryError||read('fp_cloud_paused_restore')==='1'||!initData())return false;
     // Do not upload records saved for a different Telegram account.
     const prior=read('fp_auth_uid'),uid=String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id||'');
     return !prior||prior===uid;
   }
   async function request(action,fields={}) {
     if(!canSync())throw new Error('Облако доступно через вашу учётную запись Telegram. Локальные записи доступны без входа.');
+    const restoreEpoch=read('fp_backup_last_restore');
     const url=endpoint();
     if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url))throw new Error('Проверьте адрес сервера в настройках.');
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
@@ -37,6 +38,7 @@
       if(!response.ok)throw new Error('Облако временно недоступно. Локальные данные сохранены.');
       const data=await response.json();
       if(!data||data.ok!==true)throw new Error(data?.error||'Не удалось синхронизировать данные.');
+      if(restoreEpoch!==read('fp_backup_last_restore')||read('fp_cloud_paused_restore')==='1')throw new Error('Синхронизация остановлена после восстановления копии.');
       if(data.uid)write('fp_auth_uid',String(data.uid));
       return data;
     } finally {clearTimeout(timer);}
