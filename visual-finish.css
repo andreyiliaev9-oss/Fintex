@@ -150,3 +150,9 @@ body #view-settings:has(#data-care) #st-sync-label { display: none; }
 body .data-care-block { margin-top: 12px; padding-top: 12px; }
 body .data-care-details { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
 body .data-care-details > summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+/* v78: quiet network facts; a per-tab draft is never presented as a saved entry. */
+body .network-note { margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-active); border-radius: 14px; background: var(--surface-2); color: var(--text-primary); font-size: 12px; line-height: 1.6; }
+body .network-note[hidden], body .flow-draft-note[hidden], body #offline-settings [hidden] { display: none !important; }
+body .flow-draft-note { margin: 12px 0; padding: 12px; border-radius: 14px; border: 1px solid var(--border-active); background: var(--surface-2); font-size: 12px; line-height: 1.6; }
+body .flow-draft-note button { min-height: 44px; margin-right: 16px; font-weight: 650; color: var(--text-primary); }
+body #offline-settings .data-care-actions { flex-direction: column; align-items: stretch; }

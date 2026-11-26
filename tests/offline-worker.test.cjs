@@ -1,0 +1,19 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
+function fixture({tabs=1,bad=false}={}){
+ const listeners={},buckets=new Map(),events=[],body='static app',hash=require('node:crypto').createHash('sha256').update(body).digest('hex');
+ const caches={async open(name){if(!buckets.has(name))buckets.set(name,new Map());const entries=buckets.get(name);return{async put(k,v){entries.set(k,v.clone());},async match(k){return entries.get(k)?.clone();}};},async delete(name){return buckets.delete(name);},async keys(){return [...buckets.keys()];}};
+ const self={location:{href:'https://example.com/Fintex/offline-worker.js'},addEventListener(n,f){listeners[n]=f;},clients:{async claim(){events.push('claim');},async matchAll(){return Array.from({length:tabs},(_,i)=>({url:'https://example.com/Fintex/?tab='+i}));}},async skipWaiting(){events.push('activate');}};
+ vm.runInNewContext(fs.readFileSync('offline-worker.js','utf8'),{self,URL,crypto:webcrypto,Uint8Array,caches,fetch:async()=>new Response(bad?'wrong version':body),importScripts(){self.FINTEX_OFFLINE={revision:'test',core:['index.html','app.js'],optional:['assets/ocr/lang/rus.traineddata.gz'],hashes:{'index.html':hash,'app.js':hash,'assets/ocr/lang/rus.traineddata.gz':hash}};}});
+ async function dispatch(name,data={}){let work;listeners[name]({...data,waitUntil(p){work=p;}});if(work)await work;}
+ async function message(type){let result;await dispatch('message',{data:{type},ports:[{postMessage(v){result=v;}}]});return result;}
+ return{listeners,buckets,events,caches,dispatch,message};
+}
+test('install verifies every asset, never activates a waiting update automatically',async()=>{const f=fixture();await f.dispatch('install');assert.equal(f.events.includes('activate'),false);assert.equal([...f.buckets.values()][0].size,2);});
+test('partial or mixed release cannot become an offline shell',async()=>{const f=fixture({bad:true});await assert.rejects(f.dispatch('install'));assert.equal(f.buckets.size,0);});
+test('private requests and POSTs are never intercepted; scoped navigation is',async()=>{const f=fixture();for(const request of [{method:'POST',url:'https://example.com/Fintex/app.js'},{method:'GET',url:'https://script.google.com/macros/s/id/exec'},{method:'GET',url:'https://example.com/Fintex/private.json'}]){let intercepted=false;f.listeners.fetch({request,respondWith(){intercepted=true;}});assert.equal(intercepted,false);}await f.dispatch('install');let response;f.listeners.fetch({request:{method:'GET',url:'https://example.com/Fintex/?v=78',mode:'navigate'},respondWith(p){response=p;}});assert.equal(await(await response).text(),'static app');});
+test('updating refuses multiple app windows; cleanup touches only this app prefix',async()=>{const f=fixture({tabs:2});assert.equal((await f.message('ACTIVATE')).ok,false);assert.equal(f.events.includes('activate'),false);const one=fixture();await one.caches.open('other-app-cache');await one.caches.open('fintex-static-%2FFintex%2F-old');await one.dispatch('activate');assert.equal(one.buckets.has('other-app-cache'),true);assert.equal(one.buckets.has('fintex-static-%2FFintex%2F-old'),false);assert.equal((await one.message('ACTIVATE')).ok,true);});
+test('generated allowlist matches deployed bytes and contains no data/backup/download paths',()=>{
+ const context={self:{}};vm.runInNewContext(fs.readFileSync('offline-assets.js','utf8'),context);const m=context.self.FINTEX_OFFLINE,crypto=require('node:crypto');
+ assert.ok(m.core.includes('index.html'));assert.ok(m.optional.includes('assets/ocr/pdf.min.mjs'));assert.ok(![...m.core,...m.optional].some(p=>/^(?:docs|downloads|\.cache|tests)\//.test(p)||/^https?:/.test(p)));
+ for(const file of [...m.core,...m.optional])assert.equal(crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),m.hashes[file],file+' changed: run npm run build');
+});
