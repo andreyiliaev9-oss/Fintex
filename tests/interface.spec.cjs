@@ -135,7 +135,7 @@ test('balance card distinguishes exhausted budget, forecast deficit and unusual 
 
   await page.evaluate(m => renderBalanceCardFeedback(m, true), base);
   await expect(page.locator('#status-badge')).toHaveAttribute('data-tone', 'caution');
-  await expect(page.locator('#hero-notice-title')).toHaveText('Проверьте последние расходы');
+  await expect(page.locator('#hero-notice-title')).toHaveText('Есть похожие записи');
 
   await page.evaluate(m => renderBalanceCardFeedback({ ...m, hasData: false, forecastBalance: null }, false), base);
   await expect(page.locator('#hero-forecast-text')).toHaveText('—');

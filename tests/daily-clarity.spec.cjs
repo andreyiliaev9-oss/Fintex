@@ -1,0 +1,32 @@
+const {test,expect}=require('@playwright/test');
+async function open(page){
+ await page.route('**/*',r=>['localhost','127.0.0.1'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
+ await page.addInitScript(()=>{Object.entries({fp_name:'Анна',fp_onboarded:'1',fp_motion:'0',fp_tour_v1:'complete',fp_help_v1:JSON.stringify({calendar:true,analytics:true,settings:true,goals:true}),fp_balance:'75000',fp_bills:'[]',fp_local_tx:'[]',fp_goal:JSON.stringify({title:'Подушка',target:60000,saved:15000,pockets:[{id:'trip',title:'Море',saved:25000,target:120000}]})}).forEach(([k,v])=>localStorage.setItem(k,v));});
+ await page.goto('/');await page.waitForFunction(()=>!!window.FintexDaily&&!!window.FintexAnalyticsPro&&!!document.getElementById('data-care'));await page.evaluate(()=>{dismissReturningSplash();state.payday=FintexMath.shift(TODAY,12);state.transactions=Array.from({length:10},(_,i)=>({id:'c'+i,merchant:'Покупка '+i,type:'expense',category:i%2?'food':'cafe',amount:100+i,date:FintexMath.shift(TODAY,-Math.floor(i/3)),time:'12:10'}));renderAll(false);});
+}
+const financial=p=>p.evaluate(()=>JSON.stringify({balance:state.balance,goal:state.goal,bills:state.bills,tx:state.transactions}));
+test('one real journal directly follows the balance, with tree and goals preserved at 320 and 390px',async({page})=>{
+ await open(page);const before=await financial(page);
+ for(const width of [320,390]){await page.setViewportSize({width,height:844});await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));const positions=await page.evaluate(()=>['hero-balance-card','operations-journal','tx-feed','filely-financial-tree','savings-goals'].map(id=>({id,y:document.getElementById(id).getBoundingClientRect().top+scrollY})));expect(positions[2].y).toBeLessThan(1200);expect(positions[0].y).toBeLessThan(positions[1].y);expect(positions[2].y).toBeLessThan(positions[3].y);expect(positions[3].y).toBeLessThan(positions[4].y);await expect(page.locator('#tx-feed')).toHaveCount(1);await expect(page.locator('#savings-goals [data-sg-open=primary]')).toHaveCount(1);}
+ expect(await financial(page)).toBe(before);
+});
+test('a high category share never creates a warning, similar purchases remain a hypothesis',async({page})=>{
+ await open(page);await page.evaluate(()=>{state.transactions=[{id:'a',merchant:'Продукты',amount:100,date:TODAY,type:'expense',category:'food',time:'09:00'},{id:'b',merchant:'Продукты',amount:100,date:TODAY,type:'expense',category:'food',time:'17:00'}];renderAll(false);});await expect(page.locator('#hero-notice')).toBeHidden();const before=await financial(page);const signals=await page.evaluate(()=>detectSubscriptionsAndAnomalies().anomalies);expect(signals.every(s=>s.level==='info')).toBe(true);
+ // Exercise the same public render after matching timestamps, without changing financial amounts.
+ await page.evaluate(()=>{state.transactions[1].time='09:00';renderAll(false);});await expect(page.locator('#hero-notice-title')).toHaveText('Есть похожие записи');await expect(page.locator('#hero-notice-description')).toContainText('могут быть разные покупки');expect(await page.evaluate(()=>state.transactions.length)).toBe(2);expect(await page.evaluate(()=>state.balance)).toBe(JSON.parse(before).balance);
+});
+test('calendar shows records not claimed spending absence and puts the grid before planning',async({page})=>{
+ await open(page);await page.locator('[data-nav=calendar]').click();await expect(page.locator('#cal-period-summary')).toContainText('Без записанных расходов');expect(await page.evaluate(()=>document.getElementById('cal-cells').compareDocumentPosition(document.getElementById('calendar-plan'))&Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();await expect(page.locator('#calendar-plan summary')).toBeVisible();
+});
+test('analytics states date range once, keeps period switching and brings chart higher',async({page})=>{
+ await open(page);const before=await financial(page);await page.locator('[data-nav=analytics]').click();await expect(page.locator('.ap-date-range')).toHaveCount(0);await expect(page.locator('.ap-period-dates strong')).toHaveCount(1);await page.locator('[data-period=week]').click();await expect(page.locator('[data-period=week]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('.ap-period-caption')).toHaveText('7 дней');expect(await financial(page)).toBe(before);
+});
+test('data care tells local/cloud/file boundaries and routes to existing workflows without auto-upload',async({page})=>{
+ await open(page);const before=await financial(page);await page.locator('[data-nav=settings]').click();const card=page.locator('#data-care');await expect(card).toContainText('Очистка данных');await expect(card).toContainText('не все настройки');await expect(card).toContainText('не зашифрован');await expect(card.locator('[data-care-file]')).toContainText('ещё не');await card.locator('[data-care-sync]').click();await expect(page.locator('#settings-sync')).toHaveAttribute('open','');await expect(page.locator('#ledger-sync-retry')).toBeFocused();await card.locator('[data-care-transfer]').click();await expect(page.locator('#settings-backup')).toHaveAttribute('open','');await expect(page.locator('#backup-import')).toBeFocused();expect(await financial(page)).toBe(before);
+});
+test('prepared backup is not called a verified saved file, and data care updates after export',async({page})=>{
+ await open(page);const before=await financial(page);await page.locator('[data-nav=settings]').click();const download=page.waitForEvent('download');await page.locator('[data-care-export]').click();const file=await download;expect(file.suggestedFilename()).toContain('Fintex-');await expect(page.locator('[data-care-file]')).toContainText('Файл подготовлен');await expect(page.locator('[data-care-file]')).toContainText('Проверьте');expect(await financial(page)).toBe(before);
+});
+test('storage explanation remains narrow-screen readable in all six palettes',async({page})=>{
+ await open(page);await page.setViewportSize({width:320,height:568});await page.locator('[data-nav=settings]').click();for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});expect(await page.locator('#data-care').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
+});

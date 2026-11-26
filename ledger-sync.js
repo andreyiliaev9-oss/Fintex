@@ -20,6 +20,7 @@
  function status(){ensure();if(!FintexCloud.canSync())return localStorage.getItem('fp_cloud_paused_restore')==='1'?'На устройстве · облако на паузе':'На устройстве · облако через Telegram';if(error)return error;if(cache.balanceConflict)return 'Нужно сравнить остатки';if(Object.keys(cache.conflicts).length)return 'Нужно сравнить версии';if(cache.outbox.length||state.syncQueue.length)return 'Ожидает отправки';if(cache.active&&cache.last)return 'Операции проверены с облаком';return cache.legacy?'Сервер не поддерживает исправления':'На устройстве · сервер исправлений не подключён';}
  function render(){
   if(!document.getElementById('ledger-sync-status'))return;
+  window.dispatchEvent(new Event('fintex:storage-status'));
   const text=status();document.getElementById('ledger-sync-status').textContent=text;
   document.getElementById('ledger-sync-summary').textContent=text+(cache.last?' · Последняя проверка: '+new Date(cache.last).toLocaleString('ru-RU'):'');
   for(const id of ['ap-queue-badge','autopilot-stage-pill','st-sync-label']){const el=document.getElementById(id);if(el)el.textContent=text;}

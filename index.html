@@ -19,7 +19,7 @@
   <script src="./cloud.js?v=73"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=75" />
-  <link rel="stylesheet" href="./visual-finish.css?v=76" />
+  <link rel="stylesheet" href="./visual-finish.css?v=77" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -60,14 +60,15 @@
             <span>Добро пожаловать в FINTEX</span>
           </div>
           <h1 class="text-2xl font-extrabold tracking-tight leading-snug text-white">
-            Привет! Это FINTEX — ваш личный финансовый автопилот
+            Ваши деньги — понятнее каждый день
           </h1>
           <p class="text-xs text-sub leading-relaxed">
-            Забудьте о ручных таблицах. Приложение само считает безопасный бюджет на день, защищает деньги на обязательные платежи и распознаёт чеки без платных сервисов.
+            Записывайте покупки, учитывайте платежи и откладывайте на цели. Fintex рассчитает ориентир на день по вашим данным — без подключения к банковскому счёту.
           </p>
+          <p class="text-xs text-sub">Пример расчёта, не ваши данные</p>
           <div class="grid grid-cols-2 gap-2.5 pt-2">
             <div class="bg-black/35 border border-white/10 rounded-2xl p-3">
-              <div class="text-[10px] uppercase text-sub">Безопасно сегодня</div>
+              <div class="text-[10px] uppercase text-sub">Ориентир на сегодня</div>
               <div class="text-lg font-extrabold text-brand tabular-nums mt-0.5">1 450 ₽</div>
             </div>
             <div class="bg-black/35 border border-white/10 rounded-2xl p-3">
@@ -85,17 +86,17 @@
             <i data-lucide="scan-line" class="w-6 h-6"></i>
           </div>
           <h2 class="text-2xl font-extrabold tracking-tight text-white">
-            Сканируйте чеки и PDF за секунду
+            Добавляйте покупки по чеку
           </h2>
           <p class="text-xs text-sub leading-relaxed">
-            Сфотографируйте бумажный чек или загрузите PDF — встроенный движок FINTEX Scan усилит контраст, считает QR-реквизиты (ФН, ФД, ФП), разберёт товары по категориям и сверит итоговую сумму.
+            Выберите фото или одностраничный PDF. Fintex попробует распознать покупку и сверить сумму. Проверьте сомнительные поля перед записью.
           </p>
           <div class="input-surface p-3.5 space-y-2 text-xs">
             <div class="flex items-center justify-between">
               <span class="font-semibold text-main">ООО «НЕФТЬ-РЕСУРС»</span>
               <span class="font-bold text-gold">1 870 ₽</span>
             </div>
-            <div class="text-[11px] text-brand">✓ 3 позиции распознаны · QR подтверждён</div>
+            <div class="text-[11px] text-brand">Пример · 3 позиции распознаны · QR считан</div>
           </div>
         </div>
       </div>
@@ -107,14 +108,14 @@
             <i data-lucide="shield-check" class="w-6 h-6"></i>
           </div>
           <h2 class="text-2xl font-extrabold tracking-tight text-white">
-            Никаких случайных перерасходов
+            Учитывайте то, что уже запланировано
           </h2>
           <p class="text-xs text-sub leading-relaxed">
-            FINTEX заранее откладывает суммы на подписки, кредиты и финансовую подушку, находит дубли списаний и подсказывает, можно ли совершить крупную покупку прямо сейчас.
+            Укажите платежи и накопления: Fintex исключит эти суммы из доступных денег. Это учёт резервов, не перевод денег и не ограничение расходов в банке.
           </p>
           <div class="input-surface p-3.5 flex items-center justify-between text-xs">
             <span class="text-sub">Статус бюджета</span>
-            <span class="px-2.5 py-1 rounded-lg bg-[#00D6C3]/15 text-brand font-bold">Всё под контролем</span>
+            <span class="px-2.5 py-1 rounded-lg bg-[#00D6C3]/15 text-brand font-bold">Резервы учтены</span>
           </div>
         </div>
       </div>
@@ -123,7 +124,7 @@
       <div id="ob-slide-3" class="space-y-3.5 hidden onboard-card-anim">
         <div>
           <h2 class="text-xl font-extrabold text-white">Давайте настроим ваш счёт</h2>
-          <p class="text-xs text-sub mt-0.5">Эти данные нужны для точного расчёта дневного лимита</p>
+          <p class="text-xs text-sub mt-0.5">По этим данным рассчитаем ориентир на день</p>
         </div>
 
         <div class="card-surface p-4 space-y-3">
@@ -310,6 +311,61 @@
         </div>
       </div>
 
+      <!-- Умная лента операций -->
+      <section id="operations-journal" class="space-y-2.5" aria-labelledby="operations-title">
+        <div class="tx-feed-header flex items-center justify-between px-0.5">
+          <div><span class="tx-feed-eyebrow">Лента денег</span><h2 id="operations-title" tabindex="-1" class="feed-heading">Операции</h2></div>
+          <div class="tx-feed-actions flex items-center gap-3">
+            <button type="button" id="feed-today-btn" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
+              Сегодня: <span id="feed-today-sum" class="money-val text-brand font-bold tabular-nums">0 ₽</span>
+            </button>
+            <button type="button" id="history-replay" onclick="replayOperationHistory()" class="tx-history-replay" aria-label="Повторить анимацию истории" title="Повторить анимацию истории"><i data-lucide="play" aria-hidden="true"></i></button>
+            <button type="button" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте" aria-label="Поиск операций">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="search-bar-wrap" class="hidden">
+          <input id="search-input" type="text" oninput="renderHome(false)" aria-label="Поиск по магазину, товару из чека или сумме" placeholder="Магазин, товар из чека или сумма..." class="w-full input-surface px-3.5 py-2 text-xs font-medium" />
+        </div>
+
+        <!-- Выбор дат / периода -->
+        <div id="feed-date-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
+
+        <!-- Панель выбора конкретной даты или диапазона -->
+        <div id="feed-custom-date-box" class="hidden card-surface p-3 space-y-2.5 border border-[#00D6C3]/30">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-main flex items-center gap-1.5">
+              <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-brand"></i>
+              <span>История за дату или период</span>
+            </span>
+            <button type="button" onclick="resetFeedDateFilter()" class="text-[11px] font-semibold text-brand tap">
+              Сбросить
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] uppercase text-sub mb-1">Дата / С</label>
+              <input id="feed-date-from" type="date" onchange="onFeedCustomDateChange('from')" class="w-full input-surface px-2.5 py-1.5 text-xs font-semibold text-main" />
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase text-sub mb-1">По дату</label>
+              <input id="feed-date-to" type="date" onchange="onFeedCustomDateChange('to')" class="w-full input-surface px-2.5 py-1.5 text-xs font-semibold text-main" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Фильтры: Все / Доходы / Расходы / Категории -->
+        <div id="filter-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
+
+        <!-- Сводка доходов и расходов за выбранные даты и фильтры -->
+        <div id="feed-period-summary" class="card-surface px-3.5 py-2.5 flex items-center justify-between gap-2 text-[11px]"></div>
+
+        <!-- Лента, сгруппированная по дням -->
+        <div id="tx-feed" class="space-y-3"></div>
+      </section>
+
       <!-- Динамическое финансовое дерево Filely -->
       <div id="filely-financial-tree-mount" data-ftx-keep="1" aria-live="polite"></div>
 
@@ -407,60 +463,7 @@
         <div id="bills-preview-list" class="space-y-1.5"></div>
       </div>
 
-      <!-- Умная лента операций -->
-      <div class="space-y-2.5">
-        <div class="tx-feed-header flex items-center justify-between px-0.5">
-          <div><span class="tx-feed-eyebrow">Лента денег</span><h2 class="feed-heading">Операции</h2></div>
-          <div class="tx-feed-actions flex items-center gap-3">
-            <button type="button" id="feed-today-btn" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
-              Сегодня: <span id="feed-today-sum" class="money-val text-brand font-bold tabular-nums">0 ₽</span>
-            </button>
-            <button type="button" id="history-replay" onclick="replayOperationHistory()" class="tx-history-replay" aria-label="Повторить анимацию истории" title="Повторить анимацию истории"><i data-lucide="play" aria-hidden="true"></i></button>
-            <button type="button" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте" aria-label="Поиск операций">
-              <i data-lucide="search" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-        </div>
 
-        <div id="search-bar-wrap" class="hidden">
-          <input id="search-input" type="text" oninput="renderHome(false)" aria-label="Поиск по магазину, товару из чека или сумме" placeholder="Магазин, товар из чека или сумма..." class="w-full input-surface px-3.5 py-2 text-xs font-medium" />
-        </div>
-
-        <!-- Выбор дат / периода -->
-        <div id="feed-date-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
-
-        <!-- Панель выбора конкретной даты или диапазона -->
-        <div id="feed-custom-date-box" class="hidden card-surface p-3 space-y-2.5 border border-[#00D6C3]/30">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-main flex items-center gap-1.5">
-              <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-brand"></i>
-              <span>История за дату или период</span>
-            </span>
-            <button type="button" onclick="resetFeedDateFilter()" class="text-[11px] font-semibold text-brand tap">
-              Сбросить
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[10px] uppercase text-sub mb-1">Дата / С</label>
-              <input id="feed-date-from" type="date" onchange="onFeedCustomDateChange('from')" class="w-full input-surface px-2.5 py-1.5 text-xs font-semibold text-main" />
-            </div>
-            <div>
-              <label class="block text-[10px] uppercase text-sub mb-1">По дату</label>
-              <input id="feed-date-to" type="date" onchange="onFeedCustomDateChange('to')" class="w-full input-surface px-2.5 py-1.5 text-xs font-semibold text-main" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Фильтры: Все / Доходы / Расходы / Категории -->
-        <div id="filter-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
-
-        <!-- Сводка доходов и расходов за выбранные даты и фильтры -->
-        <div id="feed-period-summary" class="card-surface px-3.5 py-2.5 flex items-center justify-between gap-2 text-[11px]"></div>
-
-        <!-- Лента, сгруппированная по дням -->
-        <div id="tx-feed" class="space-y-3"></div>
-      </div>
     </section>
 
     <!-- ВКЛАДКА 2: ФИНАНСОВЫЙ КАЛЕНДАРЬ -->
@@ -482,34 +485,10 @@
         </div>
       </div>
 
-      <details id="calendar-plan" class="section-group card-surface">
-        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="calendar-check"></i></span><span><strong>Платежи, зарплата и цель</strong><small>Планируйте деньги в одном месте</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
-        <div class="section-body space-y-3"><div class="grid grid-cols-2 gap-2 pt-2 border-t divider-line">
-          <button type="button" onclick="openBalanceModal()" class="input-surface p-2.5 text-left tap">
-            <div class="text-[10px] uppercase tracking-wider text-sub">На карте</div>
-            <div id="st-balance" class="text-sm font-bold text-main tabular-nums mt-0.5">0 ₽</div>
-          </button>
-          <button type="button" onclick="openPaydayModal()" class="input-surface p-2.5 text-left tap">
-            <div class="text-[10px] uppercase tracking-wider text-sub">Зарплата</div>
-            <div id="st-payday" class="text-sm font-bold text-gold mt-0.5">29 ноя</div>
-          </button>
-        </div><div id="cal-upcoming-events" class="space-y-2.5"></div><div class="flex items-center justify-between">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-brand">Платежи и цель</span>
-          <button type="button" onclick="openBillModal()" class="text-xs font-semibold text-brand tap">+ Платёж</button>
-        </div>
-        <div class="input-surface p-3 flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-main" id="st-goal-title">Финансовая подушка</div>
-            <div class="text-[11px] text-sub" id="st-goal-sub">Отложено: 0 ₽ из 10 000 ₽</div>
-          </div>
-          <button type="button" onclick="openGoalDetailsModal()" class="px-3 py-1.5 rounded-lg btn-gold-soft text-xs font-semibold">Открыть</button>
-        </div>
 
-        <h3 class="section-caption">Все запланированные платежи</h3><div id="st-bills-list" class="space-y-2"></div></div>
-      </details>
 
       <!-- Панель навигации по месяцам и денежного потока -->
-      <div class="card-surface p-3 space-y-2.5">
+      <div id="calendar-month-panel" class="card-surface p-3 space-y-2.5">
         <div class="flex items-center justify-between">
           <button type="button" onclick="shiftCalMonth(-1)" class="w-8 h-8 rounded-xl input-surface flex items-center justify-center text-sub hover:text-main tap" aria-label="Предыдущий месяц">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -559,6 +538,32 @@
           <span><i class="cal-legend-payday" aria-hidden="true">ЗП</i>Зарплата</span>
         </div>
       </div>
+
+      <details id="calendar-plan" class="section-group card-surface">
+        <summary><span class="section-icon" aria-hidden="true"><i data-lucide="calendar-check"></i></span><span><strong>Платежи, зарплата и цель</strong><small>Планируйте деньги в одном месте</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
+        <div class="section-body space-y-3"><div class="grid grid-cols-2 gap-2 pt-2 border-t divider-line">
+          <button type="button" onclick="openBalanceModal()" class="input-surface p-2.5 text-left tap">
+            <div class="text-[10px] uppercase tracking-wider text-sub">На карте</div>
+            <div id="st-balance" class="text-sm font-bold text-main tabular-nums mt-0.5">0 ₽</div>
+          </button>
+          <button type="button" onclick="openPaydayModal()" class="input-surface p-2.5 text-left tap">
+            <div class="text-[10px] uppercase tracking-wider text-sub">Зарплата</div>
+            <div id="st-payday" class="text-sm font-bold text-gold mt-0.5">29 ноя</div>
+          </button>
+        </div><div id="cal-upcoming-events" class="space-y-2.5"></div><div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-brand">Платежи и цель</span>
+          <button type="button" onclick="openBillModal()" class="text-xs font-semibold text-brand tap">+ Платёж</button>
+        </div>
+        <div class="input-surface p-3 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-main" id="st-goal-title">Финансовая подушка</div>
+            <div class="text-[11px] text-sub" id="st-goal-sub">Отложено: 0 ₽ из 10 000 ₽</div>
+          </div>
+          <button type="button" onclick="openGoalDetailsModal()" class="px-3 py-1.5 rounded-lg btn-gold-soft text-xs font-semibold">Открыть</button>
+        </div>
+
+        <h3 class="section-caption">Все запланированные платежи</h3><div id="st-bills-list" class="space-y-2"></div></div>
+      </details>
 
       <!-- Ритм до зарплаты и предстоящие платежи -->
 
@@ -649,7 +654,7 @@
               <i data-lucide="x" class="w-3.5 h-3.5"></i>
             </button>
           </div>
-          <div id="hm-tt-cats" class="text-[11px] text-sub truncate">Без трат за этот день</div>
+          <div id="hm-tt-cats" class="text-[11px] text-sub truncate">Нет записанных расходов за этот день</div>
           <div class="pt-0.5">
             <button type="button" id="hm-tt-jump-btn" onclick="openSelectedHeatmapDay()" class="text-[11px] font-semibold text-gold flex items-center gap-1 tap">
               <span>Посмотреть операции</span>
@@ -698,7 +703,7 @@
         <!-- Нижняя сводка: Без трат / Пиковый день / Средний чек -->
         <div class="grid grid-cols-3 gap-2 pt-1 border-t divider-line text-center">
           <div class="input-surface p-2">
-            <div class="text-[9px] uppercase text-sub">Без трат</div>
+            <div class="text-[9px] uppercase text-sub">Без записанных расходов</div>
             <div id="hm-stat-nospend" class="text-xs font-extrabold text-main mt-0.5 tabular-nums">0 дн. 🔥</div>
           </div>
           <div class="input-surface p-2">
@@ -1887,9 +1892,10 @@
   <script src="./backup-model.js?v=74"></script>
   <script src="./backup-recovery.js?v=73"></script>
   <script src="./daily-model.js?v=72"></script>
-  <script src="./ledger-sync.js?v=74"></script>
+  <script src="./ledger-sync.js?v=77"></script>
   <script src="./operation-undo.js?v=74"></script>
-  <script src="./app.js?v=76"></script>
+  <script src="./review-signals.js?v=77"></script>
+  <script src="./app.js?v=77"></script>
   <script src="./navigation.js?v=57"></script>
   <script src="./interface-motion.js?v=76"></script>
   <script src="./mobile-forms.js?v=75"></script>
@@ -1898,7 +1904,7 @@
   <script src="./savings-goals.js?v=76"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=74"></script>
+  <script src="./extensions.js?v=77"></script>
   <script src="./quick_add.js?v=72" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>
@@ -1913,9 +1919,10 @@
   <script src="./capture.js?v=75"></script>
   <script src="./behavior-model.js?v=44"></script>
   <script src="./behavior.js?v=54"></script>
-  <script src="./app-tour.js?v=71"></script>
+  <script src="./app-tour.js?v=77"></script>
   <script src="./context-help.js?v=71"></script>
   <script src="./daily-flow.js?v=75"></script>
-  <script src="./backup.js?v=73"></script>
+  <script src="./backup.js?v=77"></script>
+  <script src="./data-care.js?v=77"></script>
 </body>
 </html>

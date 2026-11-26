@@ -212,8 +212,8 @@
     window.FintexEntrance?.dismiss(true);
     window.cancelTxSwipe?.(); window.cancelGoalHold?.();
     automatic = auto; visited.clear();
-    window.dispatchEvent(new Event('fintex:tour-started'));
     origin = {tab:document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav || 'home',scroll:scrollY,focus:document.activeElement};
+    window.dispatchEvent(new Event('fintex:tour-started'));
     overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     root.classList.add('fintex-tour-open');

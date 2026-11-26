@@ -225,7 +225,7 @@
 
   function renderPeriodControls(data, period) {
     const range = periodRange(data, period);
-    return `<div class="ap-period-panel"><div class="ap-period-title"><span><i data-lucide="calendar-range" aria-hidden="true"></i>Период расходов</span><span>По сегодня</span></div><div class="ftx-ap-pills" role="group" aria-label="Период аналитики">${PERIODS.map(p => `<button type="button" class="ftx-ap-pill ${p.id === activePeriod ? 'active' : ''}" data-period="${p.id}" aria-pressed="${p.id === activePeriod}">${p.label}</button>`).join('')}</div><div class="ap-period-dates"><strong>${range.first} — ${range.last}</strong><span>Включая сегодня · ${period.days} дн.</span></div></div>`;
+    return `<div class="ap-period-panel"><div class="ap-period-title"><span><i data-lucide="calendar-range" aria-hidden="true"></i>Период расходов</span><span>Включая сегодня</span></div><div class="ftx-ap-pills" role="group" aria-label="Период аналитики">${PERIODS.map(p => `<button type="button" class="ftx-ap-pill ${p.id === activePeriod ? 'active' : ''}" data-period="${p.id}" aria-pressed="${p.id === activePeriod}">${p.label}</button>`).join('')}</div><div class="ap-period-dates"><strong>${range.first} — ${range.last}</strong></div></div>`;
   }
 
   function renderTabs() {
@@ -511,7 +511,7 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Ваши деньги в деталях <span class="ap-date-range">${periodRange(data, period).first} — ${periodRange(data, period).last}</span></p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Доходы и расходы по вашим записям</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
     if (focusKey) {
       const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
       next?.focus({ preventScroll: true });
