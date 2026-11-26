@@ -963,7 +963,7 @@ test('My tree changes species, not just scale, and savings remain independent of
   await expect(tree.locator('.ft-sub')).toContainText('100%');
   await expect(tree).toHaveAttribute('data-tree-variant','oak');
   expect(await page.evaluate(()=>({tx:localStorage.getItem('fp_local_tx'),balance:localStorage.getItem('fp_balance')}))).toEqual(before);
-  await tree.locator('.ft-art-wrap').focus();await page.keyboard.press('Enter');
+  await tree.locator('.ft-topup').focus();await page.keyboard.press('Enter');
   await expect(page.locator('#modal-goal-detail')).toBeVisible();await page.evaluate(()=>closeModals());
 });
 
@@ -1180,7 +1180,7 @@ test('My tree stronger wind fits all species at both sway extremes on a narrow s
       }
     }
   }
-  await tree.locator('.ft-art-wrap').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
+  await tree.locator('.ft-topup').click();await expect(page.locator('#modal-goal-detail')).toBeVisible();
 });
 test('tree leaves fall down with varied timing, remain bounded and obey all animation controls',async({page})=>{
   await openApp(page,true);await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});const tree=page.locator('#filely-financial-tree');await tree.scrollIntoViewIfNeeded();await expect(tree).toHaveAttribute('data-animation-paused','false');
