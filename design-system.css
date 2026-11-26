@@ -2102,3 +2102,50 @@ html.fintex-tour-open { scroll-behavior: auto !important; }
   body #tour-title { font-size: 18px; }
   body #fintex-tour .tour-actions { position: sticky; bottom: -12px; padding-block: 10px 12px; background: var(--surface-1); }
 }
+
+/* v68 · compact field guide: a chapter map, optional detail and more app in view. */
+body #fintex-tour .tour-panel { padding: 16px; border-radius: 24px; border-top: 3px solid var(--accent); }
+body #fintex-tour .tour-heading { grid-template-columns: 32px minmax(0,1fr); gap: 9px; margin-top: 11px; }
+body #fintex-tour .tour-symbol { width: 32px; height: 36px; font-size: 24px; }
+body #tour-title { font-size: 20px; }
+body #fintex-tour .tour-location { display: none; }
+body #tour-text { font-size: 13px; line-height: 1.6; margin-top: 11px; }
+body #fintex-tour .tour-progress { gap: 5px; margin: 5px 0 10px; }
+body #fintex-tour .tour-progress i { height: 4px; }
+body #fintex-tour .tour-progress i[data-current=true] { background: var(--gold); }
+body #tour-map-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: auto; min-height: 44px; margin: 0; padding: 0 9px; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-2); color: var(--text-secondary); font-size: 10px; font-weight: 650; text-align: left; }
+body #tour-map-toggle b { color: var(--accent); font-size: 17px; font-weight: 500; }
+body #tour-map-toggle[aria-expanded=true] { border-color: var(--accent); color: var(--accent); }
+body #fintex-tour .tour-overview { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px; }
+body #fintex-tour .tour-overview span { padding: 5px 8px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 650; }
+body #tour-more { margin-top: 9px; border-block: 1px solid var(--border-subtle); }
+body #tour-more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; list-style: none; cursor: pointer; color: var(--text-secondary); font-size: 11px; font-weight: 600; }
+body #tour-more summary::-webkit-details-marker { display: none; }
+body #tour-more summary span { color: var(--gold); font-size: 17px; }
+body #tour-more[open] summary span { transform: rotate(45deg); }
+body #tour-more summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+body #tour-tip { margin: 0 0 12px; }
+body #fintex-tour .tour-up-next { margin-top: 10px; color: var(--text-muted); font-size: 9px; line-height: 1.5; }
+body #fintex-tour .tour-actions { padding-top: 12px; }
+body #tour-map { margin-top: 13px; }
+body #tour-map h3 { font-size: 19px; font-weight: 750; letter-spacing: -.02em; }
+body #tour-map > p { margin: 5px 0 12px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+body #fintex-tour .tour-map-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; padding-bottom: 3px; }
+body #fintex-tour [data-tour-jump] { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 57px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-2); color: var(--text-primary); text-align: left; }
+body #fintex-tour [data-tour-jump] strong { display: block; font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
+body #fintex-tour .tour-map-state { display: block; font-size: 9px; margin-top: 3px; color: var(--text-muted); }
+body #fintex-tour .tour-map-number { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 28px; color: var(--text-muted); font-size: 10px; font-weight: 700; border-radius: 7px; background: var(--bg-canvas); font-variant-numeric: tabular-nums; }
+body #fintex-tour [data-tour-jump][data-visited=true] .tour-map-number { background: var(--accent-soft); color: var(--accent); }
+body #fintex-tour [data-tour-jump][aria-current=step] { border-color: var(--accent); background: var(--accent-soft); }
+body #fintex-tour [data-tour-jump][aria-current=step] .tour-map-state { color: var(--accent); }
+@media(max-height:500px) {
+  body #fintex-tour .tour-panel { padding: 10px 14px; border-radius: 18px; }
+  body #tour-title { font-size: 18px; }
+  body #fintex-tour .tour-actions { bottom: -10px; }
+}
+
+body #fintex-tour .tour-route > div { display: grid; gap: 4px; }
+html.no-motion body #fintex-tour * { transition: none !important; }
+@media(prefers-reduced-motion:reduce) {
+  body #fintex-tour * { transition: none !important; }
+}

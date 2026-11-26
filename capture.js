@@ -168,7 +168,7 @@
   function updateFab(){
     if(!fab)return;
     const home=!$('view-home')?.classList.contains('hidden');
-    const overlay=!!document.querySelector('dialog[open], [id^="modal-"]:not(.hidden), #onboarding-screen:not(.hidden), #returning-splash:not(.hidden)');
+    const overlay=!!document.querySelector('dialog[open]:not(#fintex-tour), [id^="modal-"]:not(.hidden), #onboarding-screen:not(.hidden), #returning-splash:not(.hidden)');
     const hidden=!home||overlay;if(fab.hidden!==hidden)fab.hidden=hidden;
   }
   function mount(){
