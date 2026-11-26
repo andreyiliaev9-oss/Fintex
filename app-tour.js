@@ -7,18 +7,17 @@
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
   const steps = [
-    {tab:'home',icon:'✦',chapter:'Знакомство',title:'Ваш маршрут по Fintex',text:'Короткий маршрут по вашим деньгам. Покажем нужное прямо в приложении — или выберите тему на карте.',tip:'Это безопасный просмотр: без пробных операций, списаний и изменений баланса.'},
-    {tab:'home',target:'#hero-daily-budget',icon:'◷',chapter:'Главная',title:'Сколько доступно сегодня',text:'Это ваш ориентир на день: сколько можно потратить, распределив свободные деньги до зарплаты.',tip:'«Доступно сегодня» — ориентир по вашим данным, а не новый баланс и не банковский лимит.'},
-    {tab:'home',target:'#capture-fab, #hdr-plus-btn',icon:'＋',chapter:'Добавление',title:'Запишите покупку удобным способом',text:'Capture читает фото чека или скриншот. А «+» в шапке — быстрый способ записать доход или расход вручную.',tip:'Распознанные данные можно проверить перед сохранением. Сейчас камера и выбор файлов не откроются.'},
-    {tab:'home',target:'.tx-feed-header',icon:'≡',chapter:'Операции',title:'Вся история — в одном месте',text:'Доходы и расходы собраны по дням. Ищите по магазину, категории или сумме; касание записи открывает детали.',tip:'Кнопка «⋯» рядом с суммой открывает действия. Удаление не происходит от обычного касания строки.'},
-    {tab:'calendar',target:'#cal-cells',icon:'▦',chapter:'Календарь',title:'Деньги на карте месяца',text:'Коснитесь даты, чтобы увидеть сводку дня. Здесь же — плановые платежи и дата зарплаты.',tip:'Из сводки дня можно перейти к операциям выбранной даты. Календарь не создаёт их повторно.'},
-    {tab:'analytics',target:'.ap-cashflow-heading, #view-analytics h2',icon:'↗',chapter:'Аналитика',title:'Поймите, куда уходят деньги',text:'Сравнивайте доходы и расходы, категории и динамику. Чем больше записанных операций, тем полезнее картина.',tip:'Разница доходов и расходов — результат за период, а не остаток на банковском счёте.'},
-    {tab:'home',target:'#savings-goals .sg-heading, #savings-goals',icon:'◎',chapter:'Цели',title:'У каждой мечты — своя цель',text:'У каждой цели — своя обложка, прогресс и пополнения. Плановый взнос поможет оценить, когда мечта станет ближе.',tip:'Отложенные деньги входят в ваш баланс, но исключены из доступных для трат. Автоматических списаний нет.'},
-    {tab:'home',target:'.ft-art-wrap',icon:'❧',chapter:'Моё дерево',title:'Маленький живой ориентир',text:'Дерево отражает соотношение доходов и расходов за 30 дней. После экскурсии потрясите крону: четыре быстрых тапа вызывают вихрь.',tip:'Один тап осыпает листья, снег или лепестки; жест вбок создаёт ветер. Это только игра: расходы не «наказывают» дерево.'},
-    {tab:'settings',target:'#settings-guide',icon:'⚙',chapter:'Настройки',title:'Все настройки — здесь',text:'Темы, светлый и тёмный режим, движение и данные — всё здесь. А эта карточка в любой момент вернёт к экскурсии.',tip:'Не нужно повторно вводить имя, баланс или настраивать приложение, чтобы вернуться к подсказкам.'},
-    {tab:'settings',icon:'✓',chapter:'Готово',title:'Теперь вы знаете дорогу',text:'Начните с одной покупки или первой цели. Не нужно помнить всё сразу: карта экскурсии поможет вернуться к любой теме.',tip:'Можно начать с одной покупки или создать первую цель. Если что-то забудете, экскурсия всегда под рукой в настройках.'}
+    {tab:'home',chapter:'Начало',title:'Покажем, что где',text:'Пройдёмся по основным кнопкам. Ничего не запишем и не изменим.'},
+    {tab:'home',target:'#hero-daily-budget',chapter:'На сегодня',title:'На сегодня',text:'Столько можно потратить сегодня, чтобы денег хватило до зарплаты.'},
+    {tab:'home',target:'#hdr-plus-btn, #capture-fab',chapter:'Добавить',title:'Добавить операцию',text:'Нажмите «+», чтобы записать доход или расход. Capture — для фото чека.'},
+    {tab:'home',target:'.tx-feed-header',chapter:'История',title:'История операций',text:'Здесь все доходы и расходы. Нажмите на запись, чтобы открыть детали.'},
+    {tab:'calendar',target:'#cal-cells',chapter:'Календарь',title:'Календарь',text:'Выберите день, чтобы посмотреть траты и платежи.'},
+    {tab:'analytics',target:'.ap-cashflow-heading, #view-analytics h2',chapter:'Аналитика',title:'Аналитика',text:'Здесь видно, на что уходят деньги и как меняются расходы.'},
+    {tab:'home',target:'#savings-goals .sg-heading, #savings-goals',chapter:'Цели',title:'Цели',text:'Создайте цель и откладывайте на неё деньги.'},
+    {tab:'home',target:'.ft-art-wrap',chapter:'Дерево',title:'Дерево',text:'Меняется от доходов и расходов. Тапните — посыплются листья, снег или лепестки.'},
+    {tab:'settings',target:'#settings-guide',chapter:'Настройки',title:'Настройки',text:'Здесь можно сменить тему и снова открыть экскурсию.'},
+    {tab:'settings',chapter:'Готово',title:'Всё готово',text:'Если что-то забудете, экскурсия есть в настройках.'}
   ];
-  const names = {home:'Главная',calendar:'Календарь',analytics:'Аналитика',settings:'Настройки'};
   let dialog, panel, focusBox, shade, index = 0, active = false, epoch = 0, mapOpen = false;
   const visited = new Set();
   let origin, overflow, effect, frame, observer, automatic = false;
@@ -40,7 +39,7 @@
   const visible = el => el && !!el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
   function targetFor(step) {
     // Comma-separated selectors are ordered fallbacks, not document order:
-    // Capture before the header +, goal heading before the whole goal block.
+    // Prefer the + in the header and the compact goal heading.
     for (const selector of (step.target || '').split(',').filter(Boolean)) {
       const target = [...document.querySelectorAll(selector.trim())].find(visible);
       if (target) return target;
@@ -50,13 +49,14 @@
   function toggleMap(open, focus = true) {
     mapOpen = open;
     dialog.dataset.map = String(open);
-    dialog.setAttribute('aria-describedby',open?'tour-map-intro':'tour-text');
+    dialog.setAttribute('aria-labelledby',open?'tour-map-title':'tour-title');
+    if(open)dialog.removeAttribute('aria-describedby');else dialog.setAttribute('aria-describedby','tour-text');
     dialog.querySelector('#tour-map').hidden = !open;
     dialog.querySelector('.tour-content').hidden = open;
     dialog.querySelector('.tour-actions').hidden = open;
     const toggle = dialog.querySelector('#tour-map-toggle');
     toggle.setAttribute('aria-expanded',String(open));
-    toggle.querySelector('span').textContent = open ? 'К подсказке' : 'Карта маршрута';
+    toggle.querySelector('span').textContent = open ? 'Назад' : 'Темы';
     stopEffect();
     layout(!open);
     panel.scrollTop = 0;
@@ -72,27 +72,24 @@
     panel.style.maxHeight = `${Math.max(100,vh-28)}px`;
     const height = panel.offsetHeight;
     let rect = target?.getBoundingClientRect();
-    // Fixed controls (Capture/header) must not scroll the underlying document.
+    // The card and its controls stay in the same place on every step.
+    // Move the real app target into the space above it, never the card itself.
+    const top = Math.max(14,vh-height-14);
     let fixed = false;
     for (let el = target; el; el = el.parentElement) if (getComputedStyle(el).position === 'fixed') { fixed = true; break; }
     if (scroll && target && !fixed) {
-      const desired = Math.max(20,(vh-height-rect.height-32)/2);
+      const desired = Math.max(20,(top-rect.height)/2);
       window.scrollTo({top:Math.max(0,scrollY+rect.top-desired),behavior:'instant'});
       rect = target.getBoundingClientRect();
     }
-    let top = Math.max(14,(vh-height)/2), ring = false;
-    if (rect && rect.width > 0 && rect.height > 0 && rect.top >= 12 && rect.bottom <= vh-12) {
-      const below = vh-rect.bottom-24, above = rect.top-24;
-      if (below >= height || above >= height) {
-        top = below >= height ? rect.bottom+18 : rect.top-height-18;
-        const left = Math.max(10,rect.left-6), y = Math.max(10,rect.top-6);
-        Object.assign(focusBox.style,{left:`${left}px`,top:`${y}px`,width:`${Math.min(vw-10,rect.right+6)-left}px`,height:`${Math.min(vh-10,rect.bottom+6)-y}px`});
-        ring = true;
-      }
+    const ring = !!(rect && rect.width > 0 && rect.height > 0 && rect.top >= 12 && rect.bottom <= top-18 && rect.right > 10 && rect.left < vw-10);
+    if (ring) {
+      const left = Math.max(10,rect.left-6), y = Math.max(10,rect.top-6);
+      Object.assign(focusBox.style,{left:`${left}px`,top:`${y}px`,width:`${Math.min(vw-10,rect.right+6)-left}px`,height:`${rect.bottom+6-y}px`});
     }
     focusBox.hidden = !ring; shade.hidden = ring;
     panel.style.left = `${(vw-width)/2}px`;
-    panel.style.top = `${Math.max(14,Math.min(vh-height-14,top))}px`;
+    panel.style.top = `${top}px`;
     dialog.dataset.spotlight = String(ring);
   }
   function scheduleLayout() {
@@ -107,16 +104,11 @@
     index = Math.max(0,Math.min(steps.length-1,next));
     const step = steps[index];
     visited.add(index); checkpoint();
-    dialog.querySelector('#tour-more').open = false;
     stopEffect();
     dialog.dataset.step = String(index);
     dialog.querySelector('#tour-title').textContent = step.title;
     dialog.querySelector('#tour-text').textContent = step.text;
-    dialog.querySelector('#tour-tip').textContent = step.tip;
-    dialog.querySelector('.tour-symbol').textContent = step.icon;
-    dialog.querySelector('.tour-chapter').textContent = `${String(index+1).padStart(2,'0')} · ${step.chapter}`;
     dialog.querySelector('.tour-counter').textContent = `${index+1} из ${steps.length}`;
-    dialog.querySelector('.tour-location').textContent = `Раздел: ${names[step.tab]}`;
     const progress = dialog.querySelector('.tour-progress');
     progress.setAttribute('aria-valuenow',String(index+1));
     progress.setAttribute('aria-valuetext',`Шаг ${index+1} из ${steps.length}: ${step.chapter}`);
@@ -124,12 +116,10 @@
     dialog.querySelectorAll('[data-tour-jump]').forEach((button,i)=>{
       button.dataset.visited=String(visited.has(i));
       if(i===index)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
-      button.querySelector('.tour-map-state').textContent=i===index?'Вы здесь':visited.has(i)?'Просмотрено':'Посмотреть';
+      button.querySelector('.tour-map-state').textContent=i===index?'•':visited.has(i)?'✓':'';
     });
-    dialog.querySelector('.tour-up-next').textContent = index < steps.length-1 ? `Далее · ${steps[index+1].chapter}` : 'Экскурсия всегда доступна в настройках';
-    dialog.querySelector('.tour-overview').hidden = index !== 0 && index !== steps.length-1;
     dialog.querySelector('#tour-back').disabled = index === 0;
-    dialog.querySelector('#tour-next').textContent = index === steps.length-1 ? (automatic?'Начать пользоваться':'Готово') : index === 0 ? 'Покажите мне →' : 'Дальше →';
+    dialog.querySelector('#tour-next').textContent = index === steps.length-1 ? 'Готово' : index === 0 ? 'Начать' : 'Далее';
     focusBox.hidden = true; shade.hidden = false;
     if (document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav !== step.tab) window.goTab(step.tab);
     // Wait for real section/module layout, not a fake loading timer.
@@ -142,9 +132,10 @@
     layout(true);
     dialog.dataset.ready = 'true';
     panel.scrollTop = 0;
+    dialog.querySelector('.tour-content').scrollTop = 0;
     dialog.querySelector('#tour-title').focus({preventScroll:true});
     if (moves()) {
-      effect = panel.animate([{opacity:.4,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,easing:'ease-out'});
+      effect = dialog.querySelector('.tour-content').animate([{opacity:.4},{opacity:1}],{duration:200,easing:'ease-out'});
       effect.id = 'fintex-tour-step';
     }
   }
@@ -182,23 +173,17 @@
     dialog.setAttribute('aria-modal','true');
     dialog.setAttribute('aria-labelledby','tour-title'); dialog.setAttribute('aria-describedby','tour-text');
     dialog.innerHTML = `<div class="tour-shade" aria-hidden="true"></div><div class="tour-focus" hidden aria-hidden="true"></div>
-      <section class="tour-panel"><header class="tour-top"><span class="tour-brand"><img src="./assets/brand/fintex-logo.webp?v=49" width="25" height="25" alt=""/>Гид по Fintex</span><button type="button" id="tour-skip" aria-label="Пропустить экскурсию">Пропустить <span aria-hidden="true">×</span></button></header>
+      <section class="tour-panel"><header class="tour-top"><span class="tour-counter"></span><div class="tour-tools"><button type="button" id="tour-map-toggle" aria-controls="tour-map" aria-expanded="false"><span>Темы</span></button><button type="button" id="tour-skip" aria-label="Закрыть экскурсию">Закрыть</button></div></header>
       <div class="tour-progress" role="progressbar" aria-label="Ход экскурсии" aria-valuemin="1" aria-valuemax="${steps.length}" aria-valuenow="1">${steps.map(()=>'<i aria-hidden="true"></i>').join('')}</div>
-      <div class="tour-route"><div><span class="tour-chapter"></span><span class="tour-counter"></span></div><button type="button" id="tour-map-toggle" aria-controls="tour-map" aria-expanded="false"><span>Карта маршрута</span><b aria-hidden="true">↗</b></button></div>
-      <nav id="tour-map" aria-label="Темы экскурсии" hidden><h3>Что хотите найти?</h3><p id="tour-map-intro">Можно идти по порядку или выбрать тему.</p><div class="tour-map-grid">${steps.map((step,i)=>`<button type="button" data-tour-jump="${i}"><span class="tour-map-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><span><strong>${step.chapter}</strong><small class="tour-map-state">Посмотреть</small></span></button>`).join('')}</div></nav>
-      <div class="tour-content"><div class="tour-heading"><span class="tour-symbol" aria-hidden="true"></span><h2 id="tour-title" tabindex="-1"></h2></div>
-      <p class="tour-location"></p><p id="tour-text"></p>
-      <div class="tour-overview" aria-label="Разделы приложения"><span>Главная</span><span>Календарь</span><span>Аналитика</span><span>Настройки</span></div>
-      <details id="tour-more"><summary>Полезно знать <span aria-hidden="true">+</span></summary><p id="tour-tip"></p></details>
-      <p class="tour-up-next"></p></div>
-      <footer class="tour-actions"><button type="button" id="tour-back">← Назад</button><button type="button" id="tour-next">Покажите мне →</button></footer></section>`;
+      <nav id="tour-map" aria-labelledby="tour-map-title" hidden><h3 id="tour-map-title">Темы</h3><div class="tour-map-grid">${steps.map((step,i)=>`<button type="button" data-tour-jump="${i}"><span class="tour-map-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><strong>${step.chapter}</strong><small class="tour-map-state" aria-hidden="true"></small></button>`).join('')}</div></nav>
+      <div class="tour-content"><h2 id="tour-title" tabindex="-1"></h2><p id="tour-text"></p></div>
+      <footer class="tour-actions"><button type="button" id="tour-back">Назад</button><button type="button" id="tour-next">Начать</button></footer></section>`;
     document.body.append(dialog); panel=dialog.querySelector('.tour-panel'); focusBox=dialog.querySelector('.tour-focus'); shade=dialog.querySelector('.tour-shade');
     dialog.querySelector('#tour-map-toggle').addEventListener('click',()=>toggleMap(!mapOpen));
     dialog.querySelector('#tour-map').addEventListener('click',event=>{
       const button = event.target.closest('[data-tour-jump]');
       if (button) go(Number(button.dataset.tourJump));
     });
-    dialog.querySelector('#tour-more').addEventListener('toggle',()=>{if(active&&!mapOpen)layout(true);});
     dialog.querySelector('#tour-skip').addEventListener('click',()=>finish());
     dialog.querySelector('#tour-back').addEventListener('click',()=>go(index-1));
     dialog.querySelector('#tour-next').addEventListener('click',()=>index===steps.length-1?finish('complete'):go(index+1));

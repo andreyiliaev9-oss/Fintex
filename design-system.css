@@ -2057,95 +2057,48 @@ body #tx-feed .tx-amount.journal-number:is([data-number-size=wide],[data-number-
   body #tx-feed .tx-row-open { row-gap: 7px; }
 }
 
-/* v67 · a read-only guided route through the actual app. Native dialog owns
- * focus/inert; the spotlight never makes underlying financial controls active. */
-body .tour-settings-card { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 10px; padding: 17px; }
-body .tour-settings-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); font-size: 23px; }
-body .tour-settings-kicker { color: var(--gold); text-transform: uppercase; letter-spacing: .07em; font-size: 8px; font-weight: 700; }
-body .tour-settings-card h3 { color: var(--text-primary); font-size: 16px; font-weight: 750; margin: 4px 0; }
-body .tour-settings-card p { color: var(--text-secondary); font-size: 11px; line-height: 1.6; }
-body #tour-replay { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 11px 13px; min-height: 44px; border: 1px solid var(--border-active); border-radius: 12px; background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 12px; font-weight: 700; }
+/* v69 · one short explanation, aligned controls and a stationary card. */
+body .tour-settings-card { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 16px; }
+body .tour-settings-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 22px; }
+body .tour-settings-card h3 { color: var(--text-primary); font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+body .tour-settings-card p { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+body #tour-replay { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid var(--border-active); border-radius: 12px; background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 12px; font-weight: 650; }
 body #fintex-tour { position: fixed; inset: 0; margin: 0; padding: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; overflow: hidden; border: 0; background: transparent; color: var(--text-primary); }
 body #fintex-tour[open] { display: block; }
 body #fintex-tour::backdrop { background: transparent; }
 body #fintex-tour .tour-shade { position: fixed; inset: 0; background: rgba(1,14,11,.73); }
-body #fintex-tour .tour-focus { position: fixed; border: 2px solid var(--accent); border-radius: 17px; box-shadow: 0 0 0 200vmax rgba(1,14,11,.73),0 0 0 5px var(--accent-soft); pointer-events: none; }
+body #fintex-tour .tour-focus { position: fixed; border: 2px solid var(--accent); border-radius: 16px; box-shadow: 0 0 0 200vmax rgba(1,14,11,.73); pointer-events: none; }
 body #fintex-tour [hidden] { display: none !important; }
-body #fintex-tour .tour-panel { position: fixed; left: 14px; top: 14px; width: min(360px,calc(100% - 28px)); max-height: calc(100dvh - 28px); overflow-y: auto; overscroll-behavior: contain; padding: 18px; box-sizing: border-box; border: 1px solid var(--border-active); border-radius: 23px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 20px 80px rgba(0,0,0,.28); }
+body #fintex-tour .tour-panel { position: fixed; left: 14px; top: 14px; display: flex; flex-direction: column; width: min(360px,calc(100% - 28px)); height: 280px; max-height: calc(100dvh - 28px); padding: 12px 16px 16px; box-sizing: border-box; border: 1px solid var(--border-active); border-radius: 20px; background: var(--surface-1); color: var(--text-primary); box-shadow: 0 14px 48px rgba(0,0,0,.25); }
+body #fintex-tour[data-map=true] .tour-panel { height: 380px; }
 body #fintex-tour button { font-family: inherit; cursor: pointer; touch-action: manipulation; }
-body #fintex-tour button:focus-visible, body #tour-replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-body #fintex-tour .tour-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-body #fintex-tour .tour-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; }
-body #fintex-tour .tour-brand img { border-radius: 8px; }
-body #tour-skip { min-height: 44px; padding: 5px 0 5px 7px; color: var(--text-secondary); font-size: 11px; border: 0; background: transparent; }
-body #tour-skip > span { margin-left: 4px; font-size: 19px; vertical-align: middle; }
-body #fintex-tour .tour-progress { display: flex; gap: 4px; margin: 7px 0 12px; }
+body #fintex-tour button:focus-visible, body #tour-replay:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+body #fintex-tour .tour-top { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+body #fintex-tour .tour-counter { color: var(--text-muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+body #fintex-tour .tour-tools { display: flex; align-items: center; gap: 4px; }
+body #fintex-tour .tour-tools button { min-height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font-size: 12px; font-weight: 600; }
+body #tour-map-toggle { color: var(--accent); }
+body #tour-skip { color: var(--text-secondary); }
+body #fintex-tour .tour-progress { display: flex; flex-shrink: 0; gap: 4px; margin: 4px 0 16px; }
 body #fintex-tour .tour-progress i { flex: 1; height: 3px; border-radius: 3px; background: var(--border-subtle); }
 body #fintex-tour .tour-progress i[data-done=true] { background: var(--accent); }
-body #fintex-tour .tour-route { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 9px; color: var(--text-muted); }
-body #fintex-tour .tour-chapter { color: var(--gold); font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
-body #fintex-tour .tour-heading { display: grid; grid-template-columns: 35px minmax(0,1fr); gap: 10px; align-items: center; margin-top: 14px; }
-body #fintex-tour .tour-symbol { display: grid; place-items: center; width: 35px; height: 40px; border-radius: 12px; color: var(--accent); background: var(--accent-soft); font-size: 27px; }
-body #tour-title { font-size: 21px; line-height: 1.22; letter-spacing: -.025em; font-weight: 750; outline: none; }
-body #fintex-tour .tour-location { margin-top: 9px; font-size: 10px; font-weight: 600; color: var(--text-muted); }
-body #tour-text { font-size: 13px; line-height: 1.65; color: var(--text-primary); margin-top: 10px; }
-body #tour-tip { font-size: 11px; line-height: 1.6; color: var(--text-secondary); border-left: 2px solid var(--gold); padding: 0 0 0 10px; margin-top: 13px; }
-body #fintex-tour .tour-actions { display: flex; gap: 9px; padding-top: 15px; }
-body #fintex-tour .tour-actions button { min-height: 44px; border-radius: 12px; padding: 10px 13px; font-size: 12px; font-weight: 700; }
+body #fintex-tour .tour-progress i[data-current=true] { background: var(--gold); }
+body #fintex-tour .tour-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+body #tour-title { font-size: 21px; line-height: 1.3; letter-spacing: -.02em; font-weight: 700; outline: none; }
+body #tour-text { margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+body #fintex-tour .tour-actions { display: grid; flex-shrink: 0; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding-top: 12px; }
+body #fintex-tour .tour-actions button { min-height: 44px; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 650; }
 body #tour-back { border: 1px solid var(--border-subtle); background: var(--surface-2); color: var(--text-secondary); }
 body #tour-back:disabled { opacity: .4; cursor: default; }
-body #tour-next { flex: 1; border: 1px solid var(--border-active); background: var(--accent); color: var(--bg-canvas); }
-html.fintex-tour-open { scroll-behavior: auto !important; }
-@media(max-height:500px) {
-  body #fintex-tour .tour-panel { padding: 12px 16px; border-radius: 18px; }
-  body #fintex-tour .tour-heading { margin-top: 9px; }
-  body #tour-title { font-size: 18px; }
-  body #fintex-tour .tour-actions { position: sticky; bottom: -12px; padding-block: 10px 12px; background: var(--surface-1); }
-}
-
-/* v68 · compact field guide: a chapter map, optional detail and more app in view. */
-body #fintex-tour .tour-panel { padding: 16px; border-radius: 24px; border-top: 3px solid var(--accent); }
-body #fintex-tour .tour-heading { grid-template-columns: 32px minmax(0,1fr); gap: 9px; margin-top: 11px; }
-body #fintex-tour .tour-symbol { width: 32px; height: 36px; font-size: 24px; }
-body #tour-title { font-size: 20px; }
-body #fintex-tour .tour-location { display: none; }
-body #tour-text { font-size: 13px; line-height: 1.6; margin-top: 11px; }
-body #fintex-tour .tour-progress { gap: 5px; margin: 5px 0 10px; }
-body #fintex-tour .tour-progress i { height: 4px; }
-body #fintex-tour .tour-progress i[data-current=true] { background: var(--gold); }
-body #tour-map-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: auto; min-height: 44px; margin: 0; padding: 0 9px; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-2); color: var(--text-secondary); font-size: 10px; font-weight: 650; text-align: left; }
-body #tour-map-toggle b { color: var(--accent); font-size: 17px; font-weight: 500; }
-body #tour-map-toggle[aria-expanded=true] { border-color: var(--accent); color: var(--accent); }
-body #fintex-tour .tour-overview { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px; }
-body #fintex-tour .tour-overview span { padding: 5px 8px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 650; }
-body #tour-more { margin-top: 9px; border-block: 1px solid var(--border-subtle); }
-body #tour-more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; list-style: none; cursor: pointer; color: var(--text-secondary); font-size: 11px; font-weight: 600; }
-body #tour-more summary::-webkit-details-marker { display: none; }
-body #tour-more summary span { color: var(--gold); font-size: 17px; }
-body #tour-more[open] summary span { transform: rotate(45deg); }
-body #tour-more summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
-body #tour-tip { margin: 0 0 12px; }
-body #fintex-tour .tour-up-next { margin-top: 10px; color: var(--text-muted); font-size: 9px; line-height: 1.5; }
-body #fintex-tour .tour-actions { padding-top: 12px; }
-body #tour-map { margin-top: 13px; }
-body #tour-map h3 { font-size: 19px; font-weight: 750; letter-spacing: -.02em; }
-body #tour-map > p { margin: 5px 0 12px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
-body #fintex-tour .tour-map-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; padding-bottom: 3px; }
-body #fintex-tour [data-tour-jump] { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 57px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-2); color: var(--text-primary); text-align: left; }
-body #fintex-tour [data-tour-jump] strong { display: block; font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
-body #fintex-tour .tour-map-state { display: block; font-size: 9px; margin-top: 3px; color: var(--text-muted); }
-body #fintex-tour .tour-map-number { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 28px; color: var(--text-muted); font-size: 10px; font-weight: 700; border-radius: 7px; background: var(--bg-canvas); font-variant-numeric: tabular-nums; }
-body #fintex-tour [data-tour-jump][data-visited=true] .tour-map-number { background: var(--accent-soft); color: var(--accent); }
+body #tour-next { border: 1px solid var(--border-active); background: var(--accent); color: var(--bg-canvas); }
+body #tour-map { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+body #tour-map h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+body #fintex-tour .tour-map-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+body #fintex-tour [data-tour-jump] { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--surface-2); color: var(--text-primary); text-align: left; }
+body #fintex-tour [data-tour-jump] strong { flex: 1; font-size: 11px; font-weight: 600; }
+body #fintex-tour .tour-map-state { color: var(--accent); font-size: 10px; }
+body #fintex-tour .tour-map-number { flex-shrink: 0; width: 18px; color: var(--text-muted); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 body #fintex-tour [data-tour-jump][aria-current=step] { border-color: var(--accent); background: var(--accent-soft); }
-body #fintex-tour [data-tour-jump][aria-current=step] .tour-map-state { color: var(--accent); }
-@media(max-height:500px) {
-  body #fintex-tour .tour-panel { padding: 10px 14px; border-radius: 18px; }
-  body #tour-title { font-size: 18px; }
-  body #fintex-tour .tour-actions { bottom: -10px; }
-}
-
-body #fintex-tour .tour-route > div { display: grid; gap: 4px; }
+html.fintex-tour-open { scroll-behavior: auto !important; }
 html.no-motion body #fintex-tour * { transition: none !important; }
-@media(prefers-reduced-motion:reduce) {
-  body #fintex-tour * { transition: none !important; }
-}
+@media(prefers-reduced-motion:reduce) { body #fintex-tour * { transition: none !important; } }
