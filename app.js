@@ -823,6 +823,7 @@ function renderAll(animateFromZero = false) {
   try { window.FINTEX_EXT?.onAfterRender?.(); } catch (e) {}
   window.FintexGoals?.render();
   lucide.createIcons();
+  window.FintexSync?.render();
 }
 
 const FEED_WEEKDAYS_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -3376,6 +3377,7 @@ function openAutopilotModal(section = 'import') {
 }
 
 function updateSyncQueueUI() {
+  if(window.FintexSync){window.FintexSync.render();return;}
   const qLen = (state.syncQueue || []).length;
   const homePill = document.getElementById('autopilot-stage-pill');
   const modalBadge = document.getElementById('ap-queue-badge');
@@ -3575,6 +3577,7 @@ async function runAnimatedBankSync() {
 }
 
 async function pushTransactionsToBackend(txSubset) {
+  if(window.FintexSync?.active())return window.FintexSync.sync();
   if (Array.isArray(txSubset) && txSubset.length) {
     const queuedIds = new Set(state.syncQueue.map(x => String(x.id)));
     txSubset.forEach(tx => {
@@ -3590,6 +3593,7 @@ async function pushTransactionsToBackend(txSubset) {
 }
 
 async function flushSyncQueue() {
+  if(window.FintexSync?.active())return window.FintexSync.sync();
   if (!window.FintexCloud.canSync() || !state.gasUrl || !state.syncQueue.length) {
     updateSyncQueueUI();
     return;
@@ -3602,6 +3606,7 @@ async function flushSyncQueue() {
       user:{name:state.name,bank:state.bank,payday:state.payday},transactions:batch
     });
     if (data && data.ok) {
+      window.FintexSync?.observeLegacy(batch.filter(t=>(data.ack_ids||[]).includes(String(t.id))));
       const ackSet = new Set((Array.isArray(data.ack_ids) ? data.ack_ids : []).map(String));
       state.syncQueue = state.syncQueue.filter(item => !ackSet.has(String(item.id)));
       localStorage.setItem('fp_sync_queue', JSON.stringify(state.syncQueue));
@@ -3612,12 +3617,17 @@ async function flushSyncQueue() {
   }
 }
 
-async function syncWithBackend(notify = false) {
+async function syncWithBackend(notify=false){
+  if(window.FintexSync)return window.FintexSync.sync(notify);
+  return legacySyncWithBackend(notify);
+}
+async function legacySyncWithBackend(notify = false) {
   if (!window.FintexCloud.canSync() || !state.gasUrl) { if(notify)toast(localStorage.getItem('fp_cloud_paused_restore')==='1'?'Облако на паузе после восстановления. Откройте настройки резервной копии.':'Для облака войдите через Telegram.'); return; }
   await flushSyncQueue();
   try {
     const data = await window.FintexCloud.request('init',{user_id:USER_ID});
     if (data.ok && data.user) {
+      window.FintexSync?.observeLegacy(data.transactions);
       if(data.webhook_token){state.apiToken=data.webhook_token;localStorage.setItem('fp_api_token',data.webhook_token);}
       let pulledNew = 0;
       if (Array.isArray(data.transactions) && data.transactions.length) {

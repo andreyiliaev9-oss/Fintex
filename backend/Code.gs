@@ -1,4 +1,4 @@
-/** FINTEX Cloud v6. Deploy Code.gs and Auth.gs, or the combined installer.
+/** FINTEX Cloud v7. Deploy Code.gs and Auth.gs, or the combined installer.
  * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'6.0-telegram',cloud_protocol:2});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'7.0-ledger',cloud_protocol:2,ledger_protocol:3});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -110,19 +110,20 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
-    var allowed=['init','push_tx','set_config'];
+    var allowed=['init','push_tx','set_config','ledger_sync'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
     if(allowed.indexOf(action)<0)authError('UNKNOWN_ACTION','Неизвестная команда.');
     var uid=authTelegram(body.init_data);
     if(body.user_id&&String(body.user_id)!==uid)authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
     var db=getDb();
-    if(action==='init'&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
+    if((action==='init'||action==='ledger_sync')&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
     if(action==='set_config') {
       var token=String(body.api_token||'');
       if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token))authError('INVALID_TOKEN','Ключ автоматизации: от 32 до 128 букв, цифр, _ или -.');
       var u=findUserRow(db.users,uid);if(!u)authError('USER_NOT_FOUND','Учётная запись не найдена.');
       db.users.getRange(u.row,6).setValue(token);return {ok:true};
     }
+    if(action==='ledger_sync')return serverLedgerSync(db,uid,body);
     if(action==='push_tx')return serverPush(db,uid,body);
     return serverInit(db,uid);
   });
@@ -136,6 +137,7 @@ function serverAppendTx(db,uid,t) {
   db.txs.appendRow([serverText(t.id,150),uid,t.date,t.time||'',serverText(t.merchant,100),t.amount,serverText(t.category||'other',50),t.type,serverText(t.op_kind||t.type,50),serverText(t.source||'App',100),serverText(t.dedup_hash||'',150),JSON.stringify(t.items||[]).slice(0,30000),new Date().toISOString()]);
 }
 function serverPush(db,uid,body) {
+  if(serverLedgerActive(db,uid))authError('UPGRADE_REQUIRED','Обновите Fintex: журнал использует синхронизацию исправлений.');
   var incoming=body.transactions;
   if(!Array.isArray(incoming)||incoming.length>30)authError('INVALID_TRANSACTIONS','Не больше 30 операций за запрос.');
   var balance=serverMoney(body.balance);
@@ -172,7 +174,8 @@ function serverInit(db,uid) {
   }
   var logs=db.logs.getDataRange().getValues(),list=[];
   for(var j=logs.length-1;j>=1&&list.length<40;j--)if(String(logs[j][2])===uid){var l=logs[j];list.push({log_id:String(l[0]),timestamp:String(l[1]),uid:uid,source:String(l[3]),status:String(l[4]),bank:String(l[5]),summary:String(l[6]),raw_preview:'',error_code:String(l[8])});}
-  var result={ok:true,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
+  var result={ok:true,ledger_protocol:3,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
+  if(serverLedgerActive(db,uid)){var ledger=serverLedgerState(db,uid);result.user.balance=ledger.balance;result.transactions=Object.keys(ledger.records).map(function(id){return ledger.records[id].tx;}).filter(Boolean).slice(-150);}
   if(uid===ADMIN_UID)result.admin={total_users:Math.max(0,db.users.getLastRow()-1),total_tx:Math.max(0,db.txs.getLastRow()-1)};
   return result;
 }
@@ -185,6 +188,7 @@ function handleWebhookIngest(uid,token,text) {
   if(known.hashes[parsed.dedup_hash])return {ok:true,duplicate:true,message:'Дубль пропущен'};
   var balance=serverMoney(u.values[3])||0;
   var next=parsed.cardBalance!==null?parsed.cardBalance:serverAdd(balance,parsed.type==='income'?parsed.amount:-parsed.amount);
+  if(parsed.cardBalance!==null&&serverLedgerActive(db,uid))next=serverAdd(parsed.cardBalance,-serverLedgerState(db,uid).delta);
   serverAppendTx(db,uid,parsed);db.users.getRange(u.row,4).setValue(next);db.users.getRange(u.row,7).setValue(new Date().toISOString());
   appendLog(db.logs,uid,'iOS Shortcut','OK',parsed.bank,parsed.merchant+' · '+parsed.amount+' ₽','','');
   return {ok:true,message:'Операция сохранена',transaction:parsed};
@@ -259,4 +263,76 @@ function createFintexDatabase() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Revisioned ledger v3. Each mutation is ONE append-only commit row under the
+ * script lock. A lost response is safe to retry with the same mutation ID.
+ * Base Transactions/Users stay intact; tombstones and revisions never expire. */
+function serverLedgerActive(db,uid){
+  var sh=db.ss.getSheetByName('LedgerEvents');if(!sh)return false;
+  return sh.getDataRange().getValues().slice(1).some(function(r){return String(r[1])===uid;});
+}
+function serverLedgerEffect(t){return !t?0:t.type==='income'?t.amount:t.type==='expense'?-t.amount:t.type==='adjustment'?t.balance_delta:0;}
+function serverLedgerTx(t){
+  if(!t||typeof t!=='object'||Array.isArray(t)||!/^\w[\w-]{0,149}$/.test(String(t.id||''))||!serverDate(t.date)||t.date>serverToday()||['expense','income','transfer','adjustment'].indexOf(t.type)<0)authError('INVALID_LEDGER','Некорректная операция.');
+  var n=serverMoney(t.amount);
+  if(typeof t.amount!=='number'||n===null||n<=0||n!==t.amount)authError('INVALID_LEDGER','Некорректная сумма.');
+  if(t.currency&&['RUB','₽','РУБ'].indexOf(t.currency)<0)authError('INVALID_LEDGER','Только рублёвые операции.');
+  var clean={id:t.id,date:t.date,amount:n,type:t.type,merchant:String(t.merchant||'Операция').slice(0,100),category:String(t.category||'other').slice(0,100),source:String(t.source||'App').slice(0,100),items:Array.isArray(t.items)?t.items:[]};
+  ['time','op_kind','op_label','dedup_hash','scan_id','transfer_from','transfer_to','bill_id','bill_before','bill_after','goal_withdrawal'].forEach(function(k){if(t[k]!==undefined)clean[k]=t[k];});
+  if(t.type==='adjustment'){
+    if(typeof t.balance_delta!=='number'||serverMoney(t.balance_delta)!==t.balance_delta||Math.abs(t.balance_delta)!==n)authError('INVALID_LEDGER','Некорректная корректировка.');clean.balance_delta=t.balance_delta;
+  }
+  var text=JSON.stringify(clean);
+  if(text.length>38000||/"(?:__proto__|constructor|prototype)"\s*:/.test(text))authError('INVALID_LEDGER','Операция слишком велика или содержит недопустимые поля.');
+  return clean;
+}
+function serverLedgerState(db,uid){
+  var records=Object.create(null),ops=Object.create(null),base=db.txs.getDataRange().getValues();
+  for(var i=1;i<base.length;i++)if(String(base[i][1])===uid){
+    var r=base[i],items=[];try{items=JSON.parse(r[11]||'[]');}catch(_){}
+    var tx={id:String(r[0]),date:serverIso(r[2]),time:r[3] instanceof Date?Utilities.formatDate(r[3],Session.getScriptTimeZone(),'HH:mm'):String(r[3]||''),merchant:String(r[4]),amount:serverMoney(r[5]),category:String(r[6]||'other'),type:String(r[7]),op_kind:String(r[8]||r[7]),source:String(r[9]||'Облако'),dedup_hash:String(r[10]||''),items:items};
+    records[tx.id]={id:tx.id,revision:1,tx:tx};
+  }
+  var sheet=db.ss.getSheetByName('LedgerEvents'),rows=sheet?sheet.getDataRange().getValues():[],delta=0,generation=0;
+  for(var j=1;j<rows.length;j++)if(String(rows[j][1])===uid){
+    var row=rows[j],payload=JSON.parse(String(row[4]));
+    records[String(row[2])]={id:String(row[2]),revision:Number(row[3]),tx:payload};
+    ops[String(row[0])]={id:String(row[0]),txId:String(row[2]),revision:Number(row[3])};delta=serverAdd(delta,Number(row[5]));generation++;
+  }
+  var user=findUserRow(db.users,uid);return {records:records,ops:ops,delta:delta,generation:generation,balance:serverAdd(serverMoney(user.values[3])||0,delta)};
+}
+function serverLedgerSync(db,uid,body){
+  // This historical spreadsheet is never a migration/write target.
+  if(db.ss.getId&&db.ss.getId()==='1X-hFpWRGUomCIlmQsDvV4I2m5Ke9A9FIQ4we5aypvps')authError('PROTECTED_DATABASE','Исходная база защищена от изменений.');
+  var incoming=body.mutations||[];
+  if(!Array.isArray(incoming)||incoming.length>20)authError('INVALID_LEDGER','Не больше 20 изменений.');
+  var mutations=incoming.map(function(m){
+    if(!m||!/^\w[\w-]{0,149}$/.test(String(m.id||''))||!/^\w[\w-]{0,149}$/.test(String(m.txId||''))||!Number.isInteger(m.baseRevision)||m.baseRevision<0)authError('INVALID_LEDGER','Некорректная ревизия.');
+    var tx=m.tx===null?null:serverLedgerTx(m.tx);if(tx&&tx.id!==m.txId)authError('INVALID_LEDGER','Идентификатор не совпадает.');
+    return {id:m.id,txId:m.txId,baseRevision:m.baseRevision,tx:tx};
+  });
+  var state=serverLedgerState(db,uid),results=[];
+  // A token covers base ingestion too: webhook changes cannot produce mixed pages.
+  function token(s){return authHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,JSON.stringify([s.balance,s.records])));}
+  if(body.pageToken&&body.pageToken!==token(state))return {ok:true,ledger_protocol:3,restart:true};
+  mutations.forEach(function(m){
+    if(state.ops[m.id]){
+      var old=state.ops[m.id];if(old.txId!==m.txId)authError('INVALID_LEDGER','Идентификатор изменения уже занят.');
+      results.push({id:m.id,status:'acked',revision:old.revision});return;
+    }
+    var current=state.records[m.txId]||{revision:0,tx:null};
+    if(current.revision!==m.baseRevision){results.push({id:m.id,status:'conflict',current:state.records[m.txId]||{id:m.txId,revision:0,tx:null}});return;}
+    var delta=serverAdd(serverLedgerEffect(m.tx),-serverLedgerEffect(current.tx)),revision=current.revision+1;
+    if(serverMoney(serverAdd(state.balance,delta))===null)authError('INVALID_LEDGER','Слишком большой остаток.');
+    var sh=getOrCreateSheet(db.ss,'LedgerEvents',['mutation_id','user_id','transaction_id','revision','payload_json','balance_delta','committed_at']);
+    sh.appendRow([m.id,uid,m.txId,revision,JSON.stringify(m.tx),delta,new Date().toISOString()]);
+    state.records[m.txId]={id:m.txId,revision:revision,tx:m.tx};state.ops[m.id]={txId:m.txId,revision:revision};state.balance=serverAdd(state.balance,delta);state.generation++;
+    results.push({id:m.id,status:'acked',revision:revision});
+  });
+  var ids=Object.keys(state.records).sort(),offset=Number(body.offset||0);
+  if(!Number.isInteger(offset)||offset<0||offset>ids.length)authError('INVALID_LEDGER','Некорректная страница.');
+  var page=[],bytes=0,end=offset;
+  while(end<ids.length&&page.length<100){var record=state.records[ids[end]],size=JSON.stringify(record).length;if(page.length&&bytes+size>90000)break;page.push(record);bytes+=size;end++;}
+  return {ok:true,ledger_protocol:3,results:results,records:page,balance:state.balance,pageToken:token(state),nextOffset:end<ids.length?end:null,total:ids.length};
 }
