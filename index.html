@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=62"></script>
   <script src="./cloud.js?v=39"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=70" />
+  <link rel="stylesheet" href="./design-system.css?v=71" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -263,7 +263,7 @@
             <span id="status-badge" class="balance-status" data-tone="calm">Всё спокойно</span>
           </div>
           <button type="button" onclick="openBalanceModal()" class="balance-total" aria-label="Изменить баланс">
-            <span class="balance-label">На вашем счёте <i data-lucide="pencil" class="w-3 h-3"></i></span>
+            <span class="balance-label">Всего на счёте <i data-lucide="pencil" class="w-3 h-3"></i></span>
             <span id="hero-balance" class="money-val balance-amount">0 ₽</span>
           </button>
           <div class="daily-budget" id="hero-daily-budget">
@@ -281,15 +281,15 @@
           <div id="hero-limit-explain" class="balance-explanation">Свободные средства распределены до зарплаты</div>
           <div class="balance-breakdown">
             <button type="button" onclick="openGoalDetailsModal()" class="balance-detail">
-              <span class="balance-detail-label"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Резерв <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
+              <span class="balance-detail-label"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Отложено <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
               <span id="hero-reserved" class="money-val balance-detail-amount">0 ₽</span>
-              <span class="balance-detail-note">Платежи и подушка</span>
+              <span class="balance-detail-note">На платежи и цели</span>
               <span id="hero-res-pct" class="hidden"></span>
             </button>
             <button type="button" onclick="openForecastExplainModal()" class="balance-detail">
-              <span class="balance-detail-label"><i data-lucide="coins" class="w-3.5 h-3.5"></i> Свободно <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
+              <span class="balance-detail-label"><i data-lucide="coins" class="w-3.5 h-3.5"></i> Можно тратить <i data-lucide="arrow-up-right" class="balance-detail-arrow w-3.5 h-3.5"></i></span>
               <span id="hero-free-pool" class="money-val balance-detail-amount">0 ₽</span>
-              <span class="balance-detail-note">До зарплаты</span>
+              <span class="balance-detail-note">Без платежей и целей</span>
               <span id="hero-free-pct" class="hidden"></span>
             </button>
           </div>
@@ -1881,7 +1881,7 @@
   <script src="./finance-math.js?v=58"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=66"></script>
-  <script src="./app.js?v=67"></script>
+  <script src="./app.js?v=71"></script>
   <script src="./navigation.js?v=57"></script>
   <script src="./interface-motion.js?v=59"></script>
   <script src="./modal-accessibility.js?v=60"></script>
@@ -1904,6 +1904,7 @@
   <script src="./capture.js?v=68"></script>
   <script src="./behavior-model.js?v=44"></script>
   <script src="./behavior.js?v=54"></script>
-  <script src="./app-tour.js?v=70"></script>
+  <script src="./app-tour.js?v=71"></script>
+  <script src="./context-help.js?v=71"></script>
 </body>
 </html>

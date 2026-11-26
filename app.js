@@ -772,8 +772,8 @@ function renderAll(animateFromZero = false) {
 
   const explainEl = document.getElementById('hero-limit-explain');
   explainEl.textContent = m.freePool === 0
-    ? 'Средства защищены для платежей и накоплений.'
-    : `До зарплаты ${m.days} дн. Резерв не входит в дневной бюджет.`;
+    ? 'На траты пока не осталось свободных денег.'
+    : `На ${m.days} дн. до зарплаты. Отложенное не тратим.`;
 
   renderBalanceCardFeedback(m, hasAnomaly);
 
