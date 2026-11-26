@@ -109,15 +109,20 @@ function preprocessReceiptCanvas(imageSrc) {
 }
 
 async function renderPdfToDataUrl(arrayBuffer) {
-  if (!window.pdfjsLib) throw new Error('Модуль PDF.js не загружен');
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 2.2 });
-  const canvas = document.createElement('canvas');
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  return canvas.toDataURL('image/png');
+  const pdfjsLib = await import('./assets/ocr/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./assets/ocr/pdf.worker.min.mjs', location.href).href;
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
+  try {
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    return canvas.toDataURL('image/png');
+  } finally {
+    await pdf.destroy();
+  }
 }
 
 function parseFiscalQrString(raw) {
