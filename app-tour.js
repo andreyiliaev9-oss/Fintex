@@ -3,20 +3,18 @@
 (() => {
   'use strict';
   if (window.FintexTour) return;
-  const KEY = 'fp_tour_v1', CHECKPOINT = 'fp_tour_step_v1';
+  const KEY = 'fp_tour_v1', CHECKPOINT = 'fp_tour_step_v2';
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
   const steps = [
-    {tab:'home',chapter:'Начало',title:'Покажем, что где',text:'Разделы — внизу. Нажмите на любой, чтобы посмотреть.'},
-    {tab:'home',target:'#hero-daily-budget',chapter:'На сегодня',title:'На сегодня',text:'Столько можно потратить сегодня, чтобы денег хватило до зарплаты.'},
-    {tab:'home',target:'#hdr-plus-btn, #capture-fab',chapter:'Добавить',title:'Добавить операцию',text:'Нажмите «+», чтобы записать доход, расход или добавить чек.'},
-    {tab:'home',target:'.tx-feed-header',chapter:'История',title:'История операций',text:'Здесь все доходы и расходы. Нажмите на запись, чтобы открыть детали.'},
-    {tab:'calendar',target:'#cal-cells',chapter:'Календарь',title:'Календарь',text:'Выберите день, чтобы посмотреть траты и платежи.'},
-    {tab:'analytics',target:'.ap-cashflow, #view-analytics h2',chapter:'Аналитика',title:'Аналитика',text:'Здесь видно, на что уходят деньги и как меняются расходы.'},
-    {tab:'home',target:'#savings-goals .sg-card, #savings-goals .sg-heading, #savings-goals',chapter:'Цели',title:'Цели',text:'Создайте цель и откладывайте на неё деньги.'},
-    {tab:'home',target:'.ft-art-wrap',chapter:'Дерево',title:'Дерево',text:'Дерево меняется от доходов и расходов. Его можно потрясти.'},
-    {tab:'settings',target:'#settings-guide',chapter:'Настройки',title:'Настройки',text:'Здесь можно сменить тему и снова открыть экскурсию.'},
-    {tab:'settings',chapter:'Готово',title:'Всё готово',text:'Если что-то забудете, экскурсия есть в настройках.'}
+    {id:'budget',tab:'home',compact:'#hero-daily-budget .daily-budget-header, .daily-budget-label',target:'#hero-daily-budget',chapter:'На сегодня',title:'На сегодня',text:'Столько можно потратить сегодня, чтобы денег хватило до зарплаты.'},
+    {id:'add',tab:'home',target:'#hdr-plus-btn, #capture-fab',chapter:'Добавить',title:'Добавить операцию',text:'Нажмите «+», чтобы записать доход, расход или добавить чек.'},
+    {id:'history',tab:'home',target:'.tx-feed-header',chapter:'История',title:'История операций',text:'Здесь все доходы и расходы. Нажмите на запись, чтобы открыть детали.'},
+    {id:'calendar',tab:'calendar',compact:'#cal-cells .is-selected, #cal-cells .is-today, #view-calendar h2',target:'#cal-cells',chapter:'Календарь',title:'Календарь',text:'Выберите день, чтобы посмотреть траты и платежи.'},
+    {id:'analytics',tab:'analytics',compact:'.ap-cashflow-heading, #view-analytics h2',target:'.ap-cashflow',chapter:'Аналитика',title:'Аналитика',text:'Здесь видно, на что уходят деньги и как меняются расходы.'},
+    {id:'goals',tab:'home',compact:'#savings-goals .sg-heading',target:'#savings-goals .sg-card, #savings-goals .sg-heading, #savings-goals',chapter:'Цели',title:'Цели',text:'Создайте цель и откладывайте на неё деньги.'},
+    {id:'tree',tab:'home',compact:'#filely-financial-tree h2, .ft-art-wrap',target:'.ft-art-wrap',chapter:'Дерево',title:'Дерево',text:'Дерево меняется от доходов и расходов. Его можно потрясти.'},
+    {id:'settings',tab:'settings',compact:'#tour-replay, #tour-settings-title',target:'#settings-guide',chapter:'Настройки',title:'Настройки',text:'Здесь можно сменить тему и снова открыть экскурсию.'},
   ];
   let dialog, panel, focusBox, scrim, index = 0, active = false, epoch = 0, mapOpen = false, peeking = false;
   const visited = new Set();
@@ -25,23 +23,27 @@
   const save = value => { try { localStorage.setItem(KEY,value); } catch (_) { /* Tour still works without storage. */ } };
   function checkpoint(clear = false) {
     try {
-      if (clear) localStorage.removeItem(CHECKPOINT);
-      else if (automatic) localStorage.setItem(CHECKPOINT,String(index));
+      if (clear) { localStorage.removeItem(CHECKPOINT); localStorage.removeItem('fp_tour_step_v1'); }
+      else if (automatic) localStorage.setItem(CHECKPOINT,steps[index].id);
     } catch (_) { /* Navigation never depends on writable storage. */ }
   }
   function savedStep() {
     try {
-      const raw = localStorage.getItem(CHECKPOINT);
-      return /^(?:[0-9])$/.test(raw || '') ? Number(raw) : 0;
+      const id = localStorage.getItem(CHECKPOINT);
+      if (id !== null) return Math.max(0,steps.findIndex(step=>step.id===id));
+      // v70 used ten numeric positions, including intro/outro. Migrate only
+      // unfinished routes; existing complete/skipped users are not interrupted.
+      const legacy = localStorage.getItem('fp_tour_step_v1');
+      return /^[0-9]$/.test(legacy || '') ? Math.max(0,Math.min(7,Number(legacy)-1)) : 0;
     } catch (_) { return 0; }
   }
   const moves = () => !media.matches && !root.classList.contains('no-motion');
   const visible = el => el && !!el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
-  function targetFor(step) {
+  function targetFor(step, maximum = Infinity) {
     // Comma-separated selectors are ordered fallbacks, not document order:
     // Prefer the + in the header and the compact goal heading.
-    for (const selector of (step.target || '').split(',').filter(Boolean)) {
-      const target = [...document.querySelectorAll(selector.trim())].find(visible);
+    for (const selector of [step.target,step.compact].filter(Boolean).join(',').split(',').filter(Boolean)) {
+      const target = [...document.querySelectorAll(selector.trim())].find(el=>visible(el)&&el.getBoundingClientRect().height<=maximum);
       if (target) return target;
     }
     return null;
@@ -84,7 +86,7 @@
   }
   function layout(scroll = false) {
     if (!active) return;
-    const step = steps[index], target = mapOpen ? null : targetFor(step);
+    const step = steps[index];
     const vw = document.documentElement.clientWidth, vh = innerHeight;
     const nav = document.querySelector('#fintex-navigation > div');
     const dock = visible(nav) ? nav.getBoundingClientRect() : null;
@@ -92,21 +94,31 @@
     const width = Math.min(360,vw-24);
     panel.style.width = `${width}px`;
     panel.style.maxHeight = `${Math.max(64,bottom-12)}px`;
-    const height = panel.offsetHeight, top = Math.max(12,bottom-height);
-    panel.style.left = `${(vw-width)/2}px`;
-    panel.style.top = `${top}px`;
+    const height = panel.offsetHeight;
+    let top = Math.max(12,bottom-height), placement = 'bottom';
+    const target = mapOpen ? null : targetFor(step,Math.max(24,bottom-height-24));
     let rect = target?.getBoundingClientRect();
     let fixed = false;
     for (let el = target; el; el = el.parentElement) if (getComputedStyle(el).position === 'fixed') { fixed = true; break; }
     if (scroll && target && !fixed) {
-      const desired = Math.max(12,(top-rect.height)/2);
+      const desired = Math.max(12,(bottom-height-rect.height-12)/2);
       window.scrollTo({top:Math.max(0,scrollY+rect.top-desired),behavior:'instant'});
       rect = target.getBoundingClientRect();
     }
+    // Prefer a nearby card, above or below the element, with no overlap.
+    if(rect && !mapOpen){
+      if(rect.bottom+12>=12&&rect.bottom+12+height<=bottom){top=rect.bottom+12;placement='below';}
+      else if(rect.top-height-12>=12){top=rect.top-height-12;placement='above';}
+    }
+    panel.style.left = `${(vw-width)/2}px`;
+    top = Math.max(12,Math.min(bottom-height,top));
+    panel.style.top = `${top}px`;
+    dialog.dataset.placement = placement;
+    const separated = rect && (rect.bottom+8<=top || top+height+8<=rect.top);
     // Separate cutouts keep both the real target AND the real section dock clear.
     let path = `M0,0H${vw}V${vh}H0z`;
     if(dock) path += rounded({x:dock.left-2,y:dock.top-2,width:dock.width+4,height:dock.height+4},28);
-    const ring = !!(rect && rect.width > 0 && rect.height > 0 && rect.top >= 8 && rect.bottom <= top-12 && rect.left >= 4 && rect.right <= vw-4);
+    const ring = !!(rect && rect.width > 0 && rect.height > 0 && rect.top >= 8 && rect.bottom <= bottom-4 && separated && rect.left >= 4 && rect.right <= vw-4);
     if (ring) {
       const pad = 4, radius = Math.min(24,parseFloat(getComputedStyle(target).borderTopLeftRadius)||8)+pad;
       const box = {x:rect.left-pad,y:rect.top-pad,width:rect.width+pad*2,height:rect.height+pad*2};
@@ -114,6 +126,7 @@
       path += rounded(box,radius);
     }
     focusBox.hidden = !ring;
+    panel.style.setProperty('--tour-pointer-x',`${rect?Math.max(18,Math.min(width-24,(rect.left+rect.right)/2-(vw-width)/2)):width/2}px`);
     scrim.setAttribute('d',path);
     dialog.dataset.spotlight = String(ring);
     dialog.querySelectorAll('[data-tour-tab]').forEach(button=>{
@@ -153,7 +166,7 @@
       button.querySelector('.tour-map-state').textContent=i===index?'•':visited.has(i)?'✓':'';
     });
     dialog.querySelector('#tour-back').disabled = index === 0;
-    dialog.querySelector('#tour-next').textContent = index === steps.length-1 ? 'Готово' : index === 0 ? 'Начать' : 'Далее';
+    dialog.querySelector('#tour-next').textContent = index === steps.length-1 ? 'Готово' : 'Далее';
     focusBox.hidden = true;
     if (document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav !== step.tab) window.goTab(step.tab);
     // Wait for real section/module layout, not a fake loading timer.
@@ -180,9 +193,11 @@
     active = false; epoch++; observer?.disconnect();
     cancelAnimationFrame(frame); frame = null; stopEffect();
     if (persist) { save(status); checkpoint(true); }
+    const topics = [...visited].map(i=>steps[i].id);
     dialog.close(); focusBox.hidden = true;
     root.classList.remove('fintex-tour-open');
     document.body.style.overflow = overflow;
+    if (persist) window.dispatchEvent(new CustomEvent('fintex:tour-finished',{detail:{topics}}));
     if (!restore) return;
     const tab = automatic ? 'home' : origin.tab;
     window.goTab(tab);
@@ -197,6 +212,7 @@
     window.FintexEntrance?.dismiss(true);
     window.cancelTxSwipe?.(); window.cancelGoalHold?.();
     automatic = auto; visited.clear();
+    window.dispatchEvent(new Event('fintex:tour-started'));
     origin = {tab:document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav || 'home',scroll:scrollY,focus:document.activeElement};
     overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -219,7 +235,7 @@
     dialog.querySelector('#tour-peek').addEventListener('click',()=>{if(mapOpen)toggleMap(false,false);setPeek(!peeking);});
     dialog.querySelector('.tour-sections').addEventListener('click',event=>{
       const button = event.target.closest('[data-tour-tab]');
-      if(button)go({home:1,calendar:4,analytics:5,settings:8}[button.dataset.tourTab]);
+      if(button)go({home:0,calendar:3,analytics:4,settings:7}[button.dataset.tourTab]);
     });
     dialog.querySelector('#tour-map-toggle').addEventListener('click',()=>toggleMap(!mapOpen));
     dialog.querySelector('#tour-map').addEventListener('click',event=>{
