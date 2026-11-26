@@ -48,6 +48,7 @@
       button.className = `seg-item py-1 ${i === index ? 'text-[#041311] font-bold' : 'text-sub'}`;
       button.setAttribute('aria-pressed', String(i === index));
     });
+    window.dispatchEvent(new CustomEvent('fintex:appearancechange', {detail: {style, dark}}));
     const status = document.getElementById('appearance-status');
     if (status) status.textContent = storageError ? 'Стиль применён, но сохранить выбор не удалось. Проверьте доступ к хранилищу.' : '';
   }

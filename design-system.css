@@ -1795,3 +1795,110 @@ body .tx-row-menu { width: 44px; border: 0; background: transparent; }
 body .tx-row-menu > span { display: grid; place-items: center; width: 30px; height: 38px; border: 1px solid var(--border-subtle); border-radius: 11px; background: var(--surface-1); }
 body .tx-row-menu[aria-expanded=true] > span { border-color: var(--border-active); background: var(--accent-soft); }
 @media(max-width:360px) { body .tx-row-open { grid-template-columns: minmax(0,1fr); } body .tx-row-open .tx-amount { justify-self: end; } }
+
+/* v62 · a different natural atmosphere for each palette. Fourteen particles,
+ * transform/opacity only; entirely decorative and below dialogs/navigation. */
+body #theme-atmosphere {
+  position: fixed; inset: 0; width: min(100%,448px); margin-inline: auto;
+  z-index: 25; overflow: hidden; pointer-events: none; contain: strict;
+  -webkit-mask-image: linear-gradient(90deg,#000,rgba(0,0,0,.3) 30%,rgba(0,0,0,.3) 70%,#000);
+  mask-image: linear-gradient(90deg,#000,rgba(0,0,0,.3) 30%,rgba(0,0,0,.3) 70%,#000);
+}
+body .theme-particle {
+  --travel: 105dvh; position: absolute; left: var(--x); top: -12px;
+  width: var(--size); height: calc(var(--size) * .62); opacity: 0;
+  border-radius: 85% 0 85% 0; background: #8fa35f;
+  animation: themeLeaf var(--duration) var(--delay) linear infinite;
+}
+body .theme-particle:nth-child(3n) { background: #c8a65b; }
+body .theme-particle:nth-child(3n + 1) { background: #6d9361; }
+@keyframes themeLeaf {
+  0% { opacity: 0; transform: translate(0,-12px) rotate(-30deg); }
+  12% { opacity: .38; }
+  35% { transform: translate(var(--sway),calc(var(--travel) * .32)) rotate(85deg) scaleX(.45); }
+  65% { opacity: .3; transform: translate(calc(var(--sway) * -.5),calc(var(--travel) * .62)) rotate(210deg) scaleX(-.8); }
+  88% { opacity: .35; }
+  100% { opacity: 0; transform: translate(var(--sway),var(--travel)) rotate(320deg); }
+}
+@keyframes themeSnow {
+  0% { opacity: 0; transform: translate(0,-8px); }
+  12% { opacity: .8; }
+  40% { transform: translate(var(--sway),calc(var(--travel) * .38)); }
+  70% { opacity: .65; transform: translate(calc(var(--sway) * -.35),calc(var(--travel) * .68)); }
+  100% { opacity: 0; transform: translate(calc(var(--sway) * .5),var(--travel)); }
+}
+@keyframes themePetal {
+  0% { opacity: 0; transform: translate(0,-12px) rotate(-15deg) scaleX(.8); }
+  15% { opacity: .5; }
+  40% { transform: translate(calc(var(--sway) * 1.2),calc(var(--travel) * .34)) rotate(70deg) scaleX(.45); }
+  70% { opacity: .4; transform: translate(calc(var(--sway) * -.5),calc(var(--travel) * .66)) rotate(155deg) scaleX(.9); }
+  100% { opacity: 0; transform: translate(var(--sway),var(--travel)) rotate(225deg); }
+}
+html[data-visual-style='sapphire'] body .theme-particle {
+  width: var(--size); height: var(--size); border-radius: 50%;
+  background: #edf9ff; border: 1px solid rgba(120,171,204,.65); animation-name: themeSnow;
+}
+html[data-visual-style='growth'] body .theme-particle {
+  height: calc(var(--size) * 1.3); border-radius: 80% 30% 75% 35%; background: #dfa47f;
+  animation-name: themePetal;
+}
+html[data-visual-style='growth'] body .theme-particle:nth-child(3n) { background: #b6be98; }
+html[data-visual-style='growth'] body .theme-particle:nth-child(3n + 1) { background: #e7bc9f; }
+body #theme-atmosphere[data-paused='true'] .theme-particle { animation-play-state: paused; }
+body:has(#returning-splash:not(.hidden),#onboarding-screen:not(.hidden),dialog[open],[role='dialog'][aria-modal='true']:not(.hidden)) #theme-atmosphere { visibility: hidden; }
+body:has(#returning-splash:not(.hidden),#onboarding-screen:not(.hidden),dialog[open],[role='dialog'][aria-modal='true']:not(.hidden)) .theme-particle { animation-play-state: paused; }
+html.no-motion body #theme-atmosphere { display: none; }
+html.no-motion body .theme-particle { animation: none; }
+@media(prefers-reduced-motion:reduce) {
+  body #theme-atmosphere { display: none; }
+  body .theme-particle { animation: none; }
+}
+
+/* The tree keeps its species/cashflow meaning. Only its season changes. */
+html[data-visual-style='sapphire'] body #filely-financial-tree .ft-falling-leaf {
+  --travel: var(--fall-distance); --sway: var(--fall-x);
+  width: 4px; height: 4px; border-radius: 50%; background: #edf9ff;
+  border: 1px solid rgba(120,171,204,.6); animation-name: themeSnow;
+}
+html[data-visual-style='sapphire'] body #filely-financial-tree .ft-falling-leaf:nth-child(even) { width: 6px; height: 6px; }
+html[data-visual-style='sapphire'] body #filely-financial-tree .ft-wind-leaf {
+  width: 3px; height: 3px; border-radius: 50%; background: #d3efff;
+  border: 1px solid #a5cce0;
+}
+html[data-visual-style='sapphire'] body #filely-financial-tree .ft-aura {
+  background: radial-gradient(ellipse,rgba(172,217,248,.2),transparent 70%);
+}
+html[data-visual-style='growth'] body #filely-financial-tree .ft-falling-leaf {
+  --travel: var(--fall-distance); --sway: var(--fall-x);
+  width: 7px; height: 9px; border-radius: 80% 30% 75% 35%; background: #dfa47f;
+  border-bottom-color: #b57e62; animation-name: themePetal;
+}
+html[data-visual-style='growth'] body #filely-financial-tree .ft-falling-leaf:nth-child(3n) { background: #b6be98; }
+html[data-visual-style='growth'] body #filely-financial-tree .ft-wind-leaf { border-radius: 80% 30% 75% 35%; background: #e4b28b; }
+body .ft-fallback-snow { display: none; }
+html[data-visual-style='sapphire'] body .ft-fallback-snow { display: block; }
+
+/* Matching finite entrance accents, still inside the original five seconds. */
+body .sprout-season-snow { display: none; }
+html[data-visual-style='sapphire'] body #returning-splash { --leaf-light: #d6eff5; --leaf-deep: #6398ac; --stem-deep: #547f94; }
+html[data-visual-style='sapphire'] body .sprout-light { background: radial-gradient(ellipse at 53% 40%,rgba(146,199,234,.25),transparent 54%),radial-gradient(ellipse at 95% 0%,rgba(200,223,250,.12),transparent 52%); }
+html[data-visual-style='sapphire'] body .sprout-season-snow { display: block; }
+html[data-visual-style='sapphire'] body .is-growing .sprout-season-snow { animation: sproutFrost .8s 2s both; }
+@keyframes sproutFrost { from { opacity: 0; } to { opacity: 1; } }
+html[data-visual-style='sapphire'] body .sprout-mote { width: 6px; height: 6px; border-radius: 50%; background: #edf9ff; border: 1px solid #a5cce0; }
+html[data-visual-style='sapphire'] body .is-growing .sprout-mote { animation-name: sproutSnow; }
+@keyframes sproutSnow {
+  0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) - 65px)); }
+  20%,70% { opacity: .85; }
+  45% { transform: translate(calc(var(--mx) + var(--drift)),var(--my)); }
+  100% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 90px)); }
+}
+html[data-visual-style='growth'] body .sprout-light { background: radial-gradient(ellipse at 53% 40%,rgba(228,178,139,.2),transparent 54%),radial-gradient(ellipse at 95% 0%,rgba(174,191,153,.15),transparent 52%); }
+html[data-visual-style='growth'] body .sprout-mote { width: 7px; height: 10px; border-radius: 80% 30% 75% 35%; background: #d9a17b; }
+html[data-visual-style='growth'] body .is-growing .sprout-mote { animation-name: sproutPetal; }
+@keyframes sproutPetal {
+  0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) - 22px)) rotate(-20deg); }
+  30%,65% { opacity: .65; }
+  50% { transform: translate(calc(var(--mx) + var(--drift)),var(--my)) rotate(65deg) scaleX(.5); }
+  100% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 60px)) rotate(150deg); }
+}
