@@ -18,7 +18,7 @@
   <script src="./appearance.js?v=62"></script>
   <script src="./cloud.js?v=73"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=74" />
+  <link rel="stylesheet" href="./design-system.css?v=75" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -1423,10 +1423,10 @@
     <div class="modal-sheet absolute bottom-0 left-0 right-0 max-w-md mx-auto p-5 space-y-4">
       <div class="w-9 h-1 bg-white/15 rounded-full mx-auto -mt-1"></div>
       <div class="flex items-center justify-between">
-        <span class="text-base font-bold text-main">Математика бюджета FINTEX</span>
+        <span class="text-base font-bold text-main">Из чего «Можно тратить»</span>
         <button type="button" onclick="closeModals()" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <div id="forecast-math-body" class="input-surface p-4 space-y-2 text-xs leading-relaxed"></div>
+      <div id="forecast-math-body" class="budget-math"></div>
     </div>
   </div>
 
@@ -1812,13 +1812,13 @@
       <div class="flex items-center justify-between">
         <div>
           <span class="text-base font-bold text-main">Голосовой ввод расходов</span>
-          <p class="text-[11px] text-sub">Скажите вслух покупки и суммы (например: «Кофе двести пятьдесят и Лукойл две тысячи»)</p>
+          <p class="text-[11px] text-sub">Например: «Кофе 250, такси 400»</p>
         </div>
         <button type="button" onclick="stopVoiceRecognition(); closeModals();" class="w-8 h-8 rounded-lg input-surface flex items-center justify-center text-sub"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <!-- Интерактивный Pull-Cord микрофон с пружинной физикой -->
-      <div class="input-surface px-4 pb-4 pt-0 flex flex-col items-center justify-center space-y-3 text-center overflow-hidden">
+      <div class="voice-input-panel input-surface px-4 pb-4 pt-0 flex flex-col items-center justify-center space-y-3 text-center overflow-hidden">
         <div id="voice-cord-stage" class="voice-cord-stage w-full pt-0 pb-1">
           <svg class="voice-cord-svg" viewBox="0 0 120 44">
             <line x1="48" y1="2" x2="72" y2="2" stroke="rgba(0,214,195,0.45)" stroke-width="2.5" stroke-linecap="round" />
@@ -1844,7 +1844,9 @@
       </div>
 
       <!-- Распознанные операции из голоса -->
+      <p class="voice-review-note">Проверьте карточки перед записью. Изменение фразы создаст их заново.</p>
       <div id="voice-parsed-list" class="space-y-2"></div>
+      <p id="voice-review-status" class="flow-status" role="status" aria-live="polite"></p>
 
       <button type="button" id="voice-commit-btn" onclick="commitVoiceExpenses()" class="hidden w-full py-3.5 rounded-xl btn-turquoise text-sm">
         Записать распознанные расходы
@@ -1878,7 +1880,7 @@
 
   <script src="./scanner.js?v=47"></script>
   <script src="./cosmic_intro.js?v=61" data-fintex-mod="cosmic_intro.js"></script>
-  <script src="./finance-math.js?v=72"></script>
+  <script src="./finance-math.js?v=75"></script>
   <script src="./life-cost.js?v=30"></script>
   <script src="./numerals.js?v=66"></script>
   <script src="./backup-model.js?v=74"></script>
@@ -1886,10 +1888,11 @@
   <script src="./daily-model.js?v=72"></script>
   <script src="./ledger-sync.js?v=74"></script>
   <script src="./operation-undo.js?v=74"></script>
-  <script src="./app.js?v=74"></script>
+  <script src="./app.js?v=75"></script>
   <script src="./navigation.js?v=57"></script>
   <script src="./interface-motion.js?v=59"></script>
-  <script src="./modal-accessibility.js?v=60"></script>
+  <script src="./mobile-forms.js?v=75"></script>
+  <script src="./modal-accessibility.js?v=75"></script>
   <script src="./goals-model.js?v=58"></script>
   <script src="./savings-goals.js?v=65"></script>
   <script src="./investment-market.js?v=27"></script>
@@ -1906,12 +1909,12 @@
   <script src="./theme-atmosphere.js?v=63"></script>
   <script src="./tree-interaction.js?v=65"></script>
   <script src="./capture-model.js?v=43"></script>
-  <script src="./capture.js?v=68"></script>
+  <script src="./capture.js?v=75"></script>
   <script src="./behavior-model.js?v=44"></script>
   <script src="./behavior.js?v=54"></script>
   <script src="./app-tour.js?v=71"></script>
   <script src="./context-help.js?v=71"></script>
-  <script src="./daily-flow.js?v=74"></script>
+  <script src="./daily-flow.js?v=75"></script>
   <script src="./backup.js?v=73"></script>
 </body>
 </html>

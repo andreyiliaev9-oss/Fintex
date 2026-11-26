@@ -43,6 +43,12 @@
     const forecastBalance=hasData?add(balance,-billsReserved,-remainingSpend):null;
     return {todaySpent,totalTodaySpent,billsReserved,goalReserved,reserved,freePool,days,dailyCap,dailyLeft,pct,hasData,dailyBurn,forecastBalance};
   }
+  function reservations(state,today){
+    const m=metrics(state,today),horizon=shift(today,m.days);
+    const bills=(state.bills||[]).filter(b=>!b.is_paid&&ordinal(b.due_date)!==null&&b.due_date<=horizon).slice().sort((a,b)=>a.due_date.localeCompare(b.due_date));
+    const goals=[{...state.goal,id:'primary'},...(Array.isArray(state.goal?.pockets)?state.goal.pockets:[])].filter(g=>money(g.saved)>0);
+    return {...m,bills,goals,horizon,shortfall:Math.max(0,add(m.reserved,-state.balance)),validPayday:ordinal(state.payday)!==null&&state.payday>today};
+  }
   function parseExpenses(raw){
     return String(raw||'').split(/;|\n|,(?!\d)|\s+и\s+(?=[а-яa-z])/i).map(text=>{
       if (/\d[.,]\d{3,}|-\s*\d|\d[eE][+-]?\d/.test(text)) return null;
@@ -67,7 +73,7 @@
       return [{date,merchant,amount:Math.abs(amount),type:String(raw).startsWith('+')?'income':'expense'}];
     });
   }
-  const api={ledgerEffect,ledgerTransactions,goalSavings,finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
+  const api={reservations,ledgerEffect,ledgerTransactions,goalSavings,finite,minor,money,add,sum,parse,ordinal,shift,key,txKey,daysUntil,nextMonth,transactions,isBill,metrics,parseExpenses,parseStatement};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.FintexMath=api;
 })(typeof window==='undefined'?globalThis:window);

@@ -2220,3 +2220,53 @@ body:has(dialog[open]) #operation-undo { visibility:hidden; }
 
 body:has([id^="modal-"]:not(.hidden)) #operation-undo { visibility:hidden; }
 body:has(#view-home.hidden) #operation-undo { display:none; }
+
+/* v75: one recognition card, readable checks, keyboard-sized sheets. */
+body .recognition-card { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; margin: 14px 0; }
+body .recognition-card .recognition-wide { grid-column: 1 / -1; }
+body .recognition-card label, body #capture-form .recognition-card label { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; font-size: 12px; font-weight: 650; }
+body .recognition-card small { display: block; min-height: 16px; font-size: 10px; line-height: 1.4; font-weight: 450; color: var(--text-secondary); }
+body .recognition-card [data-review-check=suggested] small { color: var(--text-primary); }
+body .recognition-card input, body .recognition-card select { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-1); color: var(--text-primary); padding: 10px; font-size: 16px; }
+body .recognition-card [data-review-check=suggested] :is(input,select) { border-color: var(--accent); border-inline-start: 3px solid var(--accent); }
+body .recognition-card .recognition-amount input, body #capture-form .recognition-amount input { font-size: 25px; font-weight: 650; font-variant-numeric: tabular-nums; }
+body .recognition-details { border-top: 1px solid var(--border-subtle); margin-top: 16px; color: var(--text-secondary); font-size: 12px; }
+body .recognition-details > summary, body .budget-daily-method > summary { min-height: 44px; padding: 13px 0; cursor: pointer; }
+body .voice-review-row { padding: 14px 0; border-top: 1px solid var(--border-subtle); }
+body .voice-review-row h3 { font-size: 13px; font-weight: 700; }
+body .voice-review-note, body .budget-note { color: var(--text-secondary); font-size: 12px; line-height: 1.65; margin: 12px 0; }
+body #voice-commit-btn { min-height: 48px; white-space: normal; }
+body #voice-commit-btn:disabled { opacity: .55; }
+body .budget-equation { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 18px; }
+body .budget-math-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; padding: 9px 0; font-size: 12px; }
+body .budget-math-row strong { margin-left: auto; max-width: 100%; font-size: 17px; overflow-wrap: anywhere; }
+body .budget-equation .budget-math-row:last-child { border-top: 1px solid var(--border-subtle); color: var(--accent); font-weight: 700; }
+body .budget-shortfall { font-size: 12px; line-height: 1.6; padding: 12px; border: 1px solid var(--border-subtle); border-radius: 12px; margin-top: 12px; }
+body .budget-reservations { margin: 22px 0; }
+body .budget-reservations h3 { display: flex; gap: 8px; align-items: baseline; font-size: 14px; font-weight: 700; }
+body .budget-reservations h3 span { font-size: 11px; color: var(--text-secondary); font-weight: 450; }
+body .budget-reservations li { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); font-size: 12px; }
+body .budget-reservations li > span { min-width: 0; flex: 1 1 110px; overflow-wrap: anywhere; }
+body .budget-reservations li b { margin-left: auto; font-size: 15px; max-width: 100%; overflow-wrap: anywhere; }
+body .budget-reservations small { display: block; margin-top: 4px; font-size: 11px; color: var(--text-secondary); }
+body .budget-empty { color: var(--text-secondary); line-height: 1.6; }
+body .budget-daily-method { border-top: 1px solid var(--border-subtle); font-size: 12px; }
+body [id^=modal-] > .modal-sheet { max-height: min(92dvh,calc(var(--form-viewport-height,100dvh) - 16px)); }
+body [id^=modal-]:has(> .modal-sheet) { padding-bottom: var(--form-viewport-bottom,0px); }
+body .daily-dialog, body #capture-dialog { max-height: min(92dvh,calc(var(--form-viewport-height,100dvh) - 24px)); scroll-padding-block: 24px; }
+body #capture-dialog { bottom: var(--form-viewport-bottom,0px); }
+body .daily-dialog { transform: translateY(calc(var(--form-viewport-bottom,0px) / -2)); }
+body :is(.modal-sheet,.daily-dialog,#capture-dialog) :is(input,textarea,select) { scroll-margin-block: 24px; }
+@media(max-width:350px) {
+  body .recognition-card { grid-template-columns: minmax(0,1fr); }
+  body .capture-content { padding-inline: 16px; }
+  body .budget-math-row strong { font-size: 15px; }
+}
+body [id^=modal-] > .modal-sheet.absolute { bottom: var(--form-viewport-bottom,0px); }
+body #modal-voice.has-voice-review .voice-input-panel { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px 12px; padding: 12px; }
+body #modal-voice.has-voice-review #voice-cord-stage { width: 44px; height: 44px; min-height: 0; grid-row: 1 / 3; align-self: center; padding: 0; margin: 0; }
+body #modal-voice.has-voice-review .voice-cord-svg { display: none; }
+body #modal-voice.has-voice-review #voice-mic-toggle-btn { width: 44px; height: 44px; }
+body #modal-voice.has-voice-review #voice-status-label { grid-column: 2; font-size: 11px; line-height: 1.4; margin: 0; }
+body #modal-voice.has-voice-review #voice-transcript-inp { grid-column: 2; margin: 0; }
+body #modal-voice.has-voice-review #voice-wave-box:not(.hidden) { display: none; }
