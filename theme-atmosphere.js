@@ -8,7 +8,7 @@
   layer.setAttribute('aria-hidden', 'true');
   layer.inert = true;
   const fragment = document.createDocumentFragment();
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 24; i++) {
     const particle = document.createElement('i');
     particle.className = 'theme-particle';
     particle.style.cssText = `--x:${(i * 37 + 5) % 100}%;--duration:${12 + i % 5 * 2}s;--delay:${-i * 2.7}s;--sway:${i % 2 ? -24 : 30}px;--size:${4 + i % 4}px`;

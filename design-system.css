@@ -513,7 +513,7 @@ body .sprout-hint { text-align: center; color: var(--text-muted); font-size: 10p
 @keyframes sproutGlint { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
 @keyframes sproutLetter { from { transform: translateY(110%); opacity: .25; } to { transform: translateY(0); opacity: 1; } }
 @keyframes sproutDot { 0% { transform: translateY(-15px) scale(.4); opacity: 0; } 65% { transform: translateY(2px) scale(1.12); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
-@keyframes sproutMote { 0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 20px)) rotate(-25deg); } 25%,65% { opacity: .5; } 100% { opacity: 0; transform: translate(calc(var(--mx) + var(--drift)),calc(var(--my) - 30px)) rotate(60deg); } }
+@keyframes sproutMote { 0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 20px)) rotate(-25deg); } 25%,65% { opacity: .78; } 100% { opacity: 0; transform: translate(calc(var(--mx) + var(--drift) * 1.8),calc(var(--my) - 50px)) rotate(60deg); } }
 @keyframes sproutRule { from { opacity: 0; transform: scaleX(.05); } to { opacity: .75; transform: scaleX(1); } }
 @keyframes sproutExit { from { opacity: 1; } to { opacity: 0; } }
 @keyframes sproutSceneExit { to { opacity: 0; transform: translateY(-12px) scale(1.025); } }
@@ -1796,7 +1796,7 @@ body .tx-row-menu > span { display: grid; place-items: center; width: 30px; heig
 body .tx-row-menu[aria-expanded=true] > span { border-color: var(--border-active); background: var(--accent-soft); }
 @media(max-width:360px) { body .tx-row-open { grid-template-columns: minmax(0,1fr); } body .tx-row-open .tx-amount { justify-self: end; } }
 
-/* v62 · a different natural atmosphere for each palette. Fourteen particles,
+/* v62–63 · a different natural atmosphere for each palette. Bounded particles,
  * transform/opacity only; entirely decorative and below dialogs/navigation. */
 body #theme-atmosphere {
   position: fixed; inset: 0; width: min(100%,448px); margin-inline: auto;
@@ -1810,14 +1810,15 @@ body .theme-particle {
   border-radius: 85% 0 85% 0; background: #8fa35f;
   animation: themeLeaf var(--duration) var(--delay) linear infinite;
 }
+body .theme-particle:nth-child(n + 15) { display: none; }
 body .theme-particle:nth-child(3n) { background: #c8a65b; }
 body .theme-particle:nth-child(3n + 1) { background: #6d9361; }
 @keyframes themeLeaf {
   0% { opacity: 0; transform: translate(0,-12px) rotate(-30deg); }
-  12% { opacity: .38; }
-  35% { transform: translate(var(--sway),calc(var(--travel) * .32)) rotate(85deg) scaleX(.45); }
-  65% { opacity: .3; transform: translate(calc(var(--sway) * -.5),calc(var(--travel) * .62)) rotate(210deg) scaleX(-.8); }
-  88% { opacity: .35; }
+  12% { opacity: var(--weather-peak,.38); }
+  35% { transform: translate(calc(var(--sway) * var(--gust,1)),calc(var(--travel) * .32)) rotate(85deg) scaleX(.45); }
+  65% { opacity: calc(var(--weather-peak,.38) * .8); transform: translate(calc(var(--sway) * -.5 * var(--gust,1)),calc(var(--travel) * .62)) rotate(210deg) scaleX(-.8); }
+  88% { opacity: calc(var(--weather-peak,.38) * .9); }
   100% { opacity: 0; transform: translate(var(--sway),var(--travel)) rotate(320deg); }
 }
 @keyframes themeSnow {
@@ -1829,9 +1830,9 @@ body .theme-particle:nth-child(3n + 1) { background: #6d9361; }
 }
 @keyframes themePetal {
   0% { opacity: 0; transform: translate(0,-12px) rotate(-15deg) scaleX(.8); }
-  15% { opacity: .5; }
-  40% { transform: translate(calc(var(--sway) * 1.2),calc(var(--travel) * .34)) rotate(70deg) scaleX(.45); }
-  70% { opacity: .4; transform: translate(calc(var(--sway) * -.5),calc(var(--travel) * .66)) rotate(155deg) scaleX(.9); }
+  15% { opacity: var(--weather-peak,.5); }
+  40% { transform: translate(calc(var(--sway) * 1.2 * var(--gust,1)),calc(var(--travel) * .34)) rotate(70deg) scaleX(.45); }
+  70% { opacity: calc(var(--weather-peak,.5) * .8); transform: translate(calc(var(--sway) * -.5 * var(--gust,1)),calc(var(--travel) * .66)) rotate(155deg) scaleX(.9); }
   100% { opacity: 0; transform: translate(var(--sway),var(--travel)) rotate(225deg); }
 }
 html[data-visual-style='sapphire'] body .theme-particle {
@@ -1844,6 +1845,27 @@ html[data-visual-style='growth'] body .theme-particle {
 }
 html[data-visual-style='growth'] body .theme-particle:nth-child(3n) { background: #b6be98; }
 html[data-visual-style='growth'] body .theme-particle:nth-child(3n + 1) { background: #e7bc9f; }
+/* v63 · a fuller breeze in Forest and Peach, without increasing Lagoon snow. */
+html:is([data-visual-style='forest'],[data-visual-style='growth']) body .theme-particle {
+  --weather-peak: .78; --gust: 1.9; display: block;
+  width: calc(var(--size) * 1.7); height: calc(var(--size) * 1.05);
+  animation-duration: calc(var(--duration) * .74);
+}
+html[data-visual-style='forest'] body .theme-particle {
+  background-image: linear-gradient(32deg,transparent 45%,rgba(239,243,178,.55) 48%,transparent 55%);
+  border-bottom: 1px solid rgba(61,99,41,.35);
+}
+html:is([data-visual-style='forest'],[data-visual-style='growth']) body .theme-particle:nth-child(4n) {
+  width: calc(var(--size) * 2.15); height: calc(var(--size) * 1.35);
+  animation-duration: calc(var(--duration) * .63);
+}
+html[data-visual-style='growth'] body .theme-particle {
+  --weather-peak: .85; --gust: 1.65; height: calc(var(--size) * 2.1);
+  animation-duration: calc(var(--duration) * .86);
+  background-image: linear-gradient(135deg,rgba(255,234,213,.5),transparent 65%);
+  border: 1px solid rgba(164,99,66,.25);
+}
+html[data-visual-style='growth'] body .theme-particle:nth-child(4n) { height: calc(var(--size) * 2.4); }
 body #theme-atmosphere[data-paused='true'] .theme-particle { animation-play-state: paused; }
 body:has(#returning-splash:not(.hidden),#onboarding-screen:not(.hidden),dialog[open],[role='dialog'][aria-modal='true']:not(.hidden)) #theme-atmosphere { visibility: hidden; }
 body:has(#returning-splash:not(.hidden),#onboarding-screen:not(.hidden),dialog[open],[role='dialog'][aria-modal='true']:not(.hidden)) .theme-particle { animation-play-state: paused; }
@@ -1894,11 +1916,32 @@ html[data-visual-style='sapphire'] body .is-growing .sprout-mote { animation-nam
   100% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 90px)); }
 }
 html[data-visual-style='growth'] body .sprout-light { background: radial-gradient(ellipse at 53% 40%,rgba(228,178,139,.2),transparent 54%),radial-gradient(ellipse at 95% 0%,rgba(174,191,153,.15),transparent 52%); }
-html[data-visual-style='growth'] body .sprout-mote { width: 7px; height: 10px; border-radius: 80% 30% 75% 35%; background: #d9a17b; }
+html[data-visual-style='growth'] body .sprout-mote { width: 11px; height: 16px; border-radius: 80% 30% 75% 35%; background: #d9a17b; }
 html[data-visual-style='growth'] body .is-growing .sprout-mote { animation-name: sproutPetal; }
 @keyframes sproutPetal {
   0% { opacity: 0; transform: translate(var(--mx),calc(var(--my) - 22px)) rotate(-20deg); }
-  30%,65% { opacity: .65; }
-  50% { transform: translate(calc(var(--mx) + var(--drift)),var(--my)) rotate(65deg) scaleX(.5); }
+  30%,65% { opacity: .9; }
+  50% { transform: translate(calc(var(--mx) + var(--drift) * 1.7),var(--my)) rotate(65deg) scaleX(.5); }
   100% { opacity: 0; transform: translate(var(--mx),calc(var(--my) + 60px)) rotate(150deg); }
 }
+
+/* Larger local leaf/petal accents stay clipped to the tree art, never its sums.
+ * Preserve six distinct rhythms instead of synchronising the larger particles. */
+body #filely-financial-tree .ft-falling-leaf:nth-child(2) { --ft-period: 7.6s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(3) { --ft-period: 5.9s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(4) { --ft-period: 8.3s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(5) { --ft-period: 7.1s; }
+body #filely-financial-tree .ft-falling-leaf:nth-child(6) { --ft-period: 8.8s; }
+html[data-visual-style='forest'] body #filely-financial-tree .ft-falling-leaf {
+  width: 13px; height: 8px; animation-duration: calc(var(--ft-period,6.8s) * .8);
+  background-image: linear-gradient(30deg,transparent 44%,rgba(240,239,177,.6) 48%,transparent 55%);
+}
+html[data-visual-style='forest'] body #filely-financial-tree .ft-falling-leaf:nth-child(even) { width: 10px; height: 6px; }
+html[data-visual-style='growth'] body #filely-financial-tree .ft-falling-leaf {
+  --weather-peak: .95; --gust: 1.5; width: 10px; height: 13px;
+  animation-duration: calc(var(--ft-period,6.8s) * .85); background-image: linear-gradient(135deg,rgba(255,232,206,.6),transparent 65%);
+}
+html[data-visual-style='growth'] body #filely-financial-tree .ft-falling-leaf:nth-child(even) { width: 8px; height: 11px; }
+html:is([data-visual-style='forest'],[data-visual-style='growth']) body #filely-financial-tree .ft-wind-leaf { width: 11px; height: 7px; }
+html[data-visual-style='forest'] body .sprout-mote { width: 9px; height: 14px; background: #9bae58; }
+html[data-visual-style='forest'] body .sprout-mote:nth-of-type(even) { background: #c7a75c; }

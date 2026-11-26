@@ -10,7 +10,7 @@ async function style(page,name){await page.evaluate(name=>setVisualStyle(name),n
 async function pauseScene(page){await page.evaluate(()=>document.getAnimations().forEach(a=>{a.pause();a.currentTime=3700;}));}
 test('each theme has its own weather, with a fixed decorative budget and live switching without ledger writes',async({page})=>{
   await open(page);const before=await financial(page);const layer=page.locator('#theme-atmosphere'),particle=layer.locator('i').first();
-  await expect(layer).toHaveAttribute('aria-hidden','true');await expect(layer).toHaveCSS('pointer-events','none');expect(await layer.evaluate(el=>el.inert)).toBe(true);await expect(layer.locator('i')).toHaveCount(14);await expect(layer).toHaveCSS('visibility','visible');
+  await expect(layer).toHaveAttribute('aria-hidden','true');await expect(layer).toHaveCSS('pointer-events','none');expect(await layer.evaluate(el=>el.inert)).toBe(true);await expect(layer.locator('i')).toHaveCount(24);await expect(layer).toHaveCSS('visibility','visible');
   await layer.evaluate(el=>{window.originalWeather=el;window.originalParticle=el.firstElementChild;});
   for(let i=0;i<3;i++)for(const [name,animation,season]of [['sapphire','themeSnow','winter'],['growth','themePetal','blossom'],['forest','themeLeaf','leaf']]){
     await style(page,name);await expect(particle).toHaveCSS('animation-name',animation);await expect(particle).toHaveCSS('animation-play-state','running');await expect(page.locator('#filely-financial-tree')).toHaveAttribute('data-season',season);expect(await layer.evaluate(el=>el===window.originalWeather&&el.firstElementChild===window.originalParticle)).toBe(true);
@@ -54,4 +54,26 @@ test('weather cannot catch taps or overflow narrow screens; six palettes get mat
 });
 test('winter asset failures retain a themed local fallback and can recover on season switch',async({page})=>{
   await open(page);await page.route('**/assets/trees/winter/*.svg*',r=>r.abort());await style(page,'sapphire');await expect(page.locator('.ft-img')).toBeHidden();await expect(page.locator('.ft-svg-art')).toBeVisible();await expect(page.locator('.ft-fallback-snow')).toBeVisible();await style(page,'forest');await expect(page.locator('.ft-img')).toBeVisible();await expect(page.locator('.ft-svg-art')).toHaveCount(0);
+});
+
+test('Forest and Peach have fuller, larger layered gusts while Lagoon keeps its exact original snow budget',async({page})=>{
+  await open(page);const layer=page.locator('#theme-atmosphere');
+  for(const name of ['forest','growth','sapphire']){
+    await style(page,name);
+    const metrics=await layer.evaluate(el=>[...el.children].filter(p=>getComputedStyle(p).display!=='none').map(p=>{const s=getComputedStyle(p);return {width:parseFloat(s.width),height:parseFloat(s.height),duration:parseFloat(s.animationDuration),peak:s.getPropertyValue('--weather-peak').trim(),gust:s.getPropertyValue('--gust').trim()};}));
+    expect(metrics).toHaveLength(name==='sapphire'?14:24);
+    if(name==='sapphire'){expect(metrics[0]).toMatchObject({width:4,height:4,duration:12,peak:'',gust:''});}
+    else {expect(Math.max(...metrics.map(m=>m.width))).toBeGreaterThan(14);expect(metrics[0].duration).toBeLessThan(11);expect(Number(metrics[0].peak)).toBeGreaterThan(.7);expect(Number(metrics[0].gust)).toBeGreaterThan(1.5);}
+  }
+  expect(await layer.evaluate(el=>el.children.length)).toBe(24);
+});
+test('amplified Forest and Peach effects still fully stop for both motion preferences and pause behind dialogs',async({page})=>{
+  await open(page);const weather=page.locator('#theme-atmosphere');
+  for(const name of ['forest','growth']){
+    await style(page,name);await page.locator('#filely-financial-tree').scrollIntoViewIfNeeded();
+    const leaf=page.locator('.ft-falling-leaf').first();expect(await leaf.evaluate(el=>parseFloat(getComputedStyle(el).width))).toBeGreaterThan(9);
+    await page.emulateMedia({reducedMotion:'reduce'});await expect(weather).toBeHidden();await expect(weather.locator('i').first()).toHaveCSS('animation-name','none');await expect(leaf).toHaveCSS('animation-name','none');
+    await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});await expect(weather).toBeHidden();await expect(weather.locator('i').first()).toHaveCSS('animation-name','none');await expect(leaf).toHaveCSS('animation-name','none');
+    await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();openGoalDetailsModal();});await expect(weather).toBeHidden();await expect(weather.locator('i').first()).toHaveCSS('animation-play-state','paused');await page.evaluate(()=>closeModals());await expect(weather).toBeVisible();
+  }
 });
