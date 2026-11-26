@@ -681,33 +681,11 @@ function detectSubscriptionsAndAnomalies() {
   const monthlySubs = FM.sum(subsList,x=>x.amount);
   const annualSubs = FM.money(monthlySubs * 12);
 
-  const anomalies = [];
-  if (!expenses.length) {
-    anomalies.push({ level: 'info', title: 'Недостаточно данных для детектива', desc: 'Отсканируйте чек или добавьте операции для поиска аномалий.' });
-  } else {
-    const seenPairs = {};
-    expenses.forEach(t => {
-      const pairKey = `${t.date}_${t.merchant.toLowerCase()}_${t.amount}`;
-      if (seenPairs[pairKey]) {
-        anomalies.push({ level: 'warn', title: `Повторное списание: ${t.merchant}`, desc: `Две одинаковые операции на ${fmtR(t.amount)} за ${humanDate(t.date)}.` });
-      }
-      seenPairs[pairKey] = true;
-    });
-
-    const byCat = {};
-    expenses.forEach(t => byCat[t.category] = FM.add(byCat[t.category],t.amount));
-    const totalSpent = FM.sum(expenses,t=>t.amount);
-    Object.entries(byCat).forEach(([catId, amt]) => {
-      const share = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
-      if (share >= 55 && expenses.length >= 2) {
-        anomalies.push({ level: 'warn', title: `Высокая доля: ${(CATS[catId] || CATS.other).name} (${share}%)`, desc: `Ушло ${fmtR(amt)} из ${fmtR(totalSpent)}. Рекомендуем установить лимит.` });
-      }
-    });
-
-    if (!anomalies.length) {
-      anomalies.push({ level: 'ok', title: 'Аномалий не обнаружено', desc: 'Двойных списаний и резких скачков по категориям нет.' });
-    }
-  }
+  const anomalies = FintexReviewSignals.build(expenses).map(signal=>signal.kind==='similar'?{
+    level:signal.level,title:`Похожие записи: ${signal.merchant}`,
+    desc:`${signal.count} записи по ${fmtR(signal.amount)} за ${humanDate(signal.date)}. Это могут быть разные покупки. Сверьте с банком; ничего не удаляется автоматически.`
+  }:{level:'info',title:`${(CATS[signal.category]||CATS.other).name} · ${signal.share}% записанных расходов`,desc:`За последние 30 дней записано ${fmtR(signal.amount)} в этой категории. Высокая доля сама по себе не означает перерасход.`});
+  if(!anomalies.length)anomalies.push({level:'info',title:expenses.length?'Нет похожих записей по этим признакам':'Пока мало данных',desc:'Анализируем только внесённые операции. Отсутствие наблюдений не подтверждает полноту истории.'});
   return { subsList, monthlySubs, annualSubs, anomalies };
 }
 
@@ -746,10 +724,10 @@ function renderBalanceCardFeedback(m, hasAnomaly) {
   const notice = document.getElementById('hero-notice');
   notice.hidden = !(exhausted || hasAnomaly);
   notice.dataset.tone = exhausted ? 'risk' : 'caution';
-  document.getElementById('hero-notice-title').textContent = exhausted ? 'Бюджет на сегодня исчерпан' : 'Проверьте последние расходы';
+  document.getElementById('hero-notice-title').textContent = exhausted ? 'Бюджет на сегодня исчерпан' : 'Есть похожие записи';
   document.getElementById('hero-notice-description').textContent = exhausted
     ? (m.freePool === 0 ? 'Средства зарезервированы. Посмотрите расчёт.' : 'Лимит достигнут. Посмотрите расходы за день.')
-    : 'Есть повторные списания или высокая доля одной категории.';
+    : 'Это могут быть разные покупки. Сверьте записи с банком.';
   notice.onclick = () => {
     if (exhausted && m.freePool === 0) openForecastExplainModal();
     else if (exhausted) openTodayDetailModal();
@@ -760,7 +738,7 @@ function renderBalanceCardFeedback(m, hasAnomaly) {
 function renderAll(animateFromZero = false) {
   const m = calcMetrics();
   const intel = detectSubscriptionsAndAnomalies();
-  const hasAnomaly = intel.anomalies.some(a => a.level === 'warn');
+  const hasAnomaly = intel.anomalies.some(a => a.level === 'review');
 
   document.getElementById('hdr-greeting').textContent = state.name ? `${greetingWord()}, ${state.name}` : 'FINTEX';
   document.getElementById('hdr-sync-status').textContent = `Автопилот • синхр. ${state.lastSyncText}`;
@@ -1573,7 +1551,7 @@ function renderCalendar(forceReveal = false) {
 
   document.getElementById('cal-cells').innerHTML = html;
   if (focusedCalDate) document.querySelector(`[data-cal-date="${focusedCalDate}"]`)?.focus({ preventScroll: true });
-  document.getElementById('cal-period-summary').textContent = `Операций: ${monthTxs.length} · Без трат: ${zeroSpendDays} дн.`;
+  document.getElementById('cal-period-summary').textContent = `Записей: ${monthTxs.length} · Без записанных расходов: ${zeroSpendDays} дн.`;
 
   const payDays = daysLeft(state.payday);
   const upcoming = state.bills
@@ -4034,7 +4012,7 @@ function selectHeatmapDay(iso, triggerHaptic = true) {
 
   const catsEl = document.getElementById('hm-tt-cats');
   if (info.sum <= 0) {
-    catsEl.textContent = 'Без трат — отличный день для бюджета!';
+    catsEl.textContent = 'За этот день нет записанных расходов. Это не подтверждение отсутствия покупок.';
     catsEl.className = 'text-[11px] text-brand truncate';
   } else {
     const catNames = info.categories.map(cid => (CATS[cid] || CATS.other).name);

@@ -1,0 +1,6 @@
+const test=require('node:test'),assert=require('node:assert/strict'),S=require('../review-signals.js');
+const tx=(more={})=>({date:'2026-11-24',merchant:'Кофе',category:'cafe',amount:100,...more});
+test('large category share is a fact, never a warning or overspending judgment',()=>{const rows=S.build([tx(),tx({amount:50,merchant:'Обед'})]);assert.equal(rows.length,1);assert.equal(rows[0].kind,'share');assert.equal(rows[0].level,'info');assert.equal(rows[0].share,100);});
+test('two legitimate purchases at different times stay informational',()=>{const s=S.build([tx({time:'09:00'}),tx({time:'17:00'})]).find(s=>s.kind==='similar');assert.equal(s.level,'info');assert.equal(s.count,2);});
+test('identical recorded time suggests review but never confirms a bank duplicate',()=>{const s=S.build([tx({time:'09:00'}),tx({time:'09:00'})]).find(s=>s.kind==='similar');assert.equal(s.level,'review');assert.equal(s.amount,100);});
+test('missing time is not evidence, cents remain exact and inputs are immutable',()=>{const list=[tx({amount:100.25}),tx({amount:100.25})],before=JSON.stringify(list),s=S.build(list);assert.equal(s.find(s=>s.kind==='similar').level,'info');assert.equal(s.find(s=>s.kind==='share').amount,200.5);assert.equal(JSON.stringify(list),before);assert.deepEqual(S.build([]),[]);});

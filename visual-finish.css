@@ -109,3 +109,44 @@ body #tx-feed .tx-sync-state { margin-top: 3px; font-size: 10px; line-height: 1.
 /* Switch the canvas with its text atomically: a light-to-dark colour tween can
  * otherwise put white header labels on a still-light background for 250ms. */
 body { transition: none; }
+
+/* v77 · daily work before decoration, fewer repeated headers, factual data care. */
+body #operations-journal { scroll-margin-top: 16px; }
+body #operations-title:focus { outline: none; }
+body #hero-balance-card .balance-card-top { margin-bottom: 12px; }
+body #hero-balance-card .daily-budget { padding-block: 16px; }
+body #hero-balance-card .balance-total { margin-bottom: 10px; padding-bottom: 10px; }
+body #hero-balance-card .balance-forecast { min-height: 48px; margin-top: 10px; padding-top: 10px; }
+body #hero-balance-card .balance-explanation { margin-bottom: 12px; }
+body #view-analytics .ap-page-heading { margin: 8px 0 14px; }
+body .ap-page-heading .ap-eyebrow { display: none; }
+body .ap-page-heading h2 { font-size: 28px; }
+body .ap-page-heading p { margin-top: 5px; }
+body .ap-period-panel { padding: 12px; margin-bottom: 12px; }
+body .ftx-ap .ap-period-panel .ftx-ap-pills { margin: 9px 0; }
+body .ftx-ap .ap-period-panel .ftx-ap-pill { min-height: 44px; }
+body .ftx-ap-tabs { margin-bottom: 12px; }
+body .ap-trend { margin-top: 16px; }
+body #view-calendar > div:first-child { align-items: flex-start; }
+body #cal-period-summary { max-width: 230px; line-height: 1.5; font-size: 11px; }
+body #calendar-month-panel { padding: 10px 12px; }
+body #calendar-plan { margin-block: 12px; }
+body #calendar-plan > summary { min-height: 56px; padding-block: 10px; }
+body #cal-filter-strip { margin-bottom: 8px; }
+body .cal-filter { min-height: 44px; }
+body #calendar-month-panel button[aria-label] { width: 44px; height: 44px; }
+body #view-calendar .calendar-board { padding-top: 10px; }
+body #view-settings > .data-care { padding: 18px; }
+body .data-care h3 { font-size: 20px; font-weight: 700; }
+body .data-care p { font-size: 12px; color: var(--text-secondary); line-height: 1.65; margin-top: 8px; overflow-wrap: anywhere; }
+body .data-care-block { border-top: 1px solid var(--border-subtle); margin-top: 16px; padding-top: 14px; }
+body .data-care-block strong { font-size: 13px; }
+body .data-care button { min-height: 44px; font-size: 12px; font-weight: 650; text-align: left; color: var(--accent); }
+body .data-care-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+body .data-care-actions button { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-active); background: var(--surface-2); color: var(--text-primary); }
+body .data-care-actions [data-care-export] { background: var(--accent); color: var(--ui-action-ink); border-color: transparent; }
+body .data-care .data-care-note { font-size: 11px; }
+body #view-settings:has(#data-care) #st-sync-label { display: none; }
+body .data-care-block { margin-top: 12px; padding-top: 12px; }
+body .data-care-details { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+body .data-care-details > summary { min-height: 44px; padding-block: 12px; cursor: pointer; }

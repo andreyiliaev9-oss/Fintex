@@ -61,7 +61,7 @@ test('spending-period controls show exact dates, equal prior windows and no misl
   await open(page);
   for(const [id,days]of [['week',7],['month',30],['quarter',90],['year',365]]){
     await page.locator(`[data-period="${id}"]`).click();await expect(page.locator(`[data-period="${id}"]`)).toHaveText(`${days} дней`);
-    await expect(page.locator('.ap-period-dates')).toContainText(`Включая сегодня · ${days} дн.`);
+    await expect(page.locator('.ap-period-title')).toContainText('Включая сегодня');
     const first=M.shift('2026-11-24',1-days),previousEnd=M.shift(first,-1),previousStart=M.shift(first,-days);
     const label=key=>new Date(key+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'}).replace('.','');
     await expect(page.locator('.ap-period-dates strong')).toHaveText(`${label(first)} — ${label('2026-11-24')}`);

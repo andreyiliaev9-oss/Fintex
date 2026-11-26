@@ -26,6 +26,7 @@
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Fintex-${TODAY}-${file.createdAt.slice(11,19).replaceAll(':','-')}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
     try{localStorage.setItem('fp_backup_last_export',file.createdAt);}catch(_){/* The file was prepared even if the timestamp cannot be saved. */}
     refresh();status('Файл передан в загрузки. Если он открылся, выберите «Поделиться» → «Сохранить в Файлы». Само приложение не может проверить сохранение файла.');
+    window.dispatchEvent(new Event('fintex:backup-prepared'));
     return JSON.stringify(data);
   }
   function row(label,text,money=false){const r=document.createElement('div');r.className='flow-equation-row';const a=document.createElement('span');a.textContent=label;const b=document.createElement('strong');if(money)FintexNumerals.render(b,text);else b.textContent=String(text);r.append(a,b);return r;}
