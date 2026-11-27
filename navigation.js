@@ -1,8 +1,8 @@
 /* Finger-follow tab navigation; gestures never write financial data. */
 (() => {
   'use strict';
-  const order = ['home','calendar','analytics','settings'];
-  const labels = {home:'Главная',calendar:'Календарь',analytics:'Аналитика',settings:'Настройки'};
+  const order = ['home','calendar','map','analytics','settings'];
+  const labels = {home:'Главная',calendar:'Календарь',map:'Карта',analytics:'Аналитика',settings:'Настройки'};
   const current = () => document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav;
   const visible = el => !!el?.getClientRects().length && getComputedStyle(el).visibility !== 'hidden';
   const blocked = () => [...document.querySelectorAll('[id^="modal-"],[role="dialog"],dialog[open],#onboarding-screen,#returning-splash,#ftx-stories-overlay')].some(visible);

@@ -392,7 +392,7 @@ body.stealth-mode .money-val {
   top: 6px;
   bottom: calc(6px + env(safe-area-inset-bottom));
   left: 12px;
-  width: calc((100% - 24px) / 4);
+  width: calc((100% - 24px) / 5);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.16) 0%, rgba(var(--accent-rgb), 0.05) 100%);
   border: 1px solid rgba(var(--accent-rgb), 0.28);

@@ -22,7 +22,7 @@ test('provided logo loads locally in header, home button, onboarding and browser
 test('navigation buttons work by keyboard, keep exactly one current destination and align the selected pill',async({page})=>{
   await open(page);const before=await page.evaluate(()=>JSON.stringify({balance:state.balance,transactions:state.transactions,goal:state.goal}));
   const nav=page.locator('#fintex-navigation');
-  for(const tab of ['calendar','analytics','settings','home']){
+  for(const tab of ['calendar','map','analytics','settings','home']){
     const button=nav.locator(`[data-nav="${tab}"]`);await button.focus();await page.keyboard.press('Enter');
     await expect(button).toBeFocused();await expect(button).toHaveAttribute('aria-current','page');await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);await expect(page.locator('#view-'+tab)).toBeVisible();
     const bounds=await button.boundingBox(),pill=await nav.locator('#nav-active-pill').boundingBox();expect(Math.abs(bounds.x-pill.x)).toBeLessThanOrEqual(1.5);expect(Math.abs(bounds.width-pill.width)).toBeLessThanOrEqual(1.5);
@@ -34,7 +34,7 @@ test('panel fits narrow screens and preserves label/icon contrast in all complem
   await open(page);await page.setViewportSize({width:320,height:740});const nav=page.locator('#fintex-navigation');
   for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
     await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
-    for(const tab of ['home','calendar','analytics','settings']){
+    for(const tab of ['home','calendar','map','analytics','settings']){
       await nav.locator(`[data-nav="${tab}"]`).click();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
       const metrics=await nav.evaluate(el=>{
@@ -57,7 +57,7 @@ test('each panel button has a separated outline, with a stronger current outline
   await open(page);await page.setViewportSize({width:320,height:740});
   for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
     await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
-    for(const tab of ['calendar','analytics','settings','home']){
+    for(const tab of ['calendar','map','analytics','settings','home']){
       await page.locator(`#fintex-navigation [data-nav="${tab}"]`).click();
       const outlines=await page.locator('#fintex-navigation .nav-tab').evaluateAll(buttons=>buttons.map(button=>{
         const s=getComputedStyle(button,'::after');return {current:button.getAttribute('aria-current')==='page',width:s.borderTopWidth,style:s.borderTopStyle,color:s.borderTopColor,inset:s.top,pointer:s.pointerEvents,transition:s.transitionDuration};
@@ -70,7 +70,7 @@ test('each destination has a distinct coloured icon tile even when inactive',asy
   await open(page);
   for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
     await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
-    const colours=await page.locator('#fintex-navigation .nav-icon').evaluateAll(els=>els.map(el=>getComputedStyle(el).backgroundColor));expect(new Set(colours).size).toBe(4);
-    for(const tab of ['calendar','analytics','settings']){const icon=page.locator(`[data-nav="${tab}"] .nav-icon`);const c=await icon.evaluate(el=>{const rgb=s=>s.match(/\d+/g).slice(0,3).map(Number),style=getComputedStyle(el);return {fg:rgb(style.color),bg:rgb(style.backgroundColor)};});expect(contrast(c.fg,c.bg)).toBeGreaterThanOrEqual(4.5);}
+    const colours=await page.locator('#fintex-navigation .nav-icon').evaluateAll(els=>els.map(el=>getComputedStyle(el).backgroundColor));expect(new Set(colours).size).toBe(5);
+    for(const tab of ['calendar','map','analytics','settings']){const icon=page.locator(`[data-nav="${tab}"] .nav-icon`);const c=await icon.evaluate(el=>{const rgb=s=>s.match(/\d+/g).slice(0,3).map(Number),style=getComputedStyle(el);return {fg:rgb(style.color),bg:rgb(style.backgroundColor)};});expect(contrast(c.fg,c.bg)).toBeGreaterThanOrEqual(4.5);}
   }
 });
