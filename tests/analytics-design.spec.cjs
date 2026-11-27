@@ -124,3 +124,28 @@ test('sparse history uses independent columns, no native slider, and a compact d
   for(const width of [320,390]){await page.setViewportSize({width,height:844});const box=await page.locator('.ap-expense-hero').boundingBox();expect(box.height).toBeLessThan(620);expect(await page.locator('.ap-expense-hero').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);}
   await page.addStyleTag({content:'html {scroll-behavior:auto !important}'});await page.locator('.ap-expense-hero').evaluate(el=>el.scrollIntoView({block:'start'}));await page.screenshot({path:'docs/expense-sparse-dark-preview.png'});
 });
+
+test('v89 report has a compact hierarchy, readable dark heading and theme-specific contrast',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('fp_help_v1',JSON.stringify(['analytics'])));await open(page);const before=await snapshot(page);
+ for(const style of ['forest','sapphire','growth'])for(const mode of ['light','dark']){
+  await page.evaluate(({style,mode})=>{setVisualStyle(style);setTheme(mode);},{style,mode});
+  const visual=await page.evaluate(()=>{
+   const view=document.querySelector('#view-analytics'),hero=view.querySelector('.ap-expense-hero');
+   const text=getComputedStyle(view.querySelector('h2')).color;
+   return {heading:text,expected:getComputedStyle(view).getPropertyValue('--text-primary').trim(),canvas:getComputedStyle(document.body).backgroundColor,hero:getComputedStyle(hero).backgroundColor,period:view.querySelector('.ap-period-panel').getBoundingClientRect().height,heroTop:hero.getBoundingClientRect().top,cardTop:getComputedStyle(hero).borderTopWidth};
+  });
+  const expected=await page.evaluate(color=>{const el=document.createElement('span');el.style.color=color;document.body.append(el);const result=getComputedStyle(el).color;el.remove();return result;},visual.expected);
+  await expect(page.locator('.ap-page-heading h2')).toHaveCSS('color',expected);expect(visual.hero).not.toBe(visual.canvas);expect(visual.period).toBeLessThan(90);await expect.poll(async()=>(await page.locator('.ap-expense-hero').boundingBox()).y).toBeLessThan(330);expect(visual.cardTop).toBe('0px');
+  await expect(page.locator('.ftx-ap-big')).toHaveText('27 780 ₽');
+  await expect(page.locator('.ap-plot-surface')).toHaveCSS('touch-action','pan-y');
+ }
+ expect(await snapshot(page)).toBe(before);
+});
+test('v89 report canvas is scoped to analytics and finite effects respect motion preferences',async({page})=>{
+ await open(page);const before=await snapshot(page);const reportCanvas=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
+ await page.evaluate(()=>goTab('home'));expect(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor)).not.toBe(reportCanvas);
+ await page.evaluate(()=>goTab('analytics'));expect(await page.evaluate(()=>getComputedStyle(document.body).backgroundColor)).toBe(reportCanvas);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-period=week]').click();
+ const animations=await page.locator('#view-analytics').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running').map(a=>a.effect.getTiming().iterations));expect(animations).toEqual([]);
+ await page.evaluate(()=>togglePrivacy());await expect(page.locator('.ap-trend')).toBeHidden();await expect(page.locator('.ftx-ap-big')).toHaveCSS('filter',/blur/);expect(await snapshot(page)).toBe(before);
+});

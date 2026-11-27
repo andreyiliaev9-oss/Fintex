@@ -351,7 +351,7 @@
       <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val" ${numberAttrs(cat.total,data.currency)}>${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
     return `
       <div class="ftx-ap-card gold ap-expense-hero">
-        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Расходы за период</div><span class="ap-period-caption">${period.label}</span></div>
+        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Всего потрачено</div><span class="ap-period-caption">${period.label}</span></div>
         <div class="ftx-ap-big money-val" ${numberAttrs(data.spent,data.currency)}>${fmt(data.spent, data.currency)}</div>
         <span class="ftx-ap-delta">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
         <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
@@ -511,7 +511,7 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Доходы и расходы по вашим записям</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div><details class="quiet-details ap-observations" data-ap-disclosure="observations"><summary data-ap-summary="observations">Наблюдения по записям</summary>${window.FintexBehavior?.entryHTML() || ''}</details>${renderTools()}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">Личный отчёт</div><h2>Аналитика</h2><p>Ваши деньги. Общая картина.</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div><details class="quiet-details ap-observations" data-ap-disclosure="observations"><summary data-ap-summary="observations">Наблюдения по записям</summary>${window.FintexBehavior?.entryHTML() || ''}</details>${renderTools()}`;
     container.querySelectorAll('details[data-ap-disclosure]').forEach(el=>{el.open=disclosures.get(el.dataset.apDisclosure)||false;});
     if (focusKey) {
       const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
