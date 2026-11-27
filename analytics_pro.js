@@ -82,7 +82,7 @@
   function renderCashflow(data){
     const max=Math.max(data.income,data.spent,1);
     const lines=[{label:'Доходы',value:data.income,type:'income',icon:'arrow-down-left'},{label:'Расходы',value:data.spent,type:'expense',icon:'arrow-up-right'}];
-    return `<section class="ap-cashflow" aria-labelledby="ap-cashflow-title"><div class="ap-cashflow-heading"><div><span class="ap-cashflow-kicker">Два направления</span><h3 id="ap-cashflow-title">Движение денег</h3></div><span class="ap-record-count">${data.currentTxs.length} записей</span></div>${lines.map(line=>`<div class="ap-cashflow-row" data-flow="${line.type}"><div class="ap-cashflow-label"><span class="ap-cashflow-icon" aria-hidden="true"><i data-lucide="${line.icon}"></i></span><span>${line.label}</span><strong class="ap-flow-value money-val" ${numberAttrs(line.value,data.currency)}>${fmt(line.value,data.currency)}</strong></div><div class="ap-cashflow-track" aria-hidden="true"><span style="width:${line.value/max*100}%"></span></div></div>`).join('')}<div class="ap-cashflow-net"><div><strong>Разница</strong><span>Доходы минус расходы</span></div><b class="ap-flow-value money-val ${data.net<0?'ap-negative':''}" ${numberAttrs(data.net,data.currency,data.net>0?'+':'')}>${data.net>0?'+':''}${fmt(data.net,data.currency)}</b></div><p class="ap-cashflow-note">По записям за выбранный период. Это не остаток на счёте.</p></section>`;
+    return `<section class="ap-cashflow" aria-labelledby="ap-cashflow-title"><div class="ap-cashflow-heading"><div><span class="ap-cashflow-kicker">Два направления</span><h3 id="ap-cashflow-title">Доходы и расходы</h3></div><span class="ap-record-count">${data.currentTxs.length} записей</span></div>${lines.map(line=>`<div class="ap-cashflow-row" data-flow="${line.type}"><div class="ap-cashflow-label"><span class="ap-cashflow-icon" aria-hidden="true"><i data-lucide="${line.icon}"></i></span><span>${line.label}</span><strong class="ap-flow-value money-val" ${numberAttrs(line.value,data.currency)}>${fmt(line.value,data.currency)}</strong></div><div class="ap-cashflow-track" aria-hidden="true"><span style="width:${line.value/max*100}%"></span></div></div>`).join('')}<div class="ap-cashflow-net"><div><strong>Разница</strong><span>Доходы минус расходы</span></div><b class="ap-flow-value money-val ${data.net<0?'ap-negative':''}" ${numberAttrs(data.net,data.currency,data.net>0?'+':'')}>${data.net>0?'+':''}${fmt(data.net,data.currency)}</b></div><p class="ap-cashflow-note">По записям за выбранный период. Это не остаток на счёте.</p></section>`;
   }
   function categoryMeta(rawName) {
     const aliases = { food: 'Продукты', taxi: 'Транспорт', cafe: 'Кафе и рестораны', fun: 'Развлечения', subs: 'Подписки', shop: 'Покупки', health: 'Здоровье', other: 'Прочее', income: 'Доход' };
@@ -334,11 +334,11 @@
   }
 
   function renderDailyAnswers(data) {
-    const M=FintexMath,today=M.key(new Date()),m=M.metrics(data.st,today),c=FintexDailyModel.monthComparison(data.st.transactions,today),top=data.categories[0];
+    const M=FintexMath,today=M.key(new Date()),m=M.metrics(data.st,today),c=FintexDailyModel.monthComparison(data.st.transactions,today);
     const money=value=>`<span class="money-val">${fmt(value,data.currency)}</span>`;
     const date=key=>new Date(`${key}T12:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
     const comparison=c.comparable?`${c.delta>0?'На ':c.delta<0?'На ':''}${c.delta?money(Math.abs(c.delta))+' '+(c.delta>0?'больше':'меньше'):'Без изменений'}`:'Недостаточно записей для сравнения';
-    return `<section class="ap-daily-answers" aria-label="Главное о деньгах"><div class="ap-daily-answer"><span>Куда ушло больше всего · выбранный период</span><strong>${top?esc(top.name)+' · '+money(top.total):'Пока нет записанных расходов'}</strong></div><div class="ap-daily-answer"><span>Этот месяц и прошлый</span><strong>${comparison}</strong><p>${date(c.currentFrom)} — ${date(c.currentTo)}: ${money(c.spent)}. ${date(c.previousFrom)} — ${date(c.previousTo)}: ${money(c.prior)}.${c.shorterPrevious?' В прошлом месяце меньше дней.':''} Только записанные расходы; отсутствие записей не означает нулевые траты.</p></div><div class="ap-daily-answer"><span>До зарплаты · ${date(data.st.payday||today)}</span><strong>${money(m.freePool)} свободно</strong><p>После платежей ${money(m.billsReserved)} и отложенного ${money(m.goalReserved)}. ${m.days} дн.; ориентир ${money(m.freePool/m.days)} в день.${M.add(data.st.balance,-m.reserved)<0?' Общего остатка не хватает на все резервы.':''} Новые доходы не учтены.</p></div></section>`;
+    return `<section class="ap-daily-answers" aria-label="Главное о деньгах"><div class="ap-daily-answer"><span>Этот месяц и прошлый</span><strong>${comparison}</strong><p>${date(c.currentFrom)} — ${date(c.currentTo)}: ${money(c.spent)}. ${date(c.previousFrom)} — ${date(c.previousTo)}: ${money(c.prior)}.${c.shorterPrevious?' В прошлом месяце меньше дней.':''} Только записанные расходы; отсутствие записей не означает нулевые траты.</p></div><div class="ap-daily-answer"><span>До зарплаты · ${date(data.st.payday||today)}</span><strong>${money(m.freePool)} свободно</strong><p>После платежей ${money(m.billsReserved)} и отложенного ${money(m.goalReserved)}. ${m.days} дн.; ориентир ${money(m.freePool/m.days)} в день.${M.add(data.st.balance,-m.reserved)<0?' Общего остатка не хватает на все резервы.':''} Новые доходы не учтены.</p></div></section>`;
   }
 
   function renderOverview(data, period) {
@@ -357,13 +357,12 @@
         <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
         ${renderExpenseTrend(data, period)}
       </div>
-      ${renderDailyAnswers(data)}
       ${renderCashflow(data)}
-      <div class="ftx-ap-summary-row">
+      <details data-ap-disclosure="planning" class="ap-planning-details quiet-details"><summary data-ap-summary="planning">Оценки и план до зарплаты</summary>${renderDailyAnswers(data)}<div class="ftx-ap-summary-row">
         <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val" ${numberAttrs(data.currentTxs.some(t=>!t._inc)?data.burnRate:null,data.currency)}>${data.currentTxs.some(t=>!t._inc)?fmt(data.burnRate, data.currency):'—'}</div></div>
         <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}" ${numberAttrs(data.projectedBalance,data.currency)}>${data.projectedBalance===null?'Мало записей':fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
-      <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details>
+      <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details></details>
       <div class="ftx-ap-card ap-distribution">
         <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length ? data.categories.length + ' катег.' : 'Нет операций'}</span></div>
         ${renderDistribution(data)}
@@ -483,7 +482,7 @@
         <button type="button" class="section-action" data-tool="limits"><span><strong>Лимиты категорий</strong><small>Настроить бюджет на расходы</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-act="sim"><span><strong>Дерево будущего</strong><small>Сценарии личных финансов</small></span><span aria-hidden="true">→</span></button>
         <button type="button" class="section-action" data-act="stories"><span><strong>Итоги периода</strong><small>Короткий отчёт за период</small></span><span aria-hidden="true">→</span></button>
-      </div></details>`;
+      ${window.FintexInvestments?.entryHTML() || ''}</div></details>`;
   }
 
   function findAnalyticsContainer() {
@@ -500,7 +499,8 @@
     if (!container) return;
     injectStyles();
     const focused = container.contains(document.activeElement) ? document.activeElement : null;
-    const focusKey = focused && ['period','subtab','cat','hdate','goto'].map(key => focused.hasAttribute(`data-${key}`) ? [key, focused.getAttribute(`data-${key}`)] : null).find(Boolean);
+    const focusKey = focused && ['period','subtab','cat','hdate','goto','ap-summary'].map(key => focused.hasAttribute(`data-${key}`) ? [key, focused.getAttribute(`data-${key}`)] : null).find(Boolean);
+    const disclosures=new Map([...container.querySelectorAll('details[data-ap-disclosure]')].map(el=>[el.dataset.apDisclosure,el.open]));
     const behaviorDisclosures = new Map([...container.querySelectorAll('#fintex-behavior details[data-behavior-detail]')].map(el => [el.dataset.behaviorDetail, el.open]));
     const previousTools = container.querySelector('#analytics-tools');
     if (previousTools) toolsOpen = previousTools.open;
@@ -511,7 +511,8 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Доходы и расходы по вашим записям</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div>${window.FintexBehavior?.entryHTML() || ''}${renderTools()}${window.FintexInvestments?.entryHTML() || ''}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">ФИНАНСОВЫЙ ОБЗОР</div><h2>Аналитика<span aria-hidden="true">.</span></h2><p>Доходы и расходы по вашим записям</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div><details class="quiet-details ap-observations" data-ap-disclosure="observations"><summary data-ap-summary="observations">Наблюдения по записям</summary>${window.FintexBehavior?.entryHTML() || ''}</details>${renderTools()}`;
+    container.querySelectorAll('details[data-ap-disclosure]').forEach(el=>{el.open=disclosures.get(el.dataset.apDisclosure)||false;});
     if (focusKey) {
       const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
       next?.focus({ preventScroll: true });

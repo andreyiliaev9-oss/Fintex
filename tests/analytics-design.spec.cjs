@@ -23,7 +23,7 @@ test('editorial overview plots real daily expenses, preserves amounts, periods a
     const widths=await page.locator('.ap-donut-segment').evaluateAll(els=>els.reduce((sum,el)=>sum+parseFloat(el.getAttribute('stroke-dasharray')),0));expect(widths).toBeCloseTo(100,5);
     expect(await page.locator('.ap-category-amount').first().textContent()).toBe(Math.round(data.categories[0].total).toLocaleString('ru-RU')+' ₽');
   }
-  await page.locator('[data-period="month"]').click();await page.locator('.ap-forecast-method summary').click();await expect(page.locator('.ap-forecast-method p')).toBeVisible();
+  await page.locator('[data-period="month"]').click();await page.locator('.ap-planning-details > summary').click();await page.locator('.ap-forecast-method summary').click();await expect(page.locator('.ap-forecast-method p')).toBeVisible();
   expect(await snapshot(page)).toBe(before);
 });
 test('categories support keyboard drilldown and all detail/rhythm interactions remain usable',async({page})=>{

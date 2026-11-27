@@ -15,7 +15,7 @@ async function open(page,{empty=false}={}){
   },empty?[]:history());
   await page.goto('/');await page.waitForFunction(()=>!!window.FintexBehavior&&!!window.FintexAnalyticsPro&&!!window.FINTEX_SIM?.ui);
   await page.evaluate(()=>dismissReturningSplash());await page.locator('[data-nav="analytics"]').click();
-  await expect(page.locator('#fintex-behavior')).toBeVisible();
+  await page.locator('.ap-observations > summary').click();await expect(page.locator('#fintex-behavior')).toBeVisible();
 }
 const snapshot=page=>page.evaluate(()=>JSON.stringify({balance:state.balance,goal:state.goal,transactions:state.transactions}));
 test('patterns and explicit feedback persist, planned purchase is not a psychological trait or ledger edit',async({page})=>{
@@ -25,7 +25,7 @@ test('patterns and explicit feedback persist, planned purchase is not a psycholo
   await panel.locator('[data-behavior-dismiss="weekend"]').click();await expect(panel.locator('.behavior-insight')).toHaveCount(3);
   await panel.locator('[data-behavior-planned="big"]').click();await expect(panel.locator('.behavior-unusual')).toHaveCount(0);
   expect(await snapshot(page)).toBe(before);
-  await page.reload();await page.waitForFunction(()=>!!window.FintexAnalyticsPro);await page.evaluate(()=>{dismissReturningSplash();goTab('analytics');});
+  await page.reload();await page.waitForFunction(()=>!!window.FintexAnalyticsPro);await page.evaluate(()=>{dismissReturningSplash();goTab('analytics');});await page.locator('.ap-observations > summary').click();
   await expect(panel.locator('[data-behavior-useful="delivery"]')).toHaveAttribute('aria-pressed','true');await expect(panel.locator('[data-behavior-dismiss="weekend"]')).toHaveCount(0);
   await panel.locator('[data-behavior-restore]').click();await expect(panel.locator('.behavior-insight')).toHaveCount(4);
 });

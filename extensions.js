@@ -151,7 +151,7 @@ window.FINTEX_EXT = {
       return;
     }
     const s = document.createElement('script');
-    s.src = `./${src}?v=${src==='analytics_pro.js'?77:src==='cosmic_intro.js'?61:34}`;
+    s.src = `./${src}?v=${src==='analytics_pro.js'?81:src==='cosmic_intro.js'?61:34}`;
     s.dataset.fintexMod = src;
     s.async = false;
     s.onload = () => {
@@ -255,7 +255,8 @@ if (document.readyState === 'loading') {
     btn.className = active
       ? 'px-2 py-0.5 rounded-md bg-[#00D6C3]/20 border border-[#00D6C3]/45 text-[11px] font-bold text-brand tap'
       : 'text-[11px] font-semibold text-sub hover:text-brand tap';
-    btn.textContent = active ? 'Готово' : 'Выбрать';
+    btn.textContent = active ? 'Завершить выбор' : 'Выбрать записи';
+    const more=document.getElementById('journal-more-label');if(more)more.textContent=active?'Выбор записей':'Ещё';
   }
 
   window.toggleTxSelectMode = function (forceVal, initialTxId) {

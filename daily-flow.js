@@ -34,9 +34,17 @@
     $('flow-category-row').hidden=value!=='expense';$('flow-transfer').hidden=value!=='transfer';
     $('flow-name').placeholder=value==='income'?'Например, зарплата':value==='transfer'?'Например, на свою карту':'Например, кофе';
     $('flow-type-note').textContent=value==='transfer'?'Оба счёта уже должны входить в общий остаток. Это только запись, не банковский перевод.':editing?'Состав чека остаётся исходным. Статус сохранения — у операции.':'';
-    $('flow-recent').hidden=!!editing||value==='transfer';say('');preview();
+    $('flow-recent').hidden=!!editing||value==='transfer';if($('flow-templates'))$('flow-templates').hidden=!!editing||value==='transfer'||!$('flow-recent').querySelector('button');say('');preview();
+  }
+  function describeDetails(){
+    if(!$('flow-details-label'))return;
+    const date=$('flow-date').value;
+    const label=date===TODAY?'Сегодня':date?new Date(date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'}):'Выберите дату';
+    $('flow-details-heading').textContent=kind==='expense'?'Дата и категория':'Дата операции';
+    $('flow-details-label').textContent=label+(kind==='expense'?' · '+($('flow-category').selectedOptions[0]?.textContent||'Прочее'):'');
   }
   function preview(){
+    describeDetails();
     const amount=M.parse($('flow-amount').value),old=current(),next=M.add(state.balance,-D.effect(old),kind==='income'?(amount||0):kind==='expense'?-(amount||0):0);
     const out=$('flow-after');out.hidden=amount===null||amount<=0||old?.type==='adjustment';
     if(!out.hidden)FintexNumerals.render($('flow-after-value'),next);
@@ -75,6 +83,7 @@
     $('flow-amount').disabled=protectedTx;$('flow-date').disabled=protectedTx;dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.disabled=protectedTx);
     $('flow-lock-note').hidden=!protectedTx;
     templates();setKind(tx?.type||'expense');
+    $('flow-details').open=!!id||!!repeat||date!==TODAY;$('flow-templates').open=false;
     $('flow-draft-note').hidden=!!id||!!repeat||date!==TODAY||!FintexEntryDraft.read();
     dialog.showModal();
     (protectedTx?$('flow-name'):$('flow-amount')).focus({preventScroll:true});
@@ -84,7 +93,7 @@
     const old=current();if(editing&&JSON.stringify(old)!==signature){say('Запись изменилась. Откройте её заново, чтобы не потерять изменения.');return;}
     const draft={type:kind,amount:$('flow-amount').value,date:$('flow-date').value,merchant:$('flow-name').value.trim()||(kind==='income'?'Доход':kind==='transfer'?'Между своими счетами':CATS[$('flow-category').value]?.name||'Покупка'),category:$('flow-category').value,from:$('flow-from').value,to:$('flow-to').value,covered:$('flow-covered').checked};
     const result=D.change(state.balance,state.transactions,draft,TODAY,editing,uid());
-    if(result.error){say(result.error);return;}
+    if(result.error){say(result.error);if(M.ordinal(draft.date)===null||draft.date>TODAY){$('flow-details').open=true;$('flow-date').focus();}else if(M.parse(draft.amount)===null||M.parse(draft.amount)<=0)$('flow-amount').focus();return;}
     if(Math.abs(result.balance)>1e12){say('Итоговый остаток слишком велик. Проверьте сумму.');return;}
     busy=true;try{saveLocal(result);if(!editing)FintexEntryDraft.clear();dialog.close();toast(editing?'Изменения сохранены':'Операция записана');}catch(error){say(error.message);}finally{busy=false;}
   }
@@ -119,11 +128,17 @@
     reconcile=document.createElement('dialog');reconcile.id='daily-reconcile';reconcile.className='daily-dialog';reconcile.setAttribute('aria-labelledby','reconcile-title');reconcile.setAttribute('aria-modal','true');
     reconcile.innerHTML=`<header class="flow-header"><h2 id="reconcile-title">Сверить остаток</h2><button type="button" data-flow-close aria-label="Закрыть">×</button></header><div id="flow-equation"></div><p class="flow-note">Начальная сумма восстановлена из текущих записей, а не получена из банка. Сравнивайте общий остаток по тем же счетам.</p><form id="reconcile-form" novalidate><label class="flow-field" for="flow-actual">Фактически на всех учтённых счетах, ₽<input id="flow-actual" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="Введите сумму из банка"/></label><div id="flow-difference" class="flow-after" hidden><span id="flow-difference-title"></span><strong id="flow-difference-value" class="money-val"></strong></div><label class="flow-field" for="flow-reason">Комментарий<input id="flow-reason" maxlength="100" placeholder="Например, неучтённая комиссия"/></label><label class="flow-check" id="flow-confirm-row" hidden><input type="checkbox" id="flow-confirm"/>Записать разницу отдельной корректировкой</label><p class="flow-note">Корректировка не считается доходом или расходом. Сначала сохраняется на устройстве; отправка зависит от подключения облака.</p><p id="reconcile-status" class="flow-status" role="status" aria-live="polite"></p><button id="reconcile-save" class="flow-primary" type="submit" disabled>Записать корректировку</button><button id="flow-bank-screen" class="flow-secondary" type="button">Выбрать скриншот банка</button></form>`;
     document.body.append(dialog,reconcile);
+    const details=document.createElement('details');details.id='flow-details';details.className='quiet-details';
+    details.innerHTML='<summary><span id="flow-details-heading">Дата и категория</span> <span id="flow-details-label"></span></summary>';
+    const fields=$('flow-category-row').parentElement;fields.before(details);details.append(fields);
+    const recent=document.createElement('details');recent.id='flow-templates';recent.className='quiet-details';recent.innerHTML='<summary>Повторить недавнюю</summary>';
+    $('flow-name').closest('label').after(recent);recent.append($('flow-recent'));
+
     const draftNote=document.createElement('section');draftNote.id='flow-draft-note';draftNote.className='flow-draft-note';draftNote.hidden=true;
     draftNote.innerHTML='<p>Есть незаписанный ввод в этой вкладке. Это ещё не операция.</p><button type="button" id="flow-draft-restore">Вернуть ввод</button><button type="button" id="flow-draft-discard">Удалить ввод</button>';
     dialog.querySelector('.flow-header').after(draftNote);
     $('flow-draft-discard').onclick=()=>{FintexEntryDraft.clear();draftNote.hidden=true;};
-    $('flow-draft-restore').onclick=()=>{const draft=FintexEntryDraft.read();if(!draft)return;setKind(draft.kind);for(const [field,id]of Object.entries({amount:'amount',merchant:'name',date:'date',category:'category',from:'from',to:'to'}))$('flow-'+id).value=draft[field];$('flow-covered').checked=false;inputTouched=true;draftNote.hidden=true;preview();say('Восстановлен только ввод. Проверьте поля и нажмите «Записать».');};
+    $('flow-draft-restore').onclick=()=>{const draft=FintexEntryDraft.read();if(!draft)return;setKind(draft.kind);for(const [field,id]of Object.entries({amount:'amount',merchant:'name',date:'date',category:'category',from:'from',to:'to'}))$('flow-'+id).value=draft[field];$('flow-covered').checked=false;$('flow-details').open=true;inputTouched=true;draftNote.hidden=true;preview();say('Восстановлен только ввод. Проверьте поля и нажмите «Записать».');};
     $('flow-form').addEventListener('input',rememberInput);$('flow-form').addEventListener('change',rememberInput);
     dialog.addEventListener('click',event=>{if(event.target.closest('[data-flow-kind]'))rememberInput(event);});
     $('flow-recent').addEventListener('click',rememberInput);
@@ -152,7 +167,7 @@
       if(['transfer','adjustment'].includes(tx.type))$('mtx-meta').textContent=`${fmtR(tx.amount,tx.type==='transfer'?'↔':D.effect(tx)>0?'+':'−')} · ${tx.date} · ${tx.type==='transfer'?'Между своими счетами':'Корректировка остатка'}`;
       let edit=$('tx-edit-action');if(!edit){edit=document.createElement('button');edit.type='button';edit.id='tx-edit-action';edit.className='flow-primary';edit.textContent='Изменить операцию';$('mtx-cats').after(edit);}
       edit.hidden=tx.type==='adjustment';edit.onclick=()=>open({id});
-      let note=$('tx-local-note');if(!note){note=document.createElement('p');note.id='tx-local-note';note.className='flow-note';note.textContent='Сначала сохраняется на устройстве. Статус облака указан у операции. При разных версиях потребуется сравнение.';edit.after(note);}
+      let note=$('tx-local-note');if(!note){note=document.createElement('p');note.id='tx-local-note';note.className='flow-note';note.textContent='Сначала сохраняется на устройстве. Статус облака указан у операции. При разных версиях потребуется сравнение.';const details=document.createElement('details');details.id='tx-save-details';details.className='quiet-details';details.innerHTML='<summary>Где сохраняются изменения</summary>';details.append(note);edit.after(details);}
     };
     document.addEventListener('click',event=>{if(event.target.closest?.('#hdr-plus-btn')){event.preventDefault();event.stopImmediatePropagation();open();}},true);
     let link=$('balance-check-action');if(!link){link=document.createElement('button');link.type='button';link.id='balance-check-action';link.className='balance-check-action';link.textContent='Сверить остаток';link.addEventListener('click',openReconcile);$('hero-balance-card').append(link);}

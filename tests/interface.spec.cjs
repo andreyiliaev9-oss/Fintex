@@ -154,7 +154,7 @@ test('balance card handles a long account name and large amounts at 320px', asyn
   });
   const size = await page.locator('#hero-balance-card').evaluate(el => ({ width: el.clientWidth, content: el.scrollWidth }));
   expect(size.content).toBeLessThanOrEqual(size.width);
-  await page.locator('#hero-forecast-row').click();
+  await page.locator('#balance-more > summary').click();await page.locator('#hero-forecast-row').click();
   await expect(page.locator('#modal-forecast-info')).toBeVisible();
 });
 
@@ -363,7 +363,7 @@ test('sprout artwork actually resolves to visible leaves and type in both themes
 
 async function openInvestments(page) {
   await page.locator('[data-nav="analytics"]').click();
-  await page.locator('#view-analytics [data-invest-open]').click();
+  await page.locator('#analytics-tools > summary').click();await page.locator('#view-analytics [data-invest-open]').click();
   await expect(page.locator('#invest-learning')).toBeVisible();
 }
 

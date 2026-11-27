@@ -196,3 +196,67 @@ body #backup-check-report .flow-equation-row { flex-wrap: wrap; gap: 6px 16px; }
 body #backup-check-report .flow-equation-row strong { max-width: 100%; overflow-wrap: anywhere; }
 
 body #backup-check-details > summary { min-height: 44px; padding-block: 12px; font-size: 12px; font-weight: 650; cursor: pointer; }
+/* v81: progressive disclosure for occasional actions, real controls and routes retained. */
+body .quiet-details { margin-block: 8px; color: var(--text-primary); }
+body .quiet-details > summary { min-height: 44px; padding: 12px 0; font-size: 12px; font-weight: 650; cursor: pointer; }
+body .quiet-details > summary:focus-visible, body #data-care-more > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+body #balance-more { border-top: 1px solid var(--border-subtle); margin: 8px 0 0; }
+body #balance-more > summary { color: var(--text-secondary); }
+body #balance-more .balance-explanation { margin: 0 0 8px; }
+body #balance-more .balance-forecast { margin-top: 0; }
+body #hero-balance-card > .ledger-sync-status { border: 0; background: none; margin-block: 2px 0; min-height: 44px; padding: 8px 0; font-size: 11px; }
+body .tx-feed-header { gap: 10px; }
+body .tx-feed-actions { gap: 6px; }
+body #journal-search-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding-inline: 8px; font-size: 12px; }
+body #journal-more { position: relative; margin: 0; }
+body #journal-more > summary { min-width: 54px; padding: 12px 8px; text-align: center; list-style: none; }
+body #journal-more > summary::-webkit-details-marker { display: none; }
+body .journal-more-actions { position: absolute; z-index: 32; right: 0; top: 100%; width: min(240px,75vw); padding: 8px; border: 1px solid var(--border-active); border-radius: 16px; background: var(--surface-1); box-shadow: var(--shadow-float); }
+body .journal-more-actions > button { width: 100%; display: flex; justify-content: flex-start; align-items: center; gap: 8px; min-height: 44px; padding: 10px; font-size: 12px; text-align: left; }
+body .journal-more-actions .tx-history-replay { width: 100%; border-radius: 10px; }
+body .journal-more-actions #history-replay::after { content: 'Повторить анимацию'; }
+html.no-motion body .journal-more-actions #history-replay { display: none; }
+body #flow-details > summary { display: flex; flex-wrap: wrap; gap: 3px 10px; justify-content: space-between; border-block: 1px solid var(--border-subtle); }
+body #flow-details-label { color: var(--text-secondary); font-weight: 500; overflow-wrap: anywhere; }
+body #flow-details[open] .flow-field-grid { margin-top: 12px; }
+body #flow-details[open] > summary::after { content: 'Свернуть'; color: var(--text-secondary); }
+body #flow-templates { margin-block: 2px; }
+body #flow-templates[hidden] { display: none !important; }
+body #flow-tools { background: transparent; border-color: transparent; color: var(--text-secondary); font-size: 12px; }
+body #flow-save { margin-top: 8px; }
+body #flow-form .flow-types { margin-bottom: 12px; }
+body .settings-task { display: grid; gap: 12px; margin-top: 24px; }
+body .settings-task > h3 { font-size: 14px; font-weight: 750; color: var(--text-primary); }
+body .settings-task > * { min-width: 0; margin-block: 0; }
+body #view-settings > .settings-task .data-care { padding: 18px; }
+body #data-care-more { width: 100%; }
+body #data-care-more > summary { min-height: 44px; padding: 12px 0; font-size: 12px; font-weight: 650; cursor: pointer; }
+body .data-care-secondary { display: grid; gap: 8px; }
+body #data-care .data-care-actions > [data-care-export] { width: 100%; text-align: center; }
+body #calendar-month-totals { padding: 0 14px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-1); }
+body #calendar-month-totals #cal-period-summary { max-width: none; padding-block: 10px; }
+body .calendar-purpose { margin: 4px 0 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+body #calendar-export { min-height: 44px; font-size: 12px; }
+body #cal-day-section > div:first-child { align-items: flex-start; }
+body #cal-day-section > div:first-child > button { min-height: 44px; }
+body .ap-planning-details { padding: 0 14px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-1); }
+body .ap-planning-details > summary { font-size: 13px; }
+body .ap-planning-details .ap-daily-answers { margin-top: 4px; }
+body .ap-cashflow { padding: 16px; }
+body .ap-cashflow-heading { margin-bottom: 14px; }
+body .ap-cashflow-kicker { display: none; }
+body .ap-cashflow-row { margin-bottom: 12px; }
+body .ap-cashflow-heading h3 { margin-top: 0; font-size: 18px; }
+
+body #flow-details > summary::after { content: 'Изменить'; color: var(--text-secondary); font-weight: 500; }
+body #flow-details[open] > summary::after { content: 'Свернуть'; }
+body #flow-type-note:empty { display: none; }
+@media (max-width: 360px) { body #flow-details .flow-field-grid { grid-template-columns: minmax(0,1fr); } }
+
+body #hdr-plus-btn { width: auto; min-width: 104px; gap: 6px; padding: 0 12px; background: var(--accent); color: var(--ui-action-ink); }
+body .add-entry-label { font-size: 12px; font-weight: 750; }
+body #capture-fab { min-height: 48px; padding-inline: 12px; box-shadow: 0 3px 10px rgba(9,40,23,.12); font-size: 11px; }
+body .ap-observations { padding: 0 14px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-1); }
+body .ap-observations > summary { font-size: 13px; }
+body .ap-observations #fintex-behavior { margin-top: 4px; border: 0; padding-inline: 0; }
+body #analytics-tools .inv-entry { width: 100%; box-shadow: none; margin: 0; }

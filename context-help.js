@@ -5,8 +5,7 @@
   const topics = {
     calendar:{root:'#view-calendar',text:'Нажмите на день — увидите его траты и платежи.'},
     analytics:{root:'#view-analytics',text:'Выберите период, чтобы сравнить доходы и расходы.'},
-    goals:{root:'#savings-goals',text:'Добавьте цель, затем пополняйте её.'},
-    settings:{root:'#view-settings',text:'В «Что где в Fintex» можно повторить экскурсию.'}
+    goals:{root:'#savings-goals',text:'Добавьте цель, затем пополняйте её.'}
   };
   const seen = new Set();
   try { const saved=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(saved))saved.forEach(k=>{if(Object.hasOwn(topics,k))seen.add(k);}); } catch (_) {}
