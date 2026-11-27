@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Fintex · Протокол наблюдателя</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f6f7ef;color:#193e2a;font:16px/1.55 system-ui,sans-serif}main{max-width:850px;margin:auto;padding:24px 16px 60px}h1{font-size:28px}h2{font-size:20px}fieldset,article{border:1px solid #bac9af;border-radius:14px;padding:18px;margin:18px 0;background:#fffef6}label{display:block;margin:14px 0}input,select,textarea,button{font:inherit}input,select,textarea{display:block;width:100%;border:1px solid #698064;border-radius:8px;padding:10px;color:inherit;background:white}input[type=checkbox]{display:inline;width:auto;min-width:20px;min-height:20px;vertical-align:middle}textarea{min-height:90px}button{border:1px solid #376944;border-radius:8px;background:#e2edda;color:#163a22;min-height:44px;padding:8px 16px;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ad6400;outline-offset:3px}button:disabled{opacity:.5;cursor:default}.warning{padding:14px;border-left:4px solid #ad6400;background:#fff0d7}.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.row label{flex:1;min-width:180px}small{display:block;color:#46624c}output{font-variant-numeric:tabular-nums}#status{white-space:pre-line}.danger{color:#96332a}.primary{background:#28683d;color:white}a{color:#205831}
+</style></head><body><main>
+<h1>Протокол наблюдателя</h1>
+<p class="warning"><strong>Только для реальной добровольной сессии.</strong> Это не симулятор участника и не оценка продукта. Не записывайте имена, контакты, доступы, личные суммы и чеки. Инструмент не связан с Fintex и ничего не отправляет в сеть.</p>
+<p>Заметки находятся <strong>только в памяти этой страницы</strong>. Перед закрытием выгрузите JSON и проверьте файл в загрузках. Времена — активное время таймера; внешние прерывания фиксируйте в заметках.</p>
+<p><a href="validation-plan.md">Инструкция наблюдателю</a> · <a href="participant-tasks.md" target="_blank" rel="noopener">Отдельный лист заданий</a></p>
+<fieldset><legend>Сессия</legend>
+<div class="row"><label>Код участника<select id="participant"><option value="">Выберите</option><option>P01</option><option>P02</option><option>P03</option><option>P04</option><option>P05</option><option>P06</option><option>P07</option></select></label><label>Среда<select id="device"><option value="">Выберите</option><option>iPhone · Safari</option><option>Android · Chrome</option><option>iPhone · Telegram</option><option>Android · Telegram</option><option>Другой браузер</option></select></label></div>
+<label>ОС / браузер / версия Fintex (без идентификаторов устройства)<input id="versions" maxlength="180" placeholder="Например: iOS, Safari, Fintex v82"></label>
+<label><input id="consent" type="checkbox"> Получено добровольное согласие; данные вымышленные, личные уведомления скрыты</label>
+</fieldset>
+<section id="tasks" aria-label="Наблюдения по заданиям"></section>
+<label>Итоговые замечания и обезличенные цитаты<textarea id="debrief" maxlength="3000" placeholder="Что непонятно? Как понимает хранение? Что мешает доверять?"></textarea></label>
+<p id="summary">Сессия ещё не заполнена.</p><p id="status" role="status" aria-live="polite"></p>
+<button id="export" class="primary" type="button">Скачать протокол JSON</button>
+<p><small>Незавершённые задания экспортируются как NOT RUN. Успех и факт подсказки записывает наблюдатель, не программа. Перед публикацией вручную проверьте обезличивание. Сырые результаты не коммитьте в репозиторий.</small></p>
+</main><script>
+'use strict';
+const titles=['Записать покупку','Найти прошлый расход','Понять свои деньги','Найти предстоящий платёж','Сохранить и проверить файл'];
+const tasks=titles.map((title,i)=>({id:'T'+(i+1),title,elapsed:0,started:null}));
+const $=id=>document.getElementById(id);let dirty=false;
+for(const task of tasks){
+ const article=document.createElement('article');article.id=task.id;
+ const heading=document.createElement('h2');heading.textContent=task.id+' · '+task.title;article.append(heading);
+ // Only fixed, developer-owned markup is inserted. User notes never become HTML.
+ const body=document.createElement('div');body.innerHTML='<div class="row"><button type="button" data-timer>Старт</button><output data-time aria-label="Активное время">0 с</output></div><div class="row"><label>Исход<select data-outcome><option value="not_run">NOT RUN · не проводилось</option><option value="success">SUCCESS · самостоятельно</option><option value="assisted">ASSISTED · с подсказкой</option><option value="failed">FAILED · не выполнено</option></select></label><label>Конкретных подсказок<input data-hints type="number" min="0" max="99" value="0"></label><label>Лёгкость со слов участника<select data-seq><option value="">Не отвечал</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label></div><label><input data-critical type="checkbox"> Критическая ошибка / опасное понимание</label><label>Наблюдение, неверные ожидания, подсказки<textarea data-notes maxlength="3000"></textarea></label>';
+ article.append(body);$('tasks').append(article);
+ body.querySelector('[data-timer]').addEventListener('click',event=>{
+  const running=task.started!==null;
+  if(!running&&tasks.some(other=>other.started!==null)){$('status').textContent='Остановите таймер предыдущего задания.';return;}
+  if(running){task.elapsed+=performance.now()-task.started;task.started=null;}else task.started=performance.now();
+  event.target.textContent=running?'Продолжить':'Пауза / стоп';dirty=true;$('status').textContent='';paint();
+ });
+}
+function milliseconds(task){return task.elapsed+(task.started===null?0:performance.now()-task.started);}
+function paint(){for(const task of tasks)$(task.id).querySelector('[data-time]').textContent=Math.floor(milliseconds(task)/1000)+' с';}
+setInterval(paint,500);
+document.addEventListener('input',()=>dirty=true);document.addEventListener('change',()=>dirty=true);
+window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
+$('export').addEventListener('click',()=>{
+ const fail=message=>{$('status').textContent=message;};
+ if(!$('participant').value||!$('device').value||!$('consent').checked){fail('Укажите код участника, среду и подтвердите согласие.');return;}
+ if(tasks.some(t=>t.started!==null)){fail('Остановите таймер перед выгрузкой.');return;}
+ const results=[];
+ for(const task of tasks){
+  const el=$(task.id),outcome=el.querySelector('[data-outcome]').value,raw=el.querySelector('[data-hints]').value,hints=Number(raw),seconds=Math.round(milliseconds(task)/1000);
+  if(raw===''||!Number.isInteger(hints)||hints<0||hints>99){fail(task.id+': укажите целое число подсказок от 0 до 99.');return;}
+  if(outcome==='success'&&hints!==0||outcome==='assisted'&&hints===0){fail(task.id+': исход не соответствует числу подсказок.');return;}
+  if(outcome==='not_run'&&(milliseconds(task)>0||hints>0||el.querySelector('[data-seq]').value||el.querySelector('[data-critical]').checked)){fail(task.id+': задание измерялось — укажите его фактический исход.');return;}
+  results.push({id:task.id,title:task.title,outcome,activeSeconds:outcome==='not_run'?null:seconds,timingRecorded:milliseconds(task)>0,hints,seq:el.querySelector('[data-seq]').value?Number(el.querySelector('[data-seq]').value):null,critical:el.querySelector('[data-critical]').checked,observation:el.querySelector('[data-notes]').value});
+ }
+ const attempted=results.filter(r=>r.outcome!=='not_run').length,independent=results.filter(r=>r.outcome==='success').length;
+ const report={format:'FintexObservedStudy',version:1,createdAt:new Date().toISOString(),participant:$('participant').value,environment:$('device').value,versions:$('versions').value,consentConfirmed:true,source:'human observation entered by moderator; not automated user evidence',completion:attempted===tasks.length?'complete':'partial',tasks:results,debrief:$('debrief').value};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Fintex-study-'+report.participant+'-'+report.createdAt.replace(/[:.]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('summary').textContent='Отмечено заданий: '+attempted+'/'+tasks.length+'. Самостоятельных успехов: '+independent+'/'+attempted+'. Это не общий балл UX.';
+ fail('Протокол передан в загрузки. Проверьте файл и обезличивание перед передачей. Данные на странице остаются только до её закрытия.');
+});
+</script></body></html>

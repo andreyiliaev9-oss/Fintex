@@ -6,7 +6,8 @@
     "build": "tailwindcss -i ui/tailwind.css -o assets/utilities.css --minify && node scripts/copy-icons.cjs && node scripts/copy-capture-assets.cjs && node scripts/build-offline.cjs",
     "test": "node --test tests/*.test.cjs",
     "preview": "python3 -m http.server 3000 --bind 0.0.0.0",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "test:reliability": "playwright test tests/multidevice-recovery.spec.cjs tests/operation-sync.spec.cjs tests/backup-interface.spec.cjs tests/backup-check.spec.cjs tests/offline-drafts.spec.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

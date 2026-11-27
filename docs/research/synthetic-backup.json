@@ -1,0 +1,85 @@
+{
+  "format": "FintexBackup",
+  "version": 1,
+  "createdAt": "2026-11-24T09:00:00.000Z",
+  "currency": "RUB",
+  "cloudOwner": null,
+  "data": {
+    "name": "Учебный профиль — не реальные деньги",
+    "bank": "Тестовый банк",
+    "balance": 8750.25,
+    "payday": "2026-12-04",
+    "goal": {
+      "title": "Учебный резерв",
+      "target": 50000,
+      "saved": 1000,
+      "pockets": [
+        {
+          "id": "study-trip",
+          "title": "Учебная поездка",
+          "target": 10000,
+          "saved": 250
+        }
+      ]
+    },
+    "catLimits": {},
+    "transactions": [
+      {
+        "id": "study-coffee",
+        "date": "2026-11-23",
+        "type": "expense",
+        "amount": 249.75,
+        "merchant": "Учебная кофейня",
+        "category": "cafe",
+        "source": "Учебные данные",
+        "items": []
+      },
+      {
+        "id": "study-groceries",
+        "date": "2026-11-22",
+        "type": "expense",
+        "amount": 1500,
+        "merchant": "Учебные продукты",
+        "category": "food",
+        "source": "Учебные данные",
+        "items": []
+      },
+      {
+        "id": "study-taxi",
+        "date": "2026-11-21",
+        "type": "expense",
+        "amount": 500,
+        "merchant": "Учебное такси",
+        "category": "taxi",
+        "source": "Учебные данные",
+        "items": []
+      },
+      {
+        "id": "study-income",
+        "date": "2026-11-20",
+        "type": "income",
+        "amount": 10000,
+        "merchant": "Учебный доход",
+        "category": "other",
+        "source": "Учебные данные",
+        "items": []
+      }
+    ],
+    "bills": [
+      {
+        "id": "study-bill",
+        "title": "Учебный интернет",
+        "amount": 750,
+        "due_date": "2026-11-28",
+        "is_paid": false
+      }
+    ],
+    "ledgerOffset": 0,
+    "localDeletedIds": [],
+    "priceHistory": {},
+    "captureArchive": [],
+    "behavior": {},
+    "workTime": null
+  },
+  "sha256": "97dd5306a3289f2f26d83d7e614afa144c6be565d26ad76a6a367df5974a7e30"
+}
