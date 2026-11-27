@@ -44,68 +44,7 @@ function openScanModal() {
 }
 
 function preprocessReceiptCanvas(imageSrc) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const targetW = Math.min(1600, Math.max(1000, img.width));
-      const scale = targetW / img.width;
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const d = imgData.data;
-
-      let minL = 255, maxL = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        if (lum < minL) minL = lum;
-        if (lum > maxL) maxL = lum;
-      }
-      const range = Math.max(1, maxL - minL);
-
-      for (let i = 0; i < d.length; i += 4) {
-        let lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        lum = ((lum - minL) / range) * 255;
-        lum = lum < 135 ? Math.max(0, lum * 0.78) : Math.min(255, lum * 1.12);
-        d[i] = d[i + 1] = d[i + 2] = lum;
-      }
-      ctx.putImageData(imgData, 0, 0);
-
-      let qrRaw = '';
-      if (window.jsQR) {
-        const qrCode = jsQR(imgData.data, w, h);
-        if (qrCode && qrCode.data) qrRaw = qrCode.data;
-      }
-
-      const sliceH = 1400;
-      const overlap = 180;
-      const slices = [];
-      if (h <= sliceH) {
-        slices.push(canvas.toDataURL('image/png'));
-      } else {
-        let y = 0;
-        while (y < h) {
-          const curH = Math.min(sliceH, h - y);
-          const sc = document.createElement('canvas');
-          sc.width = w;
-          sc.height = curH;
-          sc.getContext('2d').drawImage(canvas, 0, y, w, curH, 0, 0, w, curH);
-          slices.push(sc.toDataURL('image/png'));
-          if (y + curH >= h) break;
-          y += (sliceH - overlap);
-        }
-      }
-      resolve({ enhancedUrl: canvas.toDataURL('image/png'), slices, qrRaw });
-    };
-    img.onerror = () => reject(new Error('Не удалось прочитать изображение'));
-    img.src = imageSrc;
-  });
+  return window.FintexReceiptVision.prepare(imageSrc);
 }
 
 async function renderPdfToDataUrl(arrayBuffer) {
@@ -171,16 +110,8 @@ function parseRussianReceiptText(rawText, qrData, avgConf) {
     if (tm) time = `${tm[1]}:${tm[2]}`;
   }
 
-  let ocrTotal = null;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (/(ИТОГ|ВСЕГО|К ОПЛАТЕ|СУММА)/i.test(lines[i]) && !/НДС/i.test(lines[i])) {
-      const nums = lines[i].match(/(\d[\d\s]*[.,]\d{2})/g);
-      if (nums) {
-        ocrTotal = parseFloat(nums[nums.length - 1].replace(/\s+/g, '').replace(',', '.'));
-        break;
-      }
-    }
-  }
+  const totalRead = window.FintexReceiptVision.total(fullText);
+  const ocrTotal = totalRead.amount;
 
   const vatM = fullText.match(/НДС[^\d]*(\d[\d\s]*[.,]\d{2})/i);
   const vat = vatM ? parseFloat(vatM[1].replace(/\s+/g, '').replace(',', '.')) : null;
@@ -230,6 +161,7 @@ function parseRussianReceiptText(rawText, qrData, avgConf) {
   if (merchant === 'Кассовый чек') lowFields.push('merchant');
   if (!date) lowFields.push('date');
   if (!finalTotal) lowFields.push('total');
+  if (totalRead.ambiguous) lowFields.push('total_conflict');
 
   return {
     merchant, inn, date: date || TODAY, time, total: finalTotal,
@@ -332,13 +264,14 @@ async function executeScanPipeline(scanCtx) {
     setScanProgress(55, 'Этап 3: Локальный OCR (Tesseract.js rus)...');
     if (!window.Tesseract) throw new Error('Tesseract.js недоступен');
 
-    let confSum = 0;
+    let confSum = 0;const parts=[];
     for (let i = 0; i < prep.slices.length; i++) {
       setScanProgress(55 + Math.round(((i + 1) / prep.slices.length) * 30), `OCR фрагмента ${i + 1} из ${prep.slices.length}...`);
       const ocrRes = await Tesseract.recognize(prep.slices[i], 'rus+eng');
-      combinedText += '\n' + (ocrRes.data.text || '');
+      parts.push(ocrRes.data.text || '');
       confSum += (ocrRes.data.confidence || 75) / 100;
     }
+    combinedText=window.FintexReceiptVision.join(parts);
     avgConf = Math.round((confSum / prep.slices.length) * 100) / 100;
     addLog('OCR', `Tesseract.js завершён (уверенность ${Math.round(avgConf * 100)}%)`);
   } catch (ocrErr) {

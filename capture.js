@@ -9,6 +9,13 @@
   function archive(){return [...readArchive(),...state.scanHistory.filter(s=>s.confirmed).map(s=>({fileHash:s.file_hash,fiscalKey:s.fiscal_key,txId:state.transactions.find(t=>t.scan_id===s.scan_id)?.id}))];}
   function assess(c){return M.assess(c,{today:TODAY,transactions:state.transactions,archive:archive()});}
   function status(text){$('capture-status').textContent=text;}
+  function processing(phase,text,progress=null){
+    $('capture-processing-title').textContent=text;
+    dialog.querySelectorAll('[data-capture-step]').forEach((el,i)=>{el.dataset.state=i<phase?'done':i===phase?'current':'waiting';if(i===phase)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
+    const bar=$('capture-progress');bar.dataset.determinate=String(progress!==null);
+    if(progress===null){bar.removeAttribute('aria-valuenow');$('capture-progress-label').textContent=phase===0?'Подготавливаем фото и ищем QR':'Загружаем локальный движок';}
+    else{const pct=Math.min(100,Math.max(0,Math.round(progress*100)));bar.setAttribute('aria-valuenow',String(pct));bar.style.setProperty('--capture-progress',pct+'%');$('capture-progress-label').textContent=phase===2?'Сверяем сумму, дату и дубликаты':`Прочитано ${pct}% текста`;}
+  }
   function stage(name){
     dialog.querySelectorAll('[data-capture-stage]').forEach(el=>{el.hidden=el.dataset.captureStage!==name;});
     dialog.setAttribute('aria-busy',String(name==='processing'));
@@ -44,13 +51,14 @@
       const image=new Image();image.onerror=()=>reject(new Error('Изображение не открылось. Попробуйте JPEG или PNG вместо HEIC.'));
       image.onload=()=>{
         if(image.naturalWidth*image.naturalHeight>25000000){reject(new Error('Изображение слишком большое. Сделайте скриншот или уменьшите его до 25 Мп.'));return;}
-        const scale=Math.min(1,1600/image.naturalWidth,4200/image.naturalHeight),canvas=document.createElement('canvas');
-        canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/png'));
+        // Keep the source resolution. Receipt preparation has a pixel budget;
+        // scaling every long receipt down to 4200px erased small print.
+        resolve(url);
       };image.src=url;
     });
   }
   async function extract(file,id){
-    let dataUrl,text='',confidence=null,nativeText=false;
+    let dataUrl,text='',confidence=null,nativeText=false,retried=false;
     if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
       const pdfjs=await import('./assets/ocr/pdf.min.mjs');
       pdfjs.GlobalWorkerOptions.workerSrc=new URL('./assets/ocr/pdf.worker.min.mjs',location.href).href;
@@ -60,36 +68,54 @@
         const page=await pdf.getPage(1),content=await page.getTextContent();
         let lastY=null;for(const item of content.items){const y=item.transform?.[5];if(lastY!==null&&Math.abs(y-lastY)>3)text+='\n';text+=item.str+(item.hasEOL?'\n':' ');lastY=y;}
         nativeText=text.trim().length>25;
-        const base=page.getViewport({scale:1}),scale=Math.min(2,1600/base.width,4200/base.height),viewport=page.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+        const base=page.getViewport({scale:1}),scale=Math.min(2,1800/base.width,Math.sqrt(8000000/(base.width*base.height))),viewport=page.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
         await timeout(page.render({canvasContext:canvas.getContext('2d'),viewport}).promise);dataUrl=canvas.toDataURL('image/png');
       }finally{await pdf.destroy();}
     }else dataUrl=await timeout(imageData(file));
     if(id!==epoch)return null;
-    status('Ищем QR и читаем текст…');
+    processing(0,'Готовим чёткое изображение');status('Ищем QR на исходном изображении…');
     const prep=await timeout(preprocessReceiptCanvas(dataUrl));
+    if(id!==epoch)return null;
     if(prep.slices.length>8)throw new Error('Слишком длинное изображение. Обрежьте его до одной операции.');
     if(!nativeText){
       if(!window.Tesseract)throw new Error('Движок распознавания не загрузился. Для первой загрузки OCR нужен интернет. Финансовые записи не изменены.');
-      text='';let confidenceSum=0,expired=false,worker;
+      text='';let confidenceSum=0,expired=false,worker,sliceIndex=0,retries=0;const parts=[];
+      processing(1,'Читаем чек');status('Запускаем распознавание на устройстве…');
       const base=new URL('./assets/ocr/',location.href);
       try{
         worker=await timeout(Tesseract.createWorker('rus+eng',1,{
           workerPath:new URL('worker.min.js',base).href,
           corePath:new URL('tesseract-core-lstm.wasm.js',base).href,
-          langPath:new URL('lang/',base).href,gzip:true
+          langPath:new URL('lang/',base).href,gzip:true,logger:message=>{if(id===epoch&&dialog.open&&message.status==='recognizing text'&&Number.isFinite(message.progress))processing(1,retried?'Уточняем нечёткие строки':'Читаем чек',Math.min(.99,(sliceIndex+message.progress)/prep.slices.length));}
         }).then(w=>{if(expired||id!==epoch){w.terminate();throw new Error('Распознавание отменено.');}return w;}));
         activeWorker=worker;
+        if(worker.setParameters)await timeout(worker.setParameters({preserve_interword_spaces:'1',user_defined_dpi:'300'}));
         for(let i=0;i<prep.slices.length;i++){
           if(id!==epoch)return null;
-          status(`Читаем фрагмент ${i+1} из ${prep.slices.length}…`);
-          const result=await timeout(worker.recognize(prep.slices[i]));
+          sliceIndex=i;status(`Читаем часть ${i+1} из ${prep.slices.length}…`);
+          let result=await timeout(worker.recognize(prep.slices[i],{rotateAuto:true}));
           if(id!==epoch)return null;
-          text+='\n'+(result.data?.text||'');confidenceSum+=Number.isFinite(result.data?.confidence)?Math.max(0,Math.min(100,result.data.confidence)):0;
+          if((!result.data?.text?.trim()||Number(result.data?.confidence||0)<65)&&prep.originalSlices?.[i]&&retries<2){
+            retried=true;processing(1,'Уточняем нечёткие строки');status('Пробуем исходное фото и проверяем ориентацию…');
+            const sideways=prep.slices.length===1&&prep.width>prep.height*1.2&&Number(result.data?.confidence||0)<65;
+            const attempts=sideways?[90,270]:[0];
+            for(const angle of attempts){
+              if(retries>=2||id!==epoch)break;retries++;
+              const source=angle?await FintexReceiptVision.rotate(prep.originalSlices[i],angle):prep.originalSlices[i];
+              if(id!==epoch)return null;
+              const alternate=await timeout(worker.recognize(source,{rotateAuto:true}));
+              if(id!==epoch)return null;
+              if(alternate.data?.text?.trim()&&Number(alternate.data.confidence||0)>Number(result.data?.confidence||0))result=alternate;
+              if(Number(result.data?.confidence||0)>=85)break;
+            }
+          }
+          parts.push(result.data?.text||'');confidenceSum+=Number.isFinite(result.data?.confidence)?Math.max(0,Math.min(100,result.data.confidence)):0;
         }
-        confidence=confidenceSum/prep.slices.length;
+        text=FintexReceiptVision.join(parts);confidence=confidenceSum/prep.slices.length;
       }finally{expired=true;if(worker){await worker.terminate().catch(()=>{});if(activeWorker===worker)activeWorker=null;}}
     }
-    return {text,confidence,qr:parseFiscalQrString(prep.qrRaw),dataUrl,nativeText,slices:prep.slices.length};
+    processing(2,'Проверяем найденное',1);status('Проверяем итог, дату и повторные загрузки…');
+    return {text,confidence,qr:parseFiscalQrString(prep.qrRaw),dataUrl,nativeText,retried,slices:prep.slices.length};
   }
   function makeCandidate(result,mode,fileHash){
     const {text,qr,confidence}=result;
@@ -105,12 +131,12 @@
     const data=parseRussianReceiptText(text,qr,(confidence||0)/100),params=new URLSearchParams(qr.raw||'');
     // Fiscal operation n is seller-facing. Returns and non-sale directions require review.
     const refund=params.get('n')==='2'||/возврат\s+прихода|чек\s+возврата/i.test(text);
-    const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText;
+    const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText||result.retried;
     return {kind,raw:text,bank,confidence,fileHash,qr,merchant:data.merchant,amount:data.total,date:data.date,time:data.time,dateInferred:(data.low_confidence_fields||[]).includes('date'),ocrTotal:data.ocr_total,itemsSum:data.items_sum,items:data.items,low_confidence_fields:data.low_confidence_fields||[],uncertain,type:refund?'income':'expense',op_kind:refund?'refund':'expense',op_label:refund?'Возврат':'Покупка',category:classifyCategory(data.merchant),fiscalKey:M.fiscalKey(qr),dedup_hash:M.fiscalKey(qr)?'capture_fiscal_'+M.fiscalKey(qr):''};
   }
   async function receive(file,mode){
     if(!file||busy)return;
-    const id=++epoch;busy=true;candidate=null;releasePreview();stage('processing');status('Проверяем файл и дубликаты…');
+    const id=++epoch;busy=true;candidate=null;releasePreview();stage('processing');processing(0,'Готовим чёткое изображение');status('Проверяем файл и дубликаты…');
     try{
       if(file.size>15*1024*1024||file.size===0)throw new Error('Выберите непустой файл размером до 15 МБ.');
       const pdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
@@ -195,7 +221,7 @@
         <label class="capture-auto"><input id="capture-auto" type="checkbox"><span>Автоучёт надёжных чеков<small>Только если полный QR и итог из текста совпали. Доходы, переводы и банковские скриншоты — с подтверждением.</small></span></label>
         <p class="capture-footnote">До 15 МБ · только рубли · без платных сервисов. Обработка в браузере; для первой загрузки OCR нужен интернет. Кнопка работает только внутри открытого FINTEX.</p>
       </section>
-      <section data-capture-stage="processing" hidden><div class="capture-spinner" aria-hidden="true"></div><h3>Превращаем изображение в запись</h3><p class="capture-copy">Можно отменить: результат не будет сохранён после закрытия.</p><button type="button" class="capture-secondary" data-capture-close>Отменить</button></section>
+      <section data-capture-stage="processing" hidden><div class="capture-scan-scene" aria-hidden="true"><div class="capture-scan-halo"></div><div class="capture-paper"><span>FINTEX</span><i></i><i></i><i></i><b>₽</b><div class="capture-scan-beam"></div></div><span class="capture-scan-spark">✦</span></div><h3 id="capture-processing-title">Читаем чек</h3><ol class="capture-steps" aria-label="Этапы распознавания"><li data-capture-step>Фото</li><li data-capture-step>Текст</li><li data-capture-step>Проверка</li></ol><div id="capture-progress" role="progressbar" aria-label="Распознавание текста" aria-valuemin="0" aria-valuemax="100"><span></span></div><p id="capture-progress-label" class="capture-copy"></p><p class="capture-processing-note">Читаем на устройстве. Можно отменить — незавершённый результат не сохранится.</p><button type="button" class="capture-secondary" data-capture-close>Отменить</button></section>
       <section data-capture-stage="review" hidden><h3 id="capture-review-title" tabindex="-1">Проверьте запись</h3><span id="capture-level" class="capture-level"></span>
         <form id="capture-form"><div class="recognition-card" aria-label="Распознанная операция"><label class="recognition-wide">Где или за что<small id="capture-merchant-hint"></small><input id="capture-merchant" maxlength="100" required></label><label class="recognition-wide recognition-amount">Сколько, ₽<small id="capture-amount-hint"></small><input id="capture-amount" inputmode="decimal" type="text" autocomplete="off" required></label><label>Дата<small id="capture-date-hint"></small><input id="capture-date" type="date" required></label><label>Категория<small id="capture-category-hint"></small><select id="capture-category">${Object.values(CATS).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label></div>
         <label>Вид операции<select id="capture-kind"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer_out">Перевод — исходящий</option><option value="transfer_in">Перевод — входящий</option><option value="refund">Возврат</option><option value="atm">Снятие наличных</option></select></label><p id="capture-transfer-note" class="capture-copy" hidden>Проверьте направление. Перевод между своими счетами не добавляйте как расход или доход общего капитала.</p>
