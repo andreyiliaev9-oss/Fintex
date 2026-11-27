@@ -79,11 +79,6 @@
     if(value===null||value===undefined)return '';
     return `data-ap-number="${FintexMath.money(value)}" data-ap-prefix="${esc(prefix)}" data-ap-currency="${esc(currency||'₽')}"`;
   }
-  function renderCashflow(data){
-    const max=Math.max(data.income,data.spent,1);
-    const lines=[{label:'Доходы',value:data.income,type:'income',icon:'arrow-down-left'},{label:'Расходы',value:data.spent,type:'expense',icon:'arrow-up-right'}];
-    return `<section class="ap-cashflow" aria-labelledby="ap-cashflow-title"><div class="ap-cashflow-heading"><div><span class="ap-cashflow-kicker">Два направления</span><h3 id="ap-cashflow-title">Доходы и расходы</h3></div><span class="ap-record-count">${data.currentTxs.length} записей</span></div>${lines.map(line=>`<div class="ap-cashflow-row" data-flow="${line.type}"><div class="ap-cashflow-label"><span class="ap-cashflow-icon" aria-hidden="true"><i data-lucide="${line.icon}"></i></span><span>${line.label}</span><strong class="ap-flow-value money-val" ${numberAttrs(line.value,data.currency)}>${fmt(line.value,data.currency)}</strong></div><div class="ap-cashflow-track" aria-hidden="true"><span style="width:${line.value/max*100}%"></span></div></div>`).join('')}<div class="ap-cashflow-net"><div><strong>Разница</strong><span>Доходы минус расходы</span></div><b class="ap-flow-value money-val ${data.net<0?'ap-negative':''}" ${numberAttrs(data.net,data.currency,data.net>0?'+':'')}>${data.net>0?'+':''}${fmt(data.net,data.currency)}</b></div><p class="ap-cashflow-note">По записям за выбранный период. Это не остаток на счёте.</p></section>`;
-  }
   function categoryMeta(rawName) {
     const aliases = { food: 'Продукты', taxi: 'Транспорт', cafe: 'Кафе и рестораны', fun: 'Развлечения', subs: 'Подписки', shop: 'Покупки', health: 'Здоровье', other: 'Прочее', income: 'Доход' };
     const original = String(rawName || 'Прочее').trim();
@@ -321,18 +316,6 @@
     </div>`;
   }
 
-  function renderDistribution(data) {
-    if (!data.categories.length) return '<div class="ftx-ap-empty"><i data-lucide="chart-pie" aria-hidden="true"></i><strong>У каждой траты будет своё место</strong><span>Добавьте расходы, чтобы увидеть их распределение по категориям</span></div>';
-    let offset = 0;
-    const segments = data.categories.map(cat => {
-      const circle = `<circle class="ap-donut-segment" cx="64" cy="64" r="52" pathLength="100" stroke="${cat.meta.color}" stroke-dasharray="${cat.pct} ${100 - cat.pct}" stroke-dashoffset="${-offset}"/>`;
-      offset += cat.pct;
-      return circle;
-    }).join('');
-    const leader = data.categories[0];
-    return `<div class="ap-distribution-visual"><div class="ap-donut" role="img" aria-label="Распределение записанных расходов по ${data.categories.length} категориям"><svg viewBox="0 0 128 128" aria-hidden="true"><circle class="ap-donut-track" cx="64" cy="64" r="52"/>${segments}</svg><div class="ap-donut-centre" aria-hidden="true"><strong>${data.categories.length}</strong><span>категорий</span></div></div><div class="ap-distribution-leader"><span>Больше всего</span><strong>${esc(leader.name)}</strong><div><b>${Math.round(leader.pct)}%</b><span>от расходов</span></div></div></div>`;
-  }
-
   function renderDailyAnswers(data) {
     const M=FintexMath,today=M.key(new Date()),m=M.metrics(data.st,today),c=FintexDailyModel.monthComparison(data.st.transactions,today);
     const money=value=>`<span class="money-val">${fmt(value,data.currency)}</span>`;
@@ -341,60 +324,47 @@
     return `<section class="ap-daily-answers" aria-label="Главное о деньгах"><div class="ap-daily-answer"><span>Этот месяц и прошлый</span><strong>${comparison}</strong><p>${date(c.currentFrom)} — ${date(c.currentTo)}: ${money(c.spent)}. ${date(c.previousFrom)} — ${date(c.previousTo)}: ${money(c.prior)}.${c.shorterPrevious?' В прошлом месяце меньше дней.':''} Только записанные расходы; отсутствие записей не означает нулевые траты.</p></div><div class="ap-daily-answer"><span>До зарплаты · ${date(data.st.payday||today)}</span><strong>${money(m.freePool)} свободно</strong><p>После платежей ${money(m.billsReserved)} и отложенного ${money(m.goalReserved)}. ${m.days} дн.; ориентир ${money(m.freePool/m.days)} в день.${M.add(data.st.balance,-m.reserved)<0?' Общего остатка не хватает на все резервы.':''} Новые доходы не учтены.</p></div></section>`;
   }
 
+  // Read-only comparison, using the same validated transactions and kopeck math.
+  function renderReportSummary(data, period) {
+    const M=FintexMath, range=periodRange(data,period), previous=periodRange({now:new Date(`${M.shift(range.start,-1)}T12:00:00`)},period);
+    const prior=M.transactions(data.st.transactions,previous.start,M.shift(range.start,-1));
+    const priorIncome=M.sum(prior.filter(isIncome),tx=>tx.amount);
+    const priorNet=M.add(priorIncome,-data.prevSpent);
+    const rows=[['income','Доходы',data.income,priorIncome],['expense','Расходы',data.spent,data.prevSpent],['net','Разница',data.net,priorNet]];
+    return `<section class="report-summary" aria-labelledby="report-summary-title">
+      <div class="report-section-heading"><h3 id="report-summary-title">Сводка периода</h3><span>${data.currentTxs.length} записей</span></div>
+      <table class="report-table report-totals"><caption class="report-sr-only">Сравнение двух последовательных периодов одинаковой длины. Суммы в ${esc(data.currency)}.</caption><colgroup><col class="report-label-col"><col><col></colgroup><thead><tr><th scope="col">Показатель</th><th scope="col">Текущий</th><th scope="col">Предыдущий</th></tr></thead><tbody>
+      ${rows.map(([id,label,current,previousValue])=>`<tr data-report-metric="${id}"><th scope="row">${label}</th><td><strong class="money-val ${id==='expense'?'ftx-ap-big':''}">${exactMoney(current,data.currency)}</strong></td><td class="money-val">${exactMoney(previousValue,data.currency)}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="report-variance"><span>Изменение расходов</span><strong class="money-val">${data.prevSpent>0?`${data.deltaPct>0?'+':''}${data.deltaPct}%`:'—'}</strong><span class="money-val">${data.prevSpent>0?`${M.add(data.spent,-data.prevSpent)>0?'+':''}${exactMoney(M.add(data.spent,-data.prevSpent),data.currency)}`:'Нет базы сравнения'}</span></div>
+      <details class="ap-comparison"><summary>Даты и правила сравнения <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Текущий: ${range.first} — ${range.last}</p><p>Предыдущий: ${previous.first} — ${previous.last}</p><strong class="money-val">${exactMoney(data.prevSpent,data.currency)}</strong><p>Расходы предыдущего периода. Окна равной длины, без пересечения. Разница — доходы минус расходы, не остаток на счёте. Отсутствие записей не подтверждает нулевые траты.</p></details>
+    </section>`;
+  }
+
+  function renderReportCategories(data) {
+    if(!data.categories.length)return '<div class="ftx-ap-empty">Добавьте расходы, чтобы появился отчёт по категориям.</div>';
+    return `<table class="report-table report-categories"><caption class="report-sr-only">Категории по убыванию расходов. Нажмите название для просмотра до восьми крупнейших операций.</caption><colgroup><col style="width:43%"><col style="width:39%"><col style="width:18%"></colgroup><thead><tr><th scope="col">Категория</th><th scope="col">Сумма</th><th scope="col">Доля</th></tr></thead><tbody>${data.categories.map((cat,index)=>{
+      const open=expandedCategory===cat.name;
+      return `<tr class="report-category-row" data-category-share="${cat.pct}"><th scope="row"><button type="button" data-cat="${esc(cat.name)}" aria-expanded="${open}" aria-controls="report-category-${index}" aria-label="${esc(cat.name)}: показать операции"><span>${esc(cat.name)}</span><span class="report-expand" aria-hidden="true">${open?'−':'+'}</span></button></th><td class="ap-category-amount money-val">${exactMoney(cat.total,data.currency)}</td><td class="report-share">${cat.pct.toLocaleString('ru-RU',{maximumFractionDigits:1})}%</td></tr><tr id="report-category-${index}" ${open?'':'hidden'}><td colspan="3"><div class="ftx-ap-drill"><p>Крупнейшие операции · показано ${cat.items.length}${cat.items.length===8?' (не более 8)':''}</p>${open?cat.items.map(item=>`<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)}<small>${esc(item.date)}</small></span><span class="ftx-ap-tx-sum money-val">${exactMoney(item.amount,data.currency)}</span></div>`).join(''):''}</div></td></tr>`;
+    }).join('')}</tbody><tfoot><tr><th scope="row">Всего</th><td class="money-val">${exactMoney(data.spent,data.currency)}</td><td>100%</td></tr></tfoot></table>`;
+  }
+
   function renderOverview(data, period) {
-    const deltaLabel = data.prevSpent > 0 && data.currentTxs.some(t=>!t._inc)
-      ? `${data.deltaPct > 0 ? '+' : ''}${data.deltaPct}% к предыдущему периоду`
-      : 'Пока нет данных для сравнения';
-    const range = periodRange(data, period);
-    const previous = periodRange({ now: new Date(`${FintexMath.shift(range.start, -1)}T12:00:00`) }, period);
-    const topCats = data.categories.slice(0, 4).map(cat => `
-      <div class="ap-category-row"><span class="ap-category-dot" style="background:${cat.meta.color}"></span><span class="ap-category-name">${esc(cat.name)}</span><span class="ap-category-amount money-val" ${numberAttrs(cat.total,data.currency)}>${fmt(cat.total, data.currency)}</span><span class="ap-category-share">${Math.round(cat.pct)}%</span><div class="ap-category-rail" aria-hidden="true"><span style="width:${cat.pct}%;background:${cat.meta.color}"></span></div></div>`).join('');
-    return `
-      <div class="ftx-ap-card gold ap-expense-hero">
-        <div class="ap-hero-heading"><div class="ftx-ap-kicker">Всего потрачено</div><span class="ap-period-caption">${period.label}</span></div>
-        <div class="ftx-ap-big money-val" ${numberAttrs(data.spent,data.currency)}>${fmt(data.spent, data.currency)}</div>
-        <span class="ftx-ap-delta">${data.deltaPct > 0 ? '↗' : data.deltaPct < 0 ? '↘' : '—'} ${esc(deltaLabel)}</span>
-        <details class="ap-comparison"><summary>Сравнение с прошлым периодом <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p>Предыдущие ${period.days} дн.: ${previous.first} — ${previous.last}</p><strong class="money-val">${fmt(data.prevSpent, data.currency)}</strong><p>Периоды равной длины и не пересекаются. Учитываются только записанные операции.</p></details>
-        ${renderExpenseTrend(data, period)}
-      </div>
-      ${renderCashflow(data)}
+    return `${renderReportSummary(data,period)}
+      <section class="ftx-ap-card ap-expense-hero report-chart" aria-label="Динамика расходов">${renderExpenseTrend(data,period)}</section>
+      <section class="ftx-ap-card ap-distribution"><div class="report-section-heading"><h3>Расходы по категориям</h3><span>${data.categories.length} катег.</span></div>${renderReportCategories(data)}${data.categories.length?'<button type="button" class="ap-category-link" data-goto="categories">Операции по категориям <span aria-hidden="true">→</span></button>':''}</section>
+      ${renderPeriodInformation(data,period)}
       <details data-ap-disclosure="planning" class="ap-planning-details quiet-details"><summary data-ap-summary="planning">Оценки и план до зарплаты</summary>${renderDailyAnswers(data)}<div class="ftx-ap-summary-row">
         <div class="ftx-ap-stat"><div class="ap-stat-marker" aria-hidden="true"><i data-lucide="calendar-days"></i></div><div class="ftx-ap-stat-label">В среднем за день</div><div class="ftx-ap-stat-value money-val" ${numberAttrs(data.currentTxs.some(t=>!t._inc)?data.burnRate:null,data.currency)}>${data.currentTxs.some(t=>!t._inc)?fmt(data.burnRate, data.currency):'—'}</div></div>
         <div class="ftx-ap-stat"><div class="ap-stat-marker ap-marker-forecast" aria-hidden="true"><i data-lucide="flag"></i></div><div class="ftx-ap-stat-label">Остаток к концу месяца</div><div class="ftx-ap-stat-value money-val ${data.projectedBalance < 0 ? 'ap-negative' : ''}" ${numberAttrs(data.projectedBalance,data.currency)}>${data.projectedBalance===null?'Мало записей':fmt(data.projectedBalance, data.currency)}</div></div>
       </div>
       <details class="ap-forecast-method"><summary>Как рассчитан остаток <i data-lucide="chevron-down" aria-hidden="true"></i></summary><p class="ftx-ap-note">Оценка: текущий остаток минус обычные расходы на оставшиеся дни месяца и неоплаченные платежи до его конца. Новые доходы не прогнозируются.</p></details></details>
-      <div class="ftx-ap-card ap-distribution">
-        <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length ? data.categories.length + ' катег.' : 'Нет операций'}</span></div>
-        ${renderDistribution(data)}
-        ${topCats}
-        ${data.categories.length > 4 ? `<p class="ap-distribution-rest">Ещё ${data.categories.length - 4} катег. · ${fmt(FintexMath.sum(data.categories.slice(4), c => c.total), data.currency)}</p>` : ''}
-        ${data.categories.length ? '<button type="button" class="ftx-ap-btn ap-category-link" data-goto="categories">Разобрать по категориям <span aria-hidden="true">↗</span></button>' : ''}
-      </div>
-      ${renderPeriodInformation(data, period)}
-`;
+
+      <p class="report-footnote">Источник: ваши записи. Переводы между счетами и корректировки не включены. Дни без записей не означают отсутствие расходов.</p>`;
   }
 
   function renderCategories(data) {
-    if (!data.categories.length) return `<div class="ftx-ap-card"><div class="ftx-ap-empty">За выбранный период расходов пока нет.<br>Добавьте операцию — и приложение покажет, на что уходят деньги.</div></div>`;
-    return `
-      <div class="ftx-ap-card">
-        <div class="ftx-ap-section-title"><span>Структура расходов</span><span class="ftx-ap-section-sub">${data.categories.length} катег.</span></div>
-        ${renderDistribution(data)}<div class="ap-category-hint">Нажмите на категорию, чтобы посмотреть операции внутри неё.</div>
-        ${data.categories.map(cat => {
-          const isOpen = expandedCategory === cat.name;
-          const meta = cat.meta;
-          return `<div class="ftx-ap-cat ${isOpen ? 'open' : ''}" data-cat="${esc(cat.name)}" role="button" tabindex="0" aria-label="${esc(cat.name)}: показать операции" aria-expanded="${isOpen}">
-            <div class="ftx-ap-cat-icon" style="--category-colour:${meta.color}"><i data-lucide="${meta.icon}"></i></div>
-            <div class="ftx-ap-cat-main">
-              <div class="ftx-ap-cat-top"><span class="ftx-ap-cat-name">${esc(cat.name)}</span><span class="ftx-ap-cat-sum money-val" ${numberAttrs(cat.total,data.currency)}>${fmt(cat.total, data.currency)}</span></div>
-              <div class="ftx-ap-bar"><div class="ftx-ap-bar-fill" style="width:${Math.max(1, cat.pct)}%;background:${meta.color}"></div></div>
-              <div class="ftx-ap-cat-meta"><span>${Math.round(cat.pct)}% всех расходов</span><span>${cat.items.length}${cat.items.length === 8 ? '+' : ''} операций в списке</span></div>
-              ${isOpen ? `<div class="ftx-ap-drill">${cat.items.map(item => `<div class="ftx-ap-tx"><span class="ftx-ap-tx-title">${esc(item.title)} · ${esc(item.date)}</span><span class="ftx-ap-tx-sum money-val">${fmt(item.amount, data.currency)}</span></div>`).join('')}</div>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-      <div class="ftx-ap-note">Категории сгруппированы по названию операции. Неизвестные названия сохраняются как есть — приложение не приписывает им неподтверждённый смысл.</div>`;
+    return `<section class="ftx-ap-card ap-distribution"><div class="report-section-heading"><h3>Расходы по категориям</h3><span>По убыванию</span></div>${renderReportCategories(data)}</section><p class="report-footnote">Суммы и доли за выбранный период. Нажмите название категории, чтобы раскрыть крупнейшие операции.</p>`;
   }
 
   function renderWeekdayRhythm(data) {
@@ -511,7 +481,7 @@
     else if (activeSubtab === 'categories') body = renderCategories(data);
     else body = renderRhythm(data);
 
-    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">Личный отчёт</div><h2>Аналитика</h2><p>Ваши деньги. Общая картина.</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div><details class="quiet-details ap-observations" data-ap-disclosure="observations"><summary data-ap-summary="observations">Наблюдения по записям</summary>${window.FintexBehavior?.entryHTML() || ''}</details>${renderTools()}`;
+    container.innerHTML = `<div class="page-heading ap-page-heading"><div class="ap-eyebrow">Финансовый отчёт</div><h2>Аналитика</h2><p>Доходы, расходы и сравнение периодов</p></div><div class="ftx-ap">${renderPeriodControls(data, period)}${renderTabs()}${body}</div><details class="quiet-details ap-observations" data-ap-disclosure="observations"><summary data-ap-summary="observations">Наблюдения по записям</summary>${window.FintexBehavior?.entryHTML() || ''}</details>${renderTools()}`;
     container.querySelectorAll('details[data-ap-disclosure]').forEach(el=>{el.open=disclosures.get(el.dataset.apDisclosure)||false;});
     if (focusKey) {
       const next = [...container.querySelectorAll(`[data-${focusKey[0]}]`)].find(el => el.getAttribute(`data-${focusKey[0]}`) === focusKey[1]);
