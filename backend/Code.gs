@@ -1,4 +1,4 @@
-/** FINTEX Cloud v8. Deploy Code.gs, Auth.gs and QuickCapture.gs, or the combined installer.
+/** FINTEX Cloud v8. Deploy Code.gs, Auth.gs, QuickCapture.gs and Places.gs, or the combined installer.
  * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.0-quick-capture',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.1-places',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1,places_protocol:1});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -110,6 +110,7 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
+    if(action==='sms_location_ingest')return placesIngest(body);
     if(action==='quick_capture_parse'||action==='quick_capture_submit')return qcHandle(body);
     var allowed=['init','push_tx','set_config','ledger_sync','quick_capture_status','quick_capture_pair','quick_capture_revoke'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
@@ -187,7 +188,7 @@ function handleWebhookIngest(uid,token,text) {
   var parsed=parseIncomingSmsText(text,String(u.values[2]||'Т-Банк'));
   if(!parsed)authError('PARSE_NO_AMOUNT','Не удалось распознать операцию.');
   var known=serverKnown(db,uid);
-  if(known.hashes[parsed.dedup_hash])return {ok:true,duplicate:true,message:'Дубль пропущен'};
+  if(known.hashes[parsed.dedup_hash]||placesKnownSms(db,uid,parsed.dedup_hash))return {ok:true,duplicate:true,message:'Дубль пропущен'};
   var balance=serverMoney(u.values[3])||0;
   var next=parsed.cardBalance!==null?parsed.cardBalance:serverAdd(balance,parsed.type==='income'?parsed.amount:-parsed.amount);
   if(parsed.cardBalance!==null&&serverLedgerActive(db,uid))next=serverAdd(parsed.cardBalance,-serverLedgerState(db,uid).delta);
@@ -285,6 +286,7 @@ function serverLedgerTx(t){
   if(t.type==='adjustment'){
     if(typeof t.balance_delta!=='number'||serverMoney(t.balance_delta)!==t.balance_delta||Math.abs(t.balance_delta)!==n)authError('INVALID_LEDGER','Некорректная корректировка.');clean.balance_delta=t.balance_delta;
   }
+  if(t.location!==undefined&&t.location!==null){var place=placesLocation(t.location);if(!place)authError('INVALID_LOCATION','Некорректная геометка.');clean.location=place;}
   var text=JSON.stringify(clean);
   if(text.length>38000||/"(?:__proto__|constructor|prototype)"\s*:/.test(text))authError('INVALID_LEDGER','Операция слишком велика или содержит недопустимые поля.');
   return clean;

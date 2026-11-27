@@ -6,7 +6,7 @@
 
 ## 1. Обновить существующий сервер
 
-1. Откройте существующий проект Google Apps Script. Замените код готовым `downloads/Fintex-Code.txt` (то же содержимое в `.gs`). Альтернатива — три файла `backend/Auth.gs`, `backend/Code.gs`, `backend/QuickCapture.gs`. Не оставляйте старые дублирующие определения функций.
+1. Откройте существующий проект Google Apps Script. Замените код готовым `downloads/Fintex-Code.txt` (то же содержимое в `.gs`). Альтернатива — четыре файла `backend/Auth.gs`, `backend/Code.gs`, `backend/QuickCapture.gs`, `backend/Places.gs`. Не оставляйте старые дублирующие определения функций.
 2. Сохраните прежние Script Properties: `FINTEX_SS_ID`, `FINTEX_BOT_TOKEN`, `FINTEX_AUTH_SECRET`. **Не запускайте создание новой базы. Не переключайте исходную защищённую таблицу.**
 3. Обновите версию существующего web-app deployment (выполнение от владельца; доступность endpoint для запросов «Команд», авторизация реализуется внутри API). Существующий `/exec` остаётся прежним.
 4. Через Telegram откройте FINTEX → Настройки → Quick Capture → Проверить подключение. Не отправляйте Telegram initData, bot token или auth secret в «Команды».
