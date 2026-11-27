@@ -23,7 +23,7 @@ test('journal keeps exact signs and kopecks, clearer subunits and keyboard-opena
   const row=page.locator('[data-operation-row=food] .tx-row-open');await row.focus();await page.keyboard.press('Enter');await expect(page.locator('#modal-tx')).toBeVisible();expect(await snapshot(page)).toBe(before);
 });
 test('replay choreographs rows, icons, actual amounts and light sweep, with finite timing and no writes',async({page})=>{
-  await open(page);const before=await snapshot(page);await motion(page);await page.locator('#tx-feed').scrollIntoViewIfNeeded();await page.locator('#history-replay').click();
+  await open(page);const before=await snapshot(page);await motion(page);await page.locator('#tx-feed').scrollIntoViewIfNeeded();await page.locator('#journal-more > summary').click();await page.locator('#history-replay').click();
   const effects=await page.evaluate(()=>window.__opEffects.filter(x=>x.a.id.startsWith('fintex-operation-')).map(x=>({id:x.a.id,cls:x.target.className,timing:x.a.effect.getTiming(),frames:x.a.effect.getKeyframes()})));
   expect(effects.some(e=>e.id==='fintex-operation-reveal')).toBe(true);for(const cls of ['tx-amount','tx-merchant-mark','tx-arrival-glow'])expect(effects.some(e=>e.cls.includes(cls))).toBe(true);
   for(const e of effects){expect(e.timing.iterations).toBe(1);expect(e.timing.duration).toBeLessThanOrEqual(750);expect(e.frames.every(f=>!f.filter||!f.filter.includes('blur'))).toBe(true);}

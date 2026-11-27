@@ -1433,7 +1433,7 @@ function renderCalendar(forceReveal = false) {
   if (expEl) expEl.textContent = `−${fmtR(monthExp)}`;
   if (netEl) {
     netEl.textContent = monthNet > 0 ? `+${fmtR(monthNet)}` : (monthNet < 0 ? `−${fmtR(Math.abs(monthNet))}` : '0 ₽');
-    netEl.className = `cal-summary-value ${monthNet > 0 ? 'cal-income' : monthNet < 0 ? 'cal-expense' : 'text-main'}`;
+    netEl.className = `cal-summary-value money-val ${monthNet > 0 ? 'cal-income' : monthNet < 0 ? 'cal-expense' : 'text-main'}`;
   }
 
   const m = calcMetrics();
@@ -1561,7 +1561,7 @@ function renderCalendar(forceReveal = false) {
     </div>
     <div class="grid grid-cols-2 gap-2 text-xs">
       <div class="input-surface p-2.5 rounded-xl">
-        <div class="text-[10px] text-sub">Безопасно в день</div>
+        <div class="text-[10px] text-sub">Ориентир на сегодня</div>
         <div class="font-extrabold text-brand tabular-nums mt-0.5">${fmtR(m.dailyLeft)}</div>
       </div>
       <div class="input-surface p-2.5 rounded-xl">

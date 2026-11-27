@@ -19,7 +19,7 @@
   <script src="./cloud.js?v=73"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=75" />
-  <link rel="stylesheet" href="./visual-finish.css?v=80" />
+  <link rel="stylesheet" href="./visual-finish.css?v=81" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -249,8 +249,8 @@
     </div>
 
     <div class="flex items-center shrink-0" data-ftx-unified-plus="1">
-      <button type="button" id="hdr-plus-btn" onclick="openSmartHubModal()" aria-label="Добавить операцию" aria-expanded="false" title="Добавить операцию, чек или голос" class="w-10 h-10 rounded-[15px] btn-turquoise flex items-center justify-center">
-        <i id="hdr-plus-icon" data-lucide="plus" class="w-5 h-5 text-[#041311] plus-icon-rot"></i>
+      <button type="button" id="hdr-plus-btn" onclick="openSmartHubModal()" aria-label="Добавить операцию" aria-expanded="false" title="Добавить операцию" class="w-10 h-10 rounded-[15px] btn-turquoise flex items-center justify-center">
+        <i id="hdr-plus-icon" data-lucide="plus" class="w-5 h-5 text-[#041311] plus-icon-rot" aria-hidden="true"></i><span class="add-entry-label">Добавить</span>
       </button>
     </div>
   </header>
@@ -314,14 +314,14 @@
       <!-- Умная лента операций -->
       <section id="operations-journal" class="space-y-2.5" aria-labelledby="operations-title">
         <div class="tx-feed-header flex items-center justify-between px-0.5">
-          <div><span class="tx-feed-eyebrow">Лента денег</span><h2 id="operations-title" tabindex="-1" class="feed-heading">Операции</h2></div>
+          <div><h2 id="operations-title" tabindex="-1" class="feed-heading">Операции</h2></div>
           <div class="tx-feed-actions flex items-center gap-3">
             <button type="button" id="feed-today-btn" onclick="openTodayDetailModal()" class="text-xs font-medium text-sub tap">
               Сегодня: <span id="feed-today-sum" class="money-val text-brand font-bold tabular-nums">0 ₽</span>
             </button>
             <button type="button" id="history-replay" onclick="replayOperationHistory()" class="tx-history-replay" aria-label="Повторить анимацию истории" title="Повторить анимацию истории"><i data-lucide="play" aria-hidden="true"></i></button>
             <button type="button" id="journal-search-toggle" aria-expanded="false" aria-controls="search-bar-wrap" onclick="toggleSearch()" class="text-xs font-medium text-brand tap" title="Поиск по ленте" aria-label="Поиск операций">
-              <i data-lucide="search" class="w-3.5 h-3.5"></i>
+              <i data-lucide="search" class="w-3.5 h-3.5" aria-hidden="true"></i><span>Поиск</span>
             </button>
           </div>
         </div>
@@ -511,7 +511,7 @@
             <div id="cal-month-exp" class="cal-summary-value cal-expense money-val">−0 ₽</div>
           </div>
           <div class="input-surface py-1.5 px-2 rounded-xl">
-            <div class="text-[9px] uppercase tracking-wider text-sub">Итог месяца</div>
+            <div class="text-[9px] uppercase tracking-wider text-sub">Разница записей</div>
             <div id="cal-month-net" class="cal-summary-value money-val">0 ₽</div>
           </div>
         </div>
@@ -1896,7 +1896,7 @@
   <script src="./operation-undo.js?v=74"></script>
   <script src="./review-signals.js?v=77"></script>
   <script src="./journal-model.js?v=79"></script>
-  <script src="./app.js?v=79"></script>
+  <script src="./app.js?v=81"></script>
   <script src="./navigation.js?v=57"></script>
   <script src="./interface-motion.js?v=76"></script>
   <script src="./mobile-forms.js?v=75"></script>
@@ -1905,7 +1905,7 @@
   <script src="./savings-goals.js?v=76"></script>
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
-  <script src="./extensions.js?v=79"></script>
+  <script src="./extensions.js?v=81"></script>
   <script src="./journal-view.js?v=80"></script>
   <script src="./quick_add.js?v=72" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
@@ -1922,13 +1922,14 @@
   <script src="./behavior-model.js?v=44"></script>
   <script src="./behavior.js?v=54"></script>
   <script src="./app-tour.js?v=77"></script>
-  <script src="./context-help.js?v=71"></script>
+  <script src="./context-help.js?v=81"></script>
   <script src="./entry-draft.js?v=78"></script>
-  <script src="./daily-flow.js?v=79"></script>
+  <script src="./daily-flow.js?v=81"></script>
   <script src="./backup.js?v=77"></script>
   <script src="./backup-check-model.js?v=80"></script>
   <script src="./backup-check.js?v=80"></script>
-  <script src="./data-care.js?v=80"></script>
+  <script src="./data-care.js?v=81"></script>
   <script src="./offline-client.js?v=78"></script>
+  <script src="./ui-simplicity.js?v=81"></script>
 </body>
 </html>
