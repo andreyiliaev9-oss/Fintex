@@ -8,3 +8,8 @@ test('positive and negative reconciliation are explicit neutral records, exact t
 test('reconciliation equation is explicit inferred opening and handles neutral entries',()=>{const txs=[expense,{type:'income',amount:50},{type:'transfer',amount:1000},{type:'adjustment',amount:.25,balance_delta:-.25}];assert.deepEqual(D.reconciliation(139.5,txs),{opening:100,income:50,expense:10.25,adjustments:-.25,balance:139.5});});
 test('month comparison uses same elapsed dates, short months and only recorded expenses',()=>{const rows=[{...expense,date:'2026-03-31',amount:20},{...expense,date:'2026-02-28',amount:10},{...expense,date:'2026-02-28',type:'transfer',amount:100}];const r=D.monthComparison(rows,'2026-03-31');assert.equal(r.previousTo,'2026-02-28');assert.equal(r.delta,10);assert.ok(r.shorterPrevious);assert.ok(r.comparable);assert.equal(D.monthComparison([],today).comparable,false);});
 test('deleted editor target is never recreated',()=>{assert.ok(D.change(100,[],draft,today,'missing','new').error);});
+test('validation identifies the failing field without changing validation order or input',()=>{
+ const base={...draft},copy=JSON.stringify(base);
+ for(const [patch,field]of [[{type:'unknown'},'type'],[{amount:'1,234',date:'bad'},'amount'],[{date:'2026-11-25'},'date'],[{merchant:''},'merchant'],[{type:'transfer'},'from'],[{type:'transfer',from:'Карта'},'to'],[{type:'transfer',from:' Карта ',to:'карта',covered:true},'to'],[{type:'transfer',from:'Карта',to:'Наличные'},'covered']])assert.equal(D.validate({...base,...patch},today).field,field);
+ assert.equal(JSON.stringify(base),copy);assert.equal(D.validate({...base,type:'transfer',from:'Карта',to:'Наличные',covered:true},today).error,undefined);
+});

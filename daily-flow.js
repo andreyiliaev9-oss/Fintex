@@ -2,13 +2,32 @@
 (() => {
   'use strict';
   const M=FintexMath,D=FintexDailyModel;
-  let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,returnPoint=null,busy=false,reconcileBalance=null,inputTouched=false;
+  let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,returnPoint=null,busy=false,reconcileBalance=null,inputTouched=false,validationField=null;
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid=()=>`tx_${crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2)}`;
   const current=()=>editing?state.transactions.find(tx=>tx.id===editing):null;
   const say=text=>{$('flow-status').textContent=text;};
-  const recent=()=>state.transactions.filter(tx=>['expense','income'].includes(tx.type)&&!tx.goal_withdrawal&&!tx.bill_id).slice().sort((a,b)=>`${b.date} ${b.time||''}`.localeCompare(`${a.date} ${a.time||''}`)).slice(0,12);
+  const recent=(type)=>state.transactions.filter(tx=>(!type||tx.type===type)&&['expense','income'].includes(tx.type)&&!tx.goal_withdrawal&&!tx.bill_id).slice().sort((a,b)=>`${b.date} ${b.time||''}`.localeCompare(`${a.date} ${a.time||''}`)).slice(0,12);
+  const fieldId=field=>({merchant:'flow-name',type:null}[field]??'flow-'+field);
+  function clearFieldError(field){
+    const input=$(fieldId(field)),note=$('flow-error-'+field);
+    input?.removeAttribute('aria-invalid');if(note)note.hidden=true;
+    if(validationField===field){validationField=null;say('');}
+  }
+  function clearErrors(){
+    for(const field of ['amount','merchant','date','from','to','covered'])clearFieldError(field);
+    validationField=null;
+  }
+  function showError(result){
+    clearErrors();say(result.error);
+    const input=result.field&&$(fieldId(result.field)),note=$('flow-error-'+result.field);
+    if(!input||input.disabled)return;
+    validationField=result.field;input.setAttribute('aria-invalid','true');
+    if(note){note.textContent=({from:'Укажите свой счёт, с которого перевели деньги.',to:'Укажите другой свой счёт.',covered:'Подтвердите, что оба счёта уже учтены в общем остатке.'})[result.field]||result.error;note.hidden=false;}
+    if(input.closest('#flow-details'))$('flow-details').open=true;
+    input.focus();
+  }
   function saveLocal(result){
     const keys=['fp_local_tx','fp_balance','fp_sync_queue','fp_ledger_offset'],before=keys.map(k=>localStorage.getItem(k));
     // The append-only cloud retains the original row. Local corrections are an overlay,
@@ -29,7 +48,7 @@
   }
   function close(){if(dialog.open)dialog.close();if(reconcile.open)reconcile.close();}
   function setKind(value){
-    kind=value;
+    kind=value;clearErrors();templates();
     dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.flowKind===value)));
     $('flow-category-row').hidden=value!=='expense';$('flow-transfer').hidden=value!=='transfer';
     $('flow-name').placeholder=value==='income'?'Например, зарплата':value==='transfer'?'Например, на свою карту':'Например, кофе';
@@ -50,13 +69,13 @@
     if(!out.hidden)FintexNumerals.render($('flow-after-value'),next);
   }
   function templates(){
-    const list=recent().filter((tx,i,rows)=>rows.findIndex(t=>t.type===tx.type&&t.merchant===tx.merchant&&t.category===tx.category)===i).slice(0,3);$('flow-recent').replaceChildren();
+    const list=recent(kind).filter((tx,i,rows)=>rows.findIndex(t=>t.type===tx.type&&t.merchant===tx.merchant&&t.category===tx.category)===i).slice(0,3);$('flow-recent').replaceChildren();
     if(!list.length)return;
     const label=document.createElement('p');label.textContent='Недавние';$('flow-recent').append(label);
     const row=document.createElement('div');row.className='flow-recent-row';
     list.forEach(tx=>{
       const b=document.createElement('button');b.type='button';const name=document.createElement('span');name.textContent=tx.merchant;const amount=document.createElement('span');FintexNumerals.render(amount,tx.amount);b.append(name,amount);
-      b.addEventListener('click',()=>{setKind(tx.type);$('flow-amount').value=tx.amount;$('flow-name').value=tx.merchant;$('flow-category').value=CATS[tx.category]?tx.category:'other';preview();$('flow-amount').focus();$('flow-amount').select();});row.append(b);
+      b.addEventListener('click',()=>{setKind(tx.type);$('flow-amount').value=tx.amount;$('flow-name').value=tx.merchant;$('flow-category').value=CATS[tx.category]?tx.category:'other';$('flow-details').open=true;$('flow-templates').open=false;preview();$('flow-amount').focus();$('flow-amount').select();});row.append(b);
     });$('flow-recent').append(row);
   }
   function rememberInput(event){
@@ -75,14 +94,14 @@
     $('flow-date').value=id?tx.date:date;$('flow-date').max=TODAY;$('flow-amount').value=tx?tx.amount:'';$('flow-name').value=tx?.merchant||'';
     $('flow-category').querySelectorAll('[data-custom-category]').forEach(o=>o.remove());
     if(tx?.category&&!CATS[tx.category]){const option=document.createElement('option');option.value=tx.category;option.textContent=tx.category;option.dataset.customCategory='1';$('flow-category').append(option);}
-    $('flow-category').value=tx?.category||recent().find(t=>t.type==='expense')?.category||'other';
+    $('flow-category').value=tx?.category||recent('expense')[0]?.category||'other';
     if(!$('flow-category').value)$('flow-category').value='other';
     $('flow-from').value=tx?.transfer_from||'';$('flow-to').value=tx?.transfer_to||'';
     $('flow-covered').checked=!!(id&&tx?.type==='transfer');
     const protectedTx=!!(id&&D.locked(tx));
     $('flow-amount').disabled=protectedTx;$('flow-date').disabled=protectedTx;dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.disabled=protectedTx);
     $('flow-lock-note').hidden=!protectedTx;
-    templates();setKind(tx?.type||'expense');
+    setKind(tx?.type||'expense');
     $('flow-details').open=!!id||!!repeat||date!==TODAY;$('flow-templates').open=false;
     $('flow-draft-note').hidden=!!id||!!repeat||date!==TODAY||!FintexEntryDraft.read();
     dialog.showModal();
@@ -93,8 +112,8 @@
     const old=current();if(editing&&JSON.stringify(old)!==signature){say('Запись изменилась. Откройте её заново, чтобы не потерять изменения.');return;}
     const draft={type:kind,amount:$('flow-amount').value,date:$('flow-date').value,merchant:$('flow-name').value.trim()||(kind==='income'?'Доход':kind==='transfer'?'Между своими счетами':CATS[$('flow-category').value]?.name||'Покупка'),category:$('flow-category').value,from:$('flow-from').value,to:$('flow-to').value,covered:$('flow-covered').checked};
     const result=D.change(state.balance,state.transactions,draft,TODAY,editing,uid());
-    if(result.error){say(result.error);if(M.ordinal(draft.date)===null||draft.date>TODAY){$('flow-details').open=true;$('flow-date').focus();}else if(M.parse(draft.amount)===null||M.parse(draft.amount)<=0)$('flow-amount').focus();return;}
-    if(Math.abs(result.balance)>1e12){say('Итоговый остаток слишком велик. Проверьте сумму.');return;}
+    if(result.error){showError(result);return;}
+    if(Math.abs(result.balance)>1e12){showError({error:'Итоговый остаток слишком велик. Проверьте сумму.',field:'amount'});return;}
     busy=true;try{saveLocal(result);if(!editing)FintexEntryDraft.clear();dialog.close();toast(editing?'Изменения сохранены':'Операция записана');}catch(error){say(error.message);}finally{busy=false;}
   }
   function moneyRow(label,value,id='') {return `<div class="flow-equation-row"><span>${label}</span><strong class="money-val" ${id?`id="${id}"`:''} data-flow-money="${value}"></strong></div>`;}
@@ -128,6 +147,23 @@
     reconcile=document.createElement('dialog');reconcile.id='daily-reconcile';reconcile.className='daily-dialog';reconcile.setAttribute('aria-labelledby','reconcile-title');reconcile.setAttribute('aria-modal','true');
     reconcile.innerHTML=`<header class="flow-header"><h2 id="reconcile-title">Сверить остаток</h2><button type="button" data-flow-close aria-label="Закрыть">×</button></header><div id="flow-equation"></div><p class="flow-note">Начальная сумма восстановлена из текущих записей, а не получена из банка. Сравнивайте общий остаток по тем же счетам.</p><form id="reconcile-form" novalidate><label class="flow-field" for="flow-actual">Фактически на всех учтённых счетах, ₽<input id="flow-actual" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="Введите сумму из банка"/></label><div id="flow-difference" class="flow-after" hidden><span id="flow-difference-title"></span><strong id="flow-difference-value" class="money-val"></strong></div><label class="flow-field" for="flow-reason">Комментарий<input id="flow-reason" maxlength="100" placeholder="Например, неучтённая комиссия"/></label><label class="flow-check" id="flow-confirm-row" hidden><input type="checkbox" id="flow-confirm"/>Записать разницу отдельной корректировкой</label><p class="flow-note">Корректировка не считается доходом или расходом. Сначала сохраняется на устройстве; отправка зависит от подключения облака.</p><p id="reconcile-status" class="flow-status" role="status" aria-live="polite"></p><button id="reconcile-save" class="flow-primary" type="submit" disabled>Записать корректировку</button><button id="flow-bank-screen" class="flow-secondary" type="button">Выбрать скриншот банка</button></form>`;
     document.body.append(dialog,reconcile);
+    for(const field of ['amount','merchant','date','from','to','covered']){
+      const input=$(fieldId(field)),note=document.createElement('span');
+      note.id='flow-error-'+field;note.className='flow-field-error';note.hidden=true;
+      const label=input.closest('label'),text=[...label.childNodes].find(node=>node.nodeType===Node.TEXT_NODE&&node.textContent.trim());
+      const caption=document.createElement('span');caption.id='flow-label-'+field;text.replaceWith(caption);caption.append(text);
+      input.setAttribute('aria-labelledby',caption.id);label.append(note);input.setAttribute('aria-describedby',note.id);
+      input.addEventListener('input',()=>clearFieldError(field));input.addEventListener('change',()=>clearFieldError(field));
+    }
+    const amountHint=document.createElement('span');amountHint.id='flow-amount-hint';amountHint.className='flow-field-hint';amountHint.textContent='Например, 250 или 250,50';$('flow-amount').after(amountHint);
+    $('flow-amount').setAttribute('aria-describedby','flow-amount-hint flow-error-amount');$('flow-amount').setAttribute('enterkeyhint','next');
+    $('flow-name').setAttribute('enterkeyhint','done');
+    $('flow-amount').addEventListener('keydown',event=>{
+      if(event.key!=='Enter'||event.isComposing||event.keyCode===229)return;
+      event.preventDefault();const amount=M.parse($('flow-amount').value);
+      if(amount===null||amount<=0){showError({error:'Укажите сумму больше нуля, до двух знаков после запятой.',field:'amount'});return;}
+      clearFieldError('amount');$('flow-name').focus();
+    });
     const details=document.createElement('details');details.id='flow-details';details.className='quiet-details';
     details.innerHTML='<summary><span id="flow-details-heading">Дата и категория</span> <span id="flow-details-label"></span></summary>';
     const fields=$('flow-category-row').parentElement;fields.before(details);details.append(fields);

@@ -6,13 +6,13 @@
   const locked=tx=>!!(tx?.bill_id||tx?.goal_withdrawal||tx?.type==='adjustment');
   function validate(draft,today,original){
     const type=String(draft.type||''),amount=M.parse(draft.amount),date=String(draft.date||''),merchant=String(draft.merchant||'').trim().slice(0,100);
-    if(!['expense','income','transfer'].includes(type))return {error:'Выберите вид операции.'};
-    if(amount===null||amount<=0)return {error:'Укажите сумму больше нуля, до двух знаков после запятой.'};
-    if(M.ordinal(date)===null||date>today)return {error:'Выберите дату не позднее сегодня.'};
-    if(!merchant)return {error:'Укажите название операции.'};
+    if(!['expense','income','transfer'].includes(type))return {error:'Выберите вид операции.',field:'type'};
+    if(amount===null||amount<=0)return {error:'Укажите сумму больше нуля, до двух знаков после запятой.',field:'amount'};
+    if(M.ordinal(date)===null||date>today)return {error:'Выберите дату не позднее сегодня.',field:'date'};
+    if(!merchant)return {error:'Укажите название операции.',field:'merchant'};
     if(locked(original)&&(type!==original.type||M.minor(amount)!==M.minor(original.amount)||date!==original.date))return {error:'Эта запись связана с платежом или целью. Здесь можно менять только название и категорию.'};
     const from=String(draft.from||'').trim().slice(0,60),to=String(draft.to||'').trim().slice(0,60);
-    if(type==='transfer'&&(!from||!to||from.toLocaleLowerCase('ru')===to.toLocaleLowerCase('ru')||!draft.covered))return {error:'Укажите разные свои счета и подтвердите, что оба уже входят в общий остаток.'};
+    if(type==='transfer'&&(!from||!to||from.toLocaleLowerCase('ru')===to.toLocaleLowerCase('ru')||!draft.covered))return {error:'Укажите разные свои счета и подтвердите, что оба уже входят в общий остаток.',field:!from?'from':!to||from.toLocaleLowerCase('ru')===to.toLocaleLowerCase('ru')?'to':'covered'};
     return {value:{type,amount,date,merchant,category:String(draft.category||'other'),...(type==='transfer'?{transfer_from:from,transfer_to:to}:{})}};
   }
   function change(balance,transactions,draft,today,id,newId){
