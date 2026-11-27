@@ -67,7 +67,7 @@
   function nextEntry(){
     const date=$('flow-date').value,category=$('flow-category').value;
     FintexEntryDraft.begin();inputTouched=false;clearErrors();$('flow-form').reset();$('flow-date').value=date;$('flow-category').value=category;$('flow-draft-note').hidden=true;$('flow-templates').open=true;
-    setKind(kind);say('Записано. Можно добавить следующую операцию.');dialog.scrollTop=0;$('flow-amount').focus();
+    setKind(kind);say('Записано. Можно добавить следующую операцию.');$('flow-fields').scrollTop=0;$('flow-amount').focus();
   }
   function setKind(value){
     kind=value;clearErrors();templates();quickChoices();
@@ -126,7 +126,7 @@
     setKind(tx?.type||'expense');
     $('flow-details').open=!!id||!!repeat||date!==TODAY;$('flow-templates').open=!id&&!repeat;
     $('flow-draft-note').hidden=!!id||!!repeat||date!==TODAY||!FintexEntryDraft.read();
-    dialog.showModal();
+    $('flow-fields').scrollTop=0;dialog.showModal();
     (protectedTx?$('flow-name'):$('flow-amount')).focus({preventScroll:true});
   }
   function submit(event){
@@ -206,6 +206,10 @@
     const draftNote=document.createElement('section');draftNote.id='flow-draft-note';draftNote.className='flow-draft-note';draftNote.hidden=true;
     draftNote.innerHTML='<p>Есть незаписанный ввод в этой вкладке. Это ещё не операция.</p><button type="button" id="flow-draft-restore">Вернуть ввод</button><button type="button" id="flow-draft-discard">Удалить ввод</button>';
     dialog.querySelector('.flow-header').after(draftNote);
+    // A real scroll region and a separate action row: the footer never floats over inputs.
+    const scrollFields=document.createElement('div');scrollFields.id='flow-fields';scrollFields.dataset.formScroll='';
+    const form=$('flow-form');for(const child of [...form.children])if(child!==actions)scrollFields.append(child);
+    form.prepend(scrollFields);scrollFields.prepend(draftNote);
     $('flow-draft-discard').onclick=()=>{FintexEntryDraft.clear();draftNote.hidden=true;};
     $('flow-draft-restore').onclick=()=>{const draft=FintexEntryDraft.read();if(!draft)return;setKind(draft.kind);for(const [field,id]of Object.entries({amount:'amount',merchant:'name',date:'date',category:'category',from:'from',to:'to'}))$('flow-'+id).value=draft[field];$('flow-covered').checked=false;$('flow-details').open=true;inputTouched=true;draftNote.hidden=true;preview();say('Восстановлен только ввод. Проверьте поля и нажмите «Записать».');};
     $('flow-form').addEventListener('input',rememberInput);$('flow-form').addEventListener('change',rememberInput);

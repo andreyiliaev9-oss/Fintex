@@ -302,7 +302,7 @@ body .flow-chip-row button { flex:0 0 auto; min-height:44px; padding:8px 12px; b
 body .flow-chip-row button[aria-pressed=true] { border-color:var(--accent); background:var(--accent-soft); color:var(--text-primary); }
 body .flow-chip-row button:disabled { opacity:.45; }
 body .flow-chip-row button:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
-body #flow-save-bar { position:sticky; bottom:-1px; z-index:2; padding:6px 0 2px; background:var(--surface-1); border-top:1px solid var(--border-subtle); }
+body #flow-save-bar { position:static; padding:8px 0 0; background:var(--surface-1); border-top:1px solid var(--border-subtle); }
 body #flow-save-bar .flow-secondary { min-height:44px; border:1px solid var(--border-subtle); border-radius:12px; }
 body #flow-recent .flow-recent-row button { min-height:44px; }
 body #flow-templates[open] > summary { color:var(--text-secondary); }
@@ -324,3 +324,25 @@ body #fintex-tour .tour-map-note { color:var(--text-secondary); font-size:12px; 
 /* Leave room to bring even the last real control above the tour card. Removed with the tour root class. */
 html.fintex-tour-open body { padding-bottom:100vh !important; }
 body #daily-flow #flow-amount { font-size:32px; line-height:1.2; min-height:60px; font-weight:750; }
+
+/* v87: size the manual form to the visible iOS viewport, not the layout behind the keyboard. */
+body #daily-flow[open] {
+  display:flex; flex-direction:column; position:fixed;
+  top:var(--form-viewport-top,0px); bottom:var(--form-viewport-bottom,0px);
+  height:min(760px,calc(var(--form-viewport-height,100dvh) - 16px));
+  max-height:calc(var(--form-viewport-height,100dvh) - 16px);
+  margin:auto; transform:none; overflow:hidden; padding:16px;
+}
+body #daily-flow > .flow-header { flex:none; margin:0 0 10px; align-items:center; }
+body #daily-flow #flow-form { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+body #daily-flow #flow-fields { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scroll-padding-block:14px; padding:4px 4px 12px; scrollbar-width:thin; }
+body #daily-flow #flow-save-bar { flex:none; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; padding:10px 2px 0; }
+body #daily-flow #flow-save-bar:has(#flow-save-another:not([hidden])) { grid-template-columns:1.1fr 1fr; }
+body #daily-flow #flow-save-bar > button { margin:0; min-height:48px; height:auto; padding:8px; font-size:13px; line-height:1.35; }
+body #daily-flow #flow-fields :is(input,select) { scroll-margin-block:14px; }
+html[data-form-compact=true] body #daily-flow[open] { padding:10px 12px; border-radius:18px; }
+html[data-form-compact=true] body #daily-flow .flow-header { margin-bottom:6px; }
+html[data-form-compact=true] body #daily-flow .flow-header h2 { font-size:18px; }
+html[data-form-compact=true] body #daily-flow .flow-field { margin-bottom:10px; gap:5px; }
+html[data-form-compact=true] body #daily-flow #flow-form .flow-types { margin-bottom:8px; }
+html[data-form-compact=true] body #daily-flow #flow-save-bar { padding-top:8px; }
