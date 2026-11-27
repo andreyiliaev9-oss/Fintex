@@ -11,9 +11,19 @@
  ].map(([id,name,longitude,latitude,zoom])=>Object.freeze({id,name,center:[longitude,latitude],zoom}));
  const get=id=>regions.find(r=>r.id===id)||regions[0];
  const motion=()=>!matchMedia('(prefers-reduced-motion: reduce)').matches&&localStorage.getItem('fp_motion')!=='0';
- function visit(map,region,{intro=false}={}){
-  map.stop();const camera={center:region.center,zoom:region.zoom,pitch:25,bearing:0};
-  if(motion())map.flyTo({...camera,duration:intro?4200:1800,essential:false,curve:1.45});else map.jumpTo({...camera,pitch:0});
+ const flights=new WeakMap();
+ function cancel(map){const cleanup=flights.get(map);if(cleanup)cleanup();map.stop();}
+ function visit(map,region,{intro=false,target=null}={}){
+  cancel(map);
+  const area={center:region.center,zoom:region.zoom,pitch:25,bearing:0};
+  const end=target?{center:target.center,zoom:target.zoom||16,pitch:35,bearing:0}:area;
+  if(!motion()){map.jumpTo({...end,pitch:0});return;}
+  const stages=target&&(intro||map.getZoom()<4)?[{...area,duration:7800},{...end,duration:6200}]:[{...end,duration:intro?7800:target?6200:4200}];
+  const canvas=map.getContainer?.();let active=true;
+  const cleanup=()=>{active=false;map.off?.('moveend',next);map.off?.('remove',cleanup);for(const event of ['pointerdown','touchstart','wheel'])canvas?.removeEventListener(event,interrupt);flights.delete(map);};
+  const interrupt=()=>{cleanup();map.stop();};
+  function next(){if(!active)return;const camera=stages.shift();if(!camera){cleanup();return;}map.once('moveend',next);map.flyTo({...camera,essential:false,curve:1.25,easing:t=>t*t*(3-2*t)});}
+  flights.set(map,cleanup);map.once('remove',cleanup);for(const event of ['pointerdown','touchstart','wheel'])canvas?.addEventListener(event,interrupt,{passive:true});next();
  }
- window.FintexMapRegions=Object.freeze({all:regions,get,motion,visit,defaultId:'sverdlovsk'});
+ window.FintexMapRegions=Object.freeze({all:regions,get,motion,visit,cancel,defaultId:'sverdlovsk'});
 })();

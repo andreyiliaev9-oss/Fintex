@@ -171,7 +171,7 @@
     candidate.reviewed={};$('capture-category').value=CATS[candidate.category]?candidate.category:classifyCategory(candidate.merchant);
     showPlace();refreshReview();$('capture-review-title').focus({preventScroll:true});
   }
-  function showPlace(){const original=candidate;if(!original)return;window.FintexPlacePicker?.field($('capture-place'),{location:original.location,onChange:loc=>{if(candidate!==original||!dialog.open)return;if(loc)candidate.location=loc;else delete candidate.location;showPlace();}});}
+  function showPlace(){const original=candidate;if(!original)return;window.FintexPlacePicker?.field($('capture-place'),{location:original.location,suggestedLabel:()=>$('capture-merchant').value.trim(),onChange:loc=>{if(candidate!==original||!dialog.open)return;if(loc)candidate.location=loc;else delete candidate.location;showPlace();}});}
   function formCandidate(){
     const kind=$('capture-kind').value,type=['income','refund','transfer_in'].includes(kind)?'income':'expense';
     const edited={...candidate,bank:$('capture-bank').value.trim(),merchant:$('capture-merchant').value.trim(),amount:FM.parse($('capture-amount').value),date:$('capture-date').value,time:$('capture-time').value,type,op_kind:kind};

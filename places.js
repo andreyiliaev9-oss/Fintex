@@ -2,7 +2,8 @@
 (() => {
  'use strict';
  const Model=FintexPlacesModel;
- let regionId=FintexMapRegions.defaultId,days=30,currentPosition=null,positionMarker=null,gpsBusy=false,gpsEpoch=0,gpsMessage='Местоположение ещё не определено.',mapMessage='';
+ let focused=null,focusMarker=null,searchController=null,searchEpoch=0;
+ let regionId=FintexMapRegions.defaultId,days=30,currentPosition=null,positionMarker=null,gpsBusy=false,gpsEpoch=0,gpsMessage='',mapMessage='';
  try{regionId=FintexMapRegions.get(localStorage.getItem('fp_map_region')).id;}catch(_){}
  const region=()=>FintexMapRegions.get(regionId);
  const isVisible=()=>!document.getElementById('view-map')?.classList.contains('hidden');
@@ -12,7 +13,7 @@
  const expenses=n=>n+' '+(n%10===1&&n%100!==11?'расход':n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'расхода':'расходов');
  function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
  function button(text,fn){const b=node('button',text);b.type='button';b.addEventListener('click',fn);return b;}
- function stop(){generation++;if(viewer){try{viewer.map.remove();}catch(_){}viewer=null;}opening=false;host=null;positionMarker=null;lastFit='';mapMessage='';}
+ function stop(){generation++;if(viewer){try{viewer.map.remove();}catch(_){}viewer=null;}opening=false;host=null;positionMarker=null;focusMarker=null;lastFit='';mapMessage='';}
  function savePlace(id,snapshot,loc){
   const old=state.transactions.find(t=>t.id===id);if(!old||JSON.stringify(old)!==snapshot)throw Error('Операция изменилась. Откройте выбор места заново.');
   const tx={...old,local_only:true,local_edited:true};if(loc)tx.location=loc;else delete tx.location;
@@ -21,10 +22,10 @@
   localStorage.setItem('fp_local_tx',JSON.stringify(next));state.transactions=next;
   window.dispatchEvent(new Event('filely:financial-data-updated'));renderAll(false);if(window.FintexSync?.active())FintexSync.sync();
  }
- function edit(tx){const snapshot=JSON.stringify(tx);FintexPlacePicker.open({location:tx.location,title:'Место покупки · '+tx.merchant,onConfirm:loc=>savePlace(tx.id,snapshot,loc)});}
+ function edit(tx){const snapshot=JSON.stringify(tx);FintexPlacePicker.open({location:tx.location,title:'Где была покупка?',suggestedLabel:tx.merchant,onConfirm:loc=>savePlace(tx.id,snapshot,loc)});}
  function popup(tx){const p=node('div',undefined,'places-popup');p.append(node('strong',tx.merchant),node('p',money(tx.amount)+' · '+tx.date),node('p',tx.location.source==='user_confirmed'?tx.location.label:'Позиция телефона · место покупки не подтверждено'),button('Проверить место покупки',()=>edit(state.transactions.find(t=>t.id===tx.id)||tx)));return p;}
  function geojson(){return {type:'FeatureCollection',features:points.slice(0,2000).map(t=>({type:'Feature',geometry:{type:'Point',coordinates:[t.location.longitude,t.location.latitude]},properties:{id:t.id,minor:FintexMath.minor(t.amount),confirmed:t.location.source==='user_confirmed'?1:0}}))};}
- function fit(){if(!viewer||!points.length)return;const visible=points.slice(0,2000),key=visible.map(t=>[t.id,t.location.latitude,t.location.longitude].join(':')).join('|');if(lastFit===key)return;lastFit=key;const bounds=new viewer.S.LngLatBounds();for(const t of visible)bounds.extend([t.location.longitude,t.location.latitude]);viewer.map.fitBounds(bounds,{padding:54,maxZoom:16,duration:0});}
+ function fit(){if(!viewer||!points.length)return;const visible=points.slice(0,2000),key=visible.map(t=>[t.id,t.location.latitude,t.location.longitude].join(':')).join('|');if(lastFit===key)return;lastFit=key;FintexMapRegions.cancel(viewer.map);const bounds=new viewer.S.LngLatBounds();for(const t of visible)bounds.extend([t.location.longitude,t.location.latitude]);viewer.map.fitBounds(bounds,{padding:54,maxZoom:16,duration:0});}
  function renderLayers(){
   if(!viewer||(!viewer.map.isStyleLoaded()&&!viewer.map.getSource('fintex-purchases')))return;
   const m=viewer.map,data=geojson();
@@ -44,78 +45,80 @@
   if(!allowed||!opened||!host?.isConnected)return;
   host.hidden=false;if(viewer){viewer.map.resize();renderLayers();return;}if(opening)return;
   opening=true;const id=generation;
-  try{const result=await FintexSatellite.create(host,{globe:true,center:FintexMapRegions.motion()?[75,58]:region().center,zoom:FintexMapRegions.motion()?0.3:region().zoom,isCurrent:()=>id===generation&&allowed&&opened,onStatus:text=>{if(id===generation){mapMessage=text;if(status)status.textContent=text;}},onClick:async(e,m,S)=>{
-   if(mode!=='points'||!m.getLayer('fintex-points'))return;const features=m.queryRenderedFeatures(e.point,{layers:['fintex-points','fintex-clusters']});if(!features.length)return;
-   const f=features[0];if(f.properties.cluster){try{const z=await m.getSource('fintex-purchases').getClusterExpansionZoom(f.properties.cluster_id);m.easeTo({center:f.geometry.coordinates,zoom:z,duration:350});}catch(_){}return;}
+  try{const result=await FintexSatellite.create(host,{globe:true,center:FintexMapRegions.motion()?[75,58]:region().center,zoom:FintexMapRegions.motion()?0.3:region().zoom,isCurrent:()=>id===generation&&allowed&&opened,onStatus:text=>{if(id===generation){mapMessage=text;if(status){status.textContent=text;status.hidden=!text;}}},onClick:async(e,m,S)=>{
+   if(mode!=='points'||!m.getLayer('fintex-points'))return;const features=m.queryRenderedFeatures(e.point,{layers:['fintex-points','fintex-clusters']});if(!features.length){selectPlace({latitude:e.lngLat.lat,longitude:e.lngLat.lng,captured_at:new Date().toISOString(),label:'Точка на карте'},false);return;}
+   const f=features[0];if(f.properties.cluster){try{const z=await m.getSource('fintex-purchases').getClusterExpansionZoom(f.properties.cluster_id);FintexMapRegions.cancel(m);m.easeTo({center:f.geometry.coordinates,zoom:z,duration:350});}catch(_){}return;}
    const tx=points.find(t=>t.id===f.properties.id);if(tx)new S.Popup({maxWidth:'260px'}).setLngLat(f.geometry.coordinates).setDOMContent(popup(tx)).addTo(m);
   }});
    if(id!==generation||!allowed){result.map.remove();return;}viewer=result;
-   const loaded=()=>{if(id!==generation)return;renderLayers();if(currentPosition)showPosition();else FintexMapRegions.visit(result.map,region(),{intro:true});};
+   const loaded=()=>{if(id!==generation)return;renderLayers();if(focused)showFocus(true);else if(currentPosition)showPosition(true);else FintexMapRegions.visit(result.map,region(),{intro:true});};
    let initialized=false;const initialize=()=>{if(initialized)return;initialized=true;loaded();};result.map.once('load',initialize);if(result.map.isStyleLoaded())initialize();
-  }catch(error){if(id===generation){mapMessage=error.message;if(status)status.textContent=error.message;}}finally{if(id===generation)opening=false;}
+  }catch(error){if(id===generation){mapMessage=error.message;if(status){status.textContent=error.message;status.hidden=false;}}}finally{if(id===generation)opening=false;}
  }
  function refresh(){if(current?.container.isConnected)mount(current.container,{days});}
  function mount(container,options={days:30}){
   container.querySelector('#places-card')?.remove();current={container,options};
   const end=FintexMath.key(new Date()),start=FintexMath.shift(end,-(options.days-1)),data=Model.project(state.transactions,{start,end,category});points=data.points;
   const card=node('section',undefined,'places-card card-surface');card.id='places-card';
-  const header=node('header',undefined,'places-page-heading');header.append(node('span','Личная география','places-eyebrow'),node('h1','Карта'),node('p','Покупки складываются в историю ваших мест.','places-note'),node('small',data.points.length+' с местом · '+data.missing+' без места'));card.append(header);
-  const body=node('div',undefined,'places-body');card.append(body);
-  const area=node('div',undefined,'places-area');const areaLabel=node('label','Регион · Россия'),regions=node('select');regions.id='places-region';
-  const ural=node('optgroup');ural.label='Урал · приоритетный регион';const other=node('optgroup');other.label='Другие регионы России';
-  FintexMapRegions.all.forEach((r,i)=>(i<6?ural:other).append(new Option(r.name,r.id)));regions.append(ural,other);regions.value=regionId;
-  regions.onchange=()=>{regionId=regions.value;try{localStorage.setItem('fp_map_region',regionId);}catch(_){}if(viewer)FintexMapRegions.visit(viewer.map,region());};areaLabel.append(regions);area.append(areaLabel);body.append(area);
-  const locate=button(gpsBusy?'Определяем место…':'Моё местоположение',locateMe);locate.id='places-locate';locate.className='places-locate';locate.disabled=gpsBusy;body.append(locate);
-  const gps=node('p',gpsMessage,'places-gps-status');gps.id='places-gps-status';gps.setAttribute('role','status');body.append(gps);
-  const hero=node('div',undefined,'places-hero');body.append(hero);
+  const header=node('header',undefined,'places-page-heading');header.append(node('h1','Карта'));const areaLabel=node('label',undefined,'places-region-label');areaLabel.append(node('span','Регион · Россия','sr-only'));const regions=node('select');regions.id='places-region';regions.setAttribute('aria-label','Регион России');
+  const ural=node('optgroup');ural.label='Урал';const other=node('optgroup');other.label='Все регионы';FintexMapRegions.all.forEach((r,i)=>(i<6?ural:other).append(new Option(r.name,r.id)));regions.append(ural,other);regions.value=regionId;
+  regions.onchange=()=>{regionId=regions.value;try{localStorage.setItem('fp_map_region',regionId);}catch(_){}if(viewer)FintexMapRegions.visit(viewer.map,region());};areaLabel.append(regions);header.append(areaLabel);card.append(header);
+  const body=node('div',undefined,'places-body');card.append(body);const hero=node('div',undefined,'places-hero');body.append(hero);
   if(!host){host=node('div',undefined,'places-map');host.id='places-map';host.dataset.noTabSwipe='';host.setAttribute('aria-label','Карта покупок и вашего местоположения');}hero.append(host);host.hidden=!allowed;
-  if(!allowed){const consent=node('div',undefined,'places-map-consent');const orbit=node('div','66','places-orbit');orbit.setAttribute('aria-hidden','true');consent.append(orbit,node('span','Сначала — ваш регион','places-eyebrow'),node('h2','От Земли к знакомым местам'),node('p','Приблизьтесь к своей области. Нажмите «Моё местоположение», чтобы увидеть себя, и добавьте места покупок.'));const load=button('Открыть карту',()=>{FintexSatellite.allow();allowed=true;refresh();});load.id='places-load';consent.append(load,node('small','При открытии внешний сервис получает IP и область просмотра. Ваши покупки и суммы ему не передаются.'));hero.append(consent);}
-  const tools=node('div',undefined,'places-map-tools');
-  if(allowed){tools.append(button('Вся область',()=>viewer&&FintexMapRegions.visit(viewer.map,region())),button('Мои покупки',()=>{lastFit='';fit();}),button('Обновить карту',()=>{stop();refresh();}));body.append(tools);}
-  body.append(node('p','Синяя точка — вы сейчас. Выбор региона меняет обзор, а не место покупки и не итоги.','places-note'));
-  const periodLabel=node('label','Покупки за период'),period=node('select');period.id='places-period';for(const [value,title]of [[30,'30 дней'],[90,'90 дней'],[365,'Год']])period.append(new Option(title,String(value)));period.value=String(days);period.onchange=()=>{days=Number(period.value);limit=25;refresh();};periodLabel.className='places-period';periodLabel.append(period);body.append(periodLabel);
-  const totals=node('p',expenses(data.points.length)+' с местом · '+money(data.amount),'places-total money-val');totals.id='places-total';body.append(totals,node('p',start+' — '+end+' · все регионы','places-note'));
+  if(!allowed){const consent=node('div',undefined,'places-map-consent');const orbit=node('div',undefined,'places-orbit');orbit.setAttribute('aria-hidden','true');consent.append(orbit,node('span','Ваши места','places-eyebrow'),node('h2','Покупки на карте'),node('p','Находите адреса. Возвращайтесь в любимые места.'));const load=button('Открыть карту',()=>{FintexSatellite.allow();allowed=true;refresh();});load.id='places-load';consent.append(load,node('small','Снимки из интернета. Сервис видит IP и область карты, но не ваши покупки.'));hero.append(consent);}
+  const locate=button(gpsBusy?'Ищем вас…':'Моё местоположение',locateMe);locate.id='places-locate';locate.className='places-locate';locate.disabled=gpsBusy;hero.append(locate);
+  const gps=node('p',gpsMessage,'places-gps-status');gps.id='places-gps-status';gps.setAttribute('role','status');gps.hidden=!gpsMessage;hero.append(gps);
+  const search=node('form',undefined,'place-search');search.id='places-search';const input=node('input');input.id='places-search-query';input.placeholder='Адрес или место';input.maxLength=180;input.setAttribute('aria-label','Адрес или место');const submit=node('button','Найти');submit.type='submit';search.append(input,submit);search.onsubmit=findAddress;input.oninput=()=>{searchEpoch++;searchController?.abort();document.getElementById('places-search-results')?.replaceChildren();};const privacy=node('small','Поиск передаёт сервису карт только введённый запрос.','place-search-privacy');body.insertBefore(search,hero);body.insertBefore(privacy,hero);const results=node('div',undefined,'place-search-results');results.id='places-search-results';body.insertBefore(results,hero);
+  const selected=node('div',undefined,'places-selected');selected.id='places-selected';const chosen=focused||currentPosition;selected.hidden=!chosen;if(chosen){selected.append(node('span',focused?'Выбрано на карте':'Вы сейчас здесь','places-eyebrow'),node('strong',focused?.label||'Моё местоположение'),button('Добавить покупку здесь',addHere));}body.append(selected);
+  const tools=node('div',undefined,'places-map-tools');if(allowed){tools.append(button('Вся область',()=>viewer&&FintexMapRegions.visit(viewer.map,region())),button('Мои покупки',()=>{lastFit='';fit();}),button('Обновить карту',()=>{stop();refresh();}));body.append(tools);}
+  status=node('p',mapMessage,'places-note');status.id='places-status';status.setAttribute('role','status');status.hidden=!mapMessage;body.append(status);
+  const capture=button('Добавить из скриншота',()=>FintexCapture.open());capture.className='places-capture';body.append(capture);
+  const overview=node('div',undefined,'places-overview');overview.append(node('h2','Ваши покупки'));const periodLabel=node('label',undefined,'places-period');periodLabel.append(node('span','Период','sr-only'));const period=node('select');period.id='places-period';for(const [value,title]of [[30,'30 дней'],[90,'90 дней'],[365,'Год']])period.append(new Option(title,String(value)));period.value=String(days);period.onchange=()=>{days=Number(period.value);limit=25;refresh();};periodLabel.append(period);overview.append(periodLabel);body.append(overview);
+  const totals=node('p',expenses(data.points.length)+' с местом · '+money(data.amount),'places-total money-val');totals.id='places-total';body.append(totals,node('p',data.missing?data.missing+' без места':'Все покупки за период с местом','places-note'));
   const filters=node('div',undefined,'places-filters'),catLabel=node('label','Категория'),cat=node('select');cat.id='places-category';cat.append(new Option('Все категории','all'));
   for(const id of [...new Set(state.transactions.filter(t=>t.type==='expense').map(t=>t.category||'other'))].sort())cat.append(new Option(cats[id]||id,id));
   if(![...cat.options].some(o=>o.value===category)){category='all';queueMicrotask(refresh);}cat.value=category;cat.onchange=()=>{category=cat.value;limit=25;refresh();document.getElementById('places-category')?.focus({preventScroll:true});};catLabel.append(cat);filters.append(catLabel);
   const modeLabel=node('label','На карте'),select=node('select');select.id='places-mode';for(const [value,title]of [['points','Покупки и суммы'],['amount','Тепло по сумме'],['count','Тепло по количеству']])select.append(new Option(title,value));select.value=mode;select.onchange=()=>{mode=select.value;refresh();document.getElementById('places-mode')?.focus({preventScroll:true});};modeLabel.append(select);filters.append(modeLabel);body.append(filters);
-  status=node('p',undefined,'places-note');status.id='places-status';status.setAttribute('role','status');body.append(status);
-  status.textContent=mapMessage||(!data.points.length?'За этот период нет расходов с геометкой. Выберите покупку ниже — место можно добавить сейчас.':'Золотые точки — подтверждены вами, мятные — только позиция телефона. При отдалении точки объединяются, суммы складываются.');
-  body.append(node('p','Тепло — относительная плотность, не фиксированная рублёвая шкала. Карта показывает до 2 000 последних точек; итог и список учитывают все.','places-note'));
-  if(allowed)body.append(button('Скрыть карту и отключить загрузку снимков',()=>FintexSatellite.revoke()));
   const expenseRows=FintexMath.transactions(state.transactions,start,end).filter(t=>t.type==='expense'&&(category==='all'||t.category===category));
-  if(expenseRows.length){const add=node('details',undefined,'places-help');add.append(node('summary','Добавить / подтвердить место покупки'));const label=node('label','Выберите операцию'),choose=node('select');choose.id='places-transaction';for(const t of expenseRows.slice(0,250))choose.append(new Option(t.merchant+' · '+money(t.amount)+' · '+t.date,t.id));label.append(choose);add.append(label,button('Выбрать место на карте',()=>{const tx=state.transactions.find(t=>t.id===choose.value);if(tx)edit(tx);}));if(expenseRows.length>250)add.append(node('p','Здесь последние 250 операций. Остальные можно открыть через историю → изменить → место покупки.','places-note'));body.append(add);}
-  const groups=Model.places(data.points),ranking=node('div',undefined,'places-ranking');ranking.append(node('h3','Где остаётся больше всего'));for(const g of groups.slice(0,3)){const row=node('div');row.append(node('strong',g.title),node('span',money(g.amount),'money-val'),node('small',g.count+' покупок · '+g.label));ranking.append(row);}if(!groups.length)ranking.append(node('p','Места появятся после первой подтверждённой покупки.','places-note'));body.append(ranking);
+  if(expenseRows.length){const add=node('details',undefined,'places-help');add.append(node('summary','Добавить место прошлой покупке'));const label=node('label','Выберите операцию'),choose=node('select');choose.id='places-transaction';for(const t of expenseRows.slice(0,250))choose.append(new Option(t.merchant+' · '+money(t.amount)+' · '+t.date,t.id));label.append(choose);add.append(label,button('Выбрать место',()=>{const tx=state.transactions.find(t=>t.id===choose.value);if(tx)edit(tx);}));if(expenseRows.length>250)add.append(node('p','Здесь последние 250 операций. Остальные можно открыть через историю → изменить → место покупки.','places-note'));body.append(add);}
+  const groups=Model.places(data.points),ranking=node('div',undefined,'places-ranking');ranking.append(node('h3','Любимые места'));for(const g of groups.slice(0,3)){const row=node('div');row.append(node('strong',g.title),node('span',money(g.amount),'money-val'),node('small',g.count+' покупок · '+g.label));ranking.append(row);}if(!groups.length)ranking.append(node('p','Здесь будут места, в которые вы возвращаетесь.','places-note'));body.append(ranking);
   const list=node('ul',undefined,'places-list');list.id='places-list';
   for(const tx of data.points.slice(0,limit)){
-   const item=node('li'),loc=tx.location;item.append(node('strong',tx.merchant),node('span',tx.date+' · '+money(tx.amount),'money-val'),node('small',loc.source==='user_confirmed'?'Подтверждено вами · '+loc.label:'Место телефона при СМС · адрес не подтверждён'),node('small',loc.latitude.toFixed(5)+', '+loc.longitude.toFixed(5)+(loc.accuracy===null?' · точность неизвестна':' · точность ≈ '+Math.round(loc.accuracy)+' м')));
+   const item=node('li'),loc=tx.location;item.append(node('strong',tx.merchant),node('span',money(tx.amount),'money-val'),node('small',loc.source==='user_confirmed'?loc.label:'Позиция телефона · не подтверждена'),node('small',tx.date));
    item.append(button(loc.source==='user_confirmed'?'Изменить место':'Подтвердить место покупки',()=>edit(state.transactions.find(t=>t.id===tx.id)||tx)));
    const remove=button('Убрать геометку',()=>{if(!confirm('Убрать место из текущей версии? Деньги не изменятся. Старые серверные ревизии и копии могут содержать координаты.'))return;try{const old=state.transactions.find(t=>t.id===tx.id);savePlace(tx.id,JSON.stringify(old),null);toast('Метка убрана. Отправка — в настройках синхронизации.');}catch(error){toast(error.message);}});remove.setAttribute('aria-label','Убрать геометку: '+tx.merchant);item.append(remove);list.append(item);
   }
   body.append(list);if(data.points.length>limit)body.append(button('Показать ещё ('+(data.points.length-limit)+')',()=>{limit+=25;refresh();}));
-  const guide=node('section',undefined,'places-guide');guide.append(node('h2','Как всё подключается'));
-  const steps=node('ol');for(const [title,text]of [['Откройте карту','Нажмите «Открыть карту» — отдельный аккаунт для просмотра не нужен.'],['Разрешите геолокацию','Нажмите «Моё местоположение» и разрешите доступ браузеру. Синяя точка покажет, где телефон сейчас. Если запретили — включите доступ для сайта в настройках браузера.'],['Подтвердите место покупки','Добавьте расход или скриншот, выберите место и подпишите адрес. Сам по себе GPS не привязывает ваши прошлые покупки к этой точке.']]){const li=node('li');li.append(node('strong',title),node('p',text));steps.append(li);}guide.append(steps,button('Добавить покупку с местом',()=>FintexDaily.open()));body.append(guide);
-  const setup=node('details',undefined,'places-help');setup.append(node('summary','Автоматизация СМС и облачное сохранение'),node('p','Для карты и геолокации отдельная настройка сервера не нужна. Подтверждённые места сначала сохраняются на устройстве. Для передачи на другие устройства обновите свой Apps Script из инструкции. Автоматический приём СМС требует отдельно настроенной команды iPhone — пока она не подключена, добавляйте покупки вручную или скриншотом.'));const link=node('a','Открыть инструкцию →');link.href='./docs/SMS-LOCATION-SETUP.html';link.target='_blank';link.rel='noopener noreferrer';setup.append(link);body.append(setup);
+  const guide=node('details',undefined,'places-help places-guide');guide.append(node('summary','Как добавить место'),node('p','Найдите адрес или нажмите «Моё местоположение». Выберите «Добавить покупку здесь» — точку останется подтвердить одной кнопкой. Название можно не вводить.'));body.append(guide);
+  const setup=node('details',undefined,'places-help');setup.append(node('summary','О карте и подключении'),node('p','Синяя точка — телефон сейчас, не адрес прошлой покупки. Регион меняет обзор, а не итоги. Поиск отправляет введённый адрес сервису карт; снимки и покупки туда не передаются. Отображаются до 2 000 точек, итог учитывает все. Для просмотра не нужен сервер. Облако и автоматизация СМС подключаются отдельно.'));const link=node('a','Подробнее →');link.href='./docs/SMS-LOCATION-SETUP.html';link.target='_blank';link.rel='noopener noreferrer';setup.append(link);if(allowed)setup.append(button('Скрыть карту и отключить загрузку снимков',()=>FintexSatellite.revoke()));setup.append(node('small','Поиск: MapTiler · © OpenStreetMap contributors','place-search-credit'));body.append(setup);
   container.append(card);if(allowed&&opened&&isVisible())draw();
  }
- function showPosition(){
+ function showPosition(intro=false){
   if(!viewer||!currentPosition)return;const {map,S}=viewer,loc=currentPosition;
   if(positionMarker)positionMarker.remove();const dot=node('div',undefined,'places-position-dot');dot.setAttribute('aria-label','Вы здесь');positionMarker=new S.Marker({element:dot}).setLngLat([loc.longitude,loc.latitude]).addTo(map);
-  map.stop();const camera={center:[loc.longitude,loc.latitude],zoom:15,pitch:0};if(FintexMapRegions.motion())map.flyTo({...camera,duration:1800});else map.jumpTo(camera);
+  FintexMapRegions.visit(map,region(),{intro,target:{center:[loc.longitude,loc.latitude],zoom:16}});
  }
  function locateMe(){
-  if(gpsBusy)return;const id=++gpsEpoch;gpsBusy=true;gpsMessage='Разрешите геолокацию в окне браузера. Определяем место — до 15 секунд…';
+  if(gpsBusy)return;const id=++gpsEpoch;gpsBusy=true;gpsMessage='Разрешите доступ к местоположению. Ищем вас…';
   // Start from this explicit gesture, not after SDK/network initialization.
   const request=FintexSatellite.locate();refresh();
-  request.then(loc=>{if(id!==gpsEpoch||!isVisible())return;currentPosition=loc;gpsMessage='Вы здесь · '+loc.latitude.toFixed(5)+', '+loc.longitude.toFixed(5)+(loc.accuracy===null?' · точность неизвестна':' · точность ≈ '+Math.round(loc.accuracy)+' м')+'. Это место телефона сейчас, не подтверждение покупки.'+(!allowed?' Откройте карту, чтобы увидеть синюю точку.':'');showPosition();},error=>{if(id===gpsEpoch&&isVisible())gpsMessage=error.message;}).finally(()=>{if(id!==gpsEpoch)return;gpsBusy=false;if(isVisible())refresh();});
+  request.then(loc=>{if(id!==gpsEpoch||!isVisible())return;currentPosition=loc;focused=null;if(focusMarker){focusMarker.remove();focusMarker=null;}gpsMessage='Вы здесь'+(loc.accuracy===null?'':' · точность ≈ '+Math.round(loc.accuracy)+' м')+'.'+(!allowed?' Откройте карту, чтобы увидеть точку.':'');showPosition();},error=>{if(id===gpsEpoch&&isVisible())gpsMessage=error.message;}).finally(()=>{if(id!==gpsEpoch)return;gpsBusy=false;if(isVisible())refresh();});
+ }
+ function showFocus(intro=false){if(!viewer||!focused)return;const {map,S}=viewer;if(focusMarker)focusMarker.remove();focusMarker=new S.Marker({color:'#e9c779'}).setLngLat([focused.longitude,focused.latitude]).addTo(map);FintexMapRegions.visit(map,region(),{intro,target:{center:[focused.longitude,focused.latitude],zoom:16}});}
+ function selectPlace(loc,fly=true){gpsEpoch++;gpsBusy=false;gpsMessage='';focused=FintexPlacesModel.location(loc)?{...FintexPlacesModel.location(loc),label:loc.label||'Точка на карте'}:null;if(fly)showFocus();else if(viewer&&focused){if(focusMarker)focusMarker.remove();focusMarker=new viewer.S.Marker({color:'#e9c779'}).setLngLat([focused.longitude,focused.latitude]).addTo(viewer.map);}refresh();}
+ function addHere(){const loc=focused||currentPosition;if(!loc)return;FintexPlacePicker.open({location:loc,suggestedLabel:focused?.label||'Точка на карте',onConfirm:place=>FintexDaily.open({place})});}
+ async function findAddress(event){
+  event.preventDefault();searchController?.abort();searchController=new AbortController();const seq=++searchEpoch,query=document.getElementById('places-search-query').value,out=document.getElementById('places-search-results');out.replaceChildren(node('p','Ищем…','places-note'));
+  try{const rows=await FintexPlaceSearch.forward(query,{center:region().center,signal:searchController.signal});if(seq!==searchEpoch||!isVisible())return;out.replaceChildren();for(const loc of rows)out.append(button(loc.label,()=>{selectPlace(loc);if(!allowed){FintexSatellite.allow();allowed=true;refresh();}}));if(!rows.length)out.append(node('p','Не нашли. Попробуйте улицу и номер дома.','places-note'));}
+  catch(error){if(seq===searchEpoch&&isVisible())out.replaceChildren(node('p',error.message||'Поиск недоступен. Выберите точку на карте.','places-note'));}
  }
  function mountPage(){const container=document.getElementById('map-page');if(container&&isVisible())mount(container,{days});}
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- function stopMotion(){if(!FintexMapRegions.motion())viewer?.map.stop();}
+ function stopMotion(){if(!FintexMapRegions.motion())viewer&&FintexMapRegions.cancel(viewer.map);}
  reduced.addEventListener('change',stopMotion);window.addEventListener('fintex:motionchange',stopMotion);
  window.addEventListener('filely:financial-data-updated',mountPage);
- window.addEventListener('fintex:tabchange',e=>{if(e.detail.name==='map')mountPage();else{gpsEpoch++;gpsBusy=false;currentPosition=null;gpsMessage='Местоположение ещё не определено.';stop();}});
- document.addEventListener('visibilitychange',()=>{if(document.hidden){gpsEpoch++;gpsBusy=false;currentPosition=null;gpsMessage='Местоположение ещё не определено.';stop();}else if(isVisible())mountPage();});
+ window.addEventListener('fintex:tabchange',e=>{if(e.detail.name==='map')mountPage();else{gpsEpoch++;gpsBusy=false;currentPosition=null;focused=null;searchEpoch++;searchController?.abort();gpsMessage='';stop();}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){gpsEpoch++;gpsBusy=false;currentPosition=null;focused=null;searchEpoch++;searchController?.abort();gpsMessage='';stop();}else if(isVisible())mountPage();});
  window.addEventListener('fintex:satellite-revoked',()=>{allowed=false;viewer=null;stop();refresh();});
- window.FintexPlaces={mount,mountPage,stop,edit};
+ window.FintexPlaces={mount,mountPage,stop,edit,position:()=>currentPosition&&Date.now()-Date.parse(currentPosition.captured_at)<=120000?{...currentPosition}:null};
 })();
