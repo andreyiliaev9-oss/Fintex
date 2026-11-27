@@ -19,7 +19,7 @@
   <script src="./cloud.js?v=73"></script>
   <link rel="stylesheet" href="./styles.css?v=22" />
   <link rel="stylesheet" href="./design-system.css?v=75" />
-  <link rel="stylesheet" href="./visual-finish.css?v=79" />
+  <link rel="stylesheet" href="./visual-finish.css?v=80" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
 
@@ -940,7 +940,7 @@
       <p class="section-caption">Данные и подключение</p>
       <details id="settings-backup" class="section-group card-surface">
         <summary><span class="section-icon" aria-hidden="true"><i data-lucide="hard-drive-download"></i></span><span><strong>Резервная копия</strong><small>Сохранить в файл или восстановить</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
-        <div class="section-body space-y-3"><p class="backup-copy">Основные данные хранятся в этом браузере. Очистка данных браузера или смена телефона может их удалить. Облако не заменяет полную копию.</p><p id="backup-last-file" class="backup-copy"></p><button type="button" id="backup-export" class="section-action"><span><strong>Сохранить копию в файл</strong><small>Остаток, операции, цели и платежи</small></span><span aria-hidden="true">↓</span></button><button type="button" id="backup-import" class="section-action"><span><strong>Восстановить из файла</strong><small>Сначала проверка и просмотр, затем замена</small></span><span aria-hidden="true">→</span></button><input type="file" id="backup-file" accept="application/json,.json" hidden/><p class="backup-copy">Фото целей и локальные исправления входят в копию. Оригиналы чеков, демо-инвестиции, сценарии симулятора, оформление и данные входа — нет. Файл не зашифрован: храните его в надёжном месте.</p><p id="backup-status" class="backup-copy" role="status" aria-live="polite"></p><div id="backup-cloud-pause" hidden><p class="backup-copy">После восстановления облако на паузе, чтобы оно не изменило импортированные данные. Можно продолжать учёт локально.</p><button type="button" id="backup-resume" class="section-action"><span><strong>Проверить возврат к облаку</strong><small>Только для той же учётной записи Telegram</small></span><span aria-hidden="true">→</span></button></div></div>
+        <div class="section-body space-y-3"><p class="backup-copy">Основные данные хранятся в этом браузере. Очистка данных браузера или смена телефона может их удалить. Облако не заменяет полную копию.</p><p id="backup-last-file" class="backup-copy"></p><button type="button" id="backup-export" class="section-action"><span><strong>Сохранить копию в файл</strong><small>Остаток, операции, цели и платежи</small></span><span aria-hidden="true">↓</span></button><button type="button" id="backup-check-open" class="section-action"><span><strong>Проверить сохранённый файл</strong><small>Целостность и сравнение без восстановления</small></span><span aria-hidden="true">✓</span></button><input type="file" id="backup-check-file" accept="application/json,.json" hidden/><button type="button" id="backup-import" class="section-action"><span><strong>Восстановить из файла</strong><small>Сначала проверка и просмотр, затем замена</small></span><span aria-hidden="true">→</span></button><input type="file" id="backup-file" accept="application/json,.json" hidden/><p class="backup-copy">Фото целей и локальные исправления входят в копию. Оригиналы чеков, демо-инвестиции, сценарии симулятора, оформление и данные входа — нет. Файл не зашифрован: храните его в надёжном месте.</p><p id="backup-status" class="backup-copy" role="status" aria-live="polite"></p><div id="backup-cloud-pause" hidden><p class="backup-copy">После восстановления облако на паузе, чтобы оно не изменило импортированные данные. Можно продолжать учёт локально.</p><button type="button" id="backup-resume" class="section-action"><span><strong>Проверить возврат к облаку</strong><small>Только для той же учётной записи Telegram</small></span><span aria-hidden="true">→</span></button></div></div>
       </details>
       <details id="settings-data" class="section-group card-surface">
         <summary><span class="section-icon" aria-hidden="true"><i data-lucide="cloud"></i></span><span><strong>Импорт и облако</strong><small>Загрузка операций и синхронизация</small></span><i data-lucide="chevron-down" class="section-chevron" aria-hidden="true"></i></summary>
@@ -1906,7 +1906,7 @@
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./extensions.js?v=79"></script>
-  <script src="./journal-view.js?v=79"></script>
+  <script src="./journal-view.js?v=80"></script>
   <script src="./quick_add.js?v=72" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>
   <script src="./sim_ui.js?v=34" data-fintex-mod="sim_ui.js"></script>
@@ -1926,7 +1926,9 @@
   <script src="./entry-draft.js?v=78"></script>
   <script src="./daily-flow.js?v=79"></script>
   <script src="./backup.js?v=77"></script>
-  <script src="./data-care.js?v=77"></script>
+  <script src="./backup-check-model.js?v=80"></script>
+  <script src="./backup-check.js?v=80"></script>
+  <script src="./data-care.js?v=80"></script>
   <script src="./offline-client.js?v=78"></script>
 </body>
 </html>
