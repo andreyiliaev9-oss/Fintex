@@ -268,3 +268,30 @@ body #flow-form [aria-invalid="true"] { border-color: var(--expense); box-shadow
 body #flow-form .flow-field-hint { color: var(--text-secondary); font-size: 11px; font-weight: 500; }
 body #flow-form .flow-check:has(.flow-field-error:not([hidden])) { flex-wrap: wrap; }
 body #flow-form .flow-check .flow-field-error { flex-basis: 100%; }
+
+/* v83: a local receipt scanner, not a fake countdown. Animation is decorative. */
+body .capture-scan-scene { position: relative; height: 160px; display: grid; place-items: center; overflow: hidden; margin: 0 0 16px; border-radius: 22px; background: var(--surface-2); }
+body .capture-scan-halo { position: absolute; width: 128px; height: 128px; border-radius: 50%; border: 1px solid var(--border-active); box-shadow: 0 0 0 18px var(--surface-1),0 0 0 19px var(--border-subtle); }
+body .capture-paper { position: relative; width: 88px; height: 120px; padding: 14px 12px; background: var(--surface-1); border: 1px solid var(--border-active); border-radius: 10px 10px 5px 5px; transform: rotate(-7deg); box-shadow: 0 8px 20px #00000012; color: var(--text-primary); }
+body .capture-paper > span { display: block; font-size: 10px; letter-spacing: .12em; font-weight: 800; margin-bottom: 12px; }
+body .capture-paper > i { display: block; width: 100%; height: 3px; background: var(--border-active); margin: 8px 0; border-radius: 4px; }
+body .capture-paper > i:nth-of-type(2) { width: 70%; }
+body .capture-paper > b { display: block; text-align: right; font-size: 18px; line-height: 1; }
+body .capture-scan-beam { position: absolute; inset: 20px -10px auto; height: 2px; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: capture-read-line 2.6s ease-in-out infinite alternate; }
+body .capture-scan-spark { position: absolute; left: calc(50% + 60px); top: 30px; color: var(--accent); font-size: 24px; animation: capture-read-spark 2.6s ease-in-out infinite alternate; }
+body #capture-dialog [data-capture-stage="processing"] h3 { text-align: center; font-size: 23px; }
+body .capture-steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 18px 0; counter-reset: capture-step; }
+body .capture-steps li { flex: 1; min-width: 0; font-size: 11px; color: var(--text-secondary); padding: 8px 2px; border-bottom: 2px solid var(--border-subtle); text-align: center; }
+body .capture-steps li[data-state="current"] { color: var(--text-primary); font-weight: 750; border-color: var(--accent); }
+body .capture-steps li[data-state="done"] { border-color: var(--accent); }
+body #capture-progress { height: 5px; background: var(--surface-2); overflow: hidden; border-radius: 5px; }
+body #capture-progress > span { display: block; height: 100%; width: var(--capture-progress,0%); background: var(--accent); border-radius: inherit; }
+body #capture-progress[data-determinate="false"] > span { width: 35%; animation: capture-read-wait 1.8s ease-in-out infinite alternate; }
+body #capture-progress-label { text-align: center; margin: 8px 0 16px; font-size: 12px; min-height: 20px; }
+body .capture-processing-note { color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+body #capture-dialog:not([open]) .capture-content *, body [data-capture-stage][hidden] * { animation-play-state: paused !important; }
+@keyframes capture-read-line { to { transform: translateY(76px); } }
+@keyframes capture-read-spark { to { opacity: .45; transform: translateY(8px) scale(.85); } }
+@keyframes capture-read-wait { to { transform: translateX(185%); } }
+@media(prefers-reduced-motion:reduce) { body .capture-scan-beam, body .capture-scan-spark, body #capture-progress > span { animation: none !important; } }
+html.no-motion body .capture-scan-beam, html.no-motion body .capture-scan-spark, html.no-motion body #capture-progress > span { animation: none !important; }
