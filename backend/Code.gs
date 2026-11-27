@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.1-places',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1,places_protocol:1});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.2-satellite',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1,places_protocol:2});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -177,7 +177,7 @@ function serverInit(db,uid) {
   }
   var logs=db.logs.getDataRange().getValues(),list=[];
   for(var j=logs.length-1;j>=1&&list.length<40;j--)if(String(logs[j][2])===uid){var l=logs[j];list.push({log_id:String(l[0]),timestamp:String(l[1]),uid:uid,source:String(l[3]),status:String(l[4]),bank:String(l[5]),summary:String(l[6]),raw_preview:'',error_code:String(l[8])});}
-  var result={ok:true,ledger_protocol:3,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
+  var result={ok:true,ledger_protocol:3,places_protocol:2,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
   if(serverLedgerActive(db,uid)){var ledger=serverLedgerState(db,uid);result.user.balance=ledger.balance;result.transactions=Object.keys(ledger.records).map(function(id){return ledger.records[id].tx;}).filter(Boolean).slice(-150);}
   if(uid===ADMIN_UID)result.admin={total_users:Math.max(0,db.users.getLastRow()-1),total_tx:Math.max(0,db.txs.getLastRow()-1)};
   return result;

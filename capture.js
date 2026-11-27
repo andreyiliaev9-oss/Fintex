@@ -31,6 +31,7 @@
   }
   function open(){
     if(busy||dialog.open)return;
+    $('capture-place-done').hidden=true;
     priorFocus=document.activeElement;candidate=null;status('');stage('menu');$('capture-auto').checked=autoEnabled();
     dialog.showModal();fab.setAttribute('aria-expanded','true');
     const back=window.Telegram?.WebApp?.BackButton;
@@ -144,6 +145,7 @@
   }
   async function receive(file,mode){
     if(!file||busy)return;
+    $('capture-place-done').hidden=true;
     const id=++epoch;busy=true;candidate=null;releasePreview();stage('processing');processing(0,'Готовим чёткое изображение');status('Проверяем файл и дубликаты…');
     try{
       if(file.size>15*1024*1024||file.size===0)throw new Error('Выберите непустой файл размером до 15 МБ.');
@@ -167,8 +169,9 @@
     $('capture-bank').value=candidate.bank||'';$('capture-merchant').value=candidate.merchant||'';$('capture-amount').value=candidate.amount>0?String(candidate.amount):'';$('capture-date').value=candidate.dateInferred?'':candidate.date||'';$('capture-date').max=TODAY;$('capture-time').value=candidate.time||'';$('capture-kind').value=candidate.op_kind||candidate.type;
     $('capture-confidence').textContent=Number.isFinite(candidate.confidence)?`Качество текста OCR: ${Math.round(candidate.confidence)}%. Это не вероятность правильной операции.`:'Текст извлечён из PDF. Процент достоверности не придумываем.';
     candidate.reviewed={};$('capture-category').value=CATS[candidate.category]?candidate.category:classifyCategory(candidate.merchant);
-    refreshReview();$('capture-review-title').focus({preventScroll:true});
+    showPlace();refreshReview();$('capture-review-title').focus({preventScroll:true});
   }
+  function showPlace(){const original=candidate;if(!original)return;window.FintexPlacePicker?.field($('capture-place'),{location:original.location,onChange:loc=>{if(candidate!==original||!dialog.open)return;if(loc)candidate.location=loc;else delete candidate.location;showPlace();}});}
   function formCandidate(){
     const kind=$('capture-kind').value,type=['income','refund','transfer_in'].includes(kind)?'income':'expense';
     const edited={...candidate,bank:$('capture-bank').value.trim(),merchant:$('capture-merchant').value.trim(),amount:FM.parse($('capture-amount').value),date:$('capture-date').value,time:$('capture-time').value,type,op_kind:kind};
@@ -204,6 +207,7 @@
       if(c.kind==='receipt')try{upsertScanArchive({scan_id:tx.scan_id,file_hash:c.fileHash,fiscal_key:fiscal,merchant:c.merchant,total:c.amount,date:c.date,confirmed:true});}catch(_){/* Ledger is already saved; auxiliary archive is best-effort. */}
       if(c.kind==='receipt')for(const item of c.items||[])try{recordProductPrice(item.name,Number(item.unit_price||item.total_price)||0,c.merchant,c.date,item.category);}catch(_){}
     }
+    $('capture-place-done').hidden=!result.addedCount;$('capture-place-done').onclick=()=>{const tx=state.transactions.find(t=>t.id===result.added[0]?.id);if(tx)window.FintexPlaces?.edit(tx);};
     candidate=null;stage('done');status('');$('capture-done-title').textContent=result.addedCount?(automatic?'Чек записан автоматически':'Операция записана'):'Уже учтено';
     $('capture-done-text').textContent=result.addedCount?`${c.op_label||'Покупка'} · ${c.merchant} · ${fmtR(c.amount)}. ${automatic?'QR и итог из текста совпали. Это не проверка чека в ФНС.':'Баланс изменён только на сумму операции, не на распознанный остаток счёта.'}`:'Дубликат отклонён. Баланс не изменён.';
     renderAll(false);updateSyncQueueUI();window.vibro?.('success');
@@ -233,9 +237,9 @@
       <section data-capture-stage="review" hidden><h3 id="capture-review-title" tabindex="-1">Проверьте запись</h3><span id="capture-level" class="capture-level"></span>
         <form id="capture-form"><div class="recognition-card" aria-label="Распознанная операция"><label class="recognition-wide">Где или за что<small id="capture-merchant-hint"></small><input id="capture-merchant" maxlength="100" required></label><label class="recognition-wide recognition-amount">Сколько, ₽<small id="capture-amount-hint"></small><input id="capture-amount" inputmode="decimal" type="text" autocomplete="off" required></label><label>Дата<small id="capture-date-hint"></small><input id="capture-date" type="date" required></label><label>Категория<small id="capture-category-hint"></small><select id="capture-category">${Object.values(CATS).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></label></div>
         <label>Вид операции<select id="capture-kind"><option value="expense">Расход</option><option value="income">Доход</option><option value="transfer_out">Перевод — исходящий</option><option value="transfer_in">Перевод — входящий</option><option value="refund">Возврат</option><option value="atm">Снятие наличных</option></select></label><p id="capture-transfer-note" class="capture-copy" hidden>Проверьте направление. Перевод между своими счетами не добавляйте как расход или доход общего капитала.</p>
-        <details class="recognition-details"><summary>Изображение и детали распознавания</summary><details class="capture-image"><summary>Посмотреть изображение</summary><img id="capture-preview" alt="Загруженное изображение для проверки"></details><p id="capture-confidence" class="capture-copy"></p><div class="capture-fields"><label>Банк<input id="capture-bank" maxlength="60" placeholder="Не определён"></label><label>Время<input id="capture-time" type="time"></label></div><ul id="capture-reasons"></ul></details><p id="capture-validation" class="flow-status" role="status" aria-live="polite"></p><button id="capture-save" class="capture-primary" type="submit">Подтвердить и записать</button></form>
+        <section id="capture-place"></section><details class="recognition-details"><summary>Изображение и детали распознавания</summary><details class="capture-image"><summary>Посмотреть изображение</summary><img id="capture-preview" alt="Загруженное изображение для проверки"></details><p id="capture-confidence" class="capture-copy"></p><div class="capture-fields"><label>Банк<input id="capture-bank" maxlength="60" placeholder="Не определён"></label><label>Время<input id="capture-time" type="time"></label></div><ul id="capture-reasons"></ul></details><p id="capture-validation" class="flow-status" role="status" aria-live="polite"></p><button id="capture-save" class="capture-primary" type="submit">Подтвердить и записать</button></form>
       </section>
-      <section data-capture-stage="done" hidden><div class="capture-success" aria-hidden="true">✓</div><h3 id="capture-done-title"></h3><p id="capture-done-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-close>Готово</button><button type="button" class="capture-secondary" data-capture-again>Добавить ещё</button></section>
+      <section data-capture-stage="done" hidden><div class="capture-success" aria-hidden="true">✓</div><h3 id="capture-done-title"></h3><p id="capture-done-text" class="capture-copy"></p><button type="button" id="capture-place-done" class="capture-secondary" hidden>Добавить место покупки</button><button type="button" class="capture-primary" data-capture-close>Готово</button><button type="button" class="capture-secondary" data-capture-again>Добавить ещё</button></section>
       <section data-capture-stage="error" hidden><h3>Не получилось прочитать</h3><p id="capture-error-text" class="capture-copy"></p><button type="button" class="capture-primary" data-capture-again>Выбрать другое изображение</button></section>
       <p id="capture-status" role="status" aria-live="polite"></p>
     </div>`;

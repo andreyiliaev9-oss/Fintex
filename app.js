@@ -567,6 +567,7 @@ function addOrMergeTransactions(incomingList, sourceName) {
       const transaction = {
         id: 'tx_' + token,
         scan_id: item.scan_id || '',
+        ...(window.FintexPlacesModel?.location(item.location)?{location:FintexPlacesModel.location(item.location),...(item.location.source==='user_confirmed'?{local_only:true}:{})}:{}),
         ...(sourceName==='FINTEX Capture'?{bank:item.bank||'',capture_confidence:Number.isFinite(item.confidence)?item.confidence:null}:{}),
         dedup_hash: dedupHash,
         merchant,
@@ -3556,7 +3557,7 @@ async function runAnimatedBankSync() {
 }
 
 async function pushTransactionsToBackend(txSubset) {
-  if(window.FintexSync?.active())return window.FintexSync.sync();
+  if(window.FintexSync?.active()||txSubset?.some(t=>t.location?.source==='user_confirmed'))return window.FintexSync?.sync();
   if (Array.isArray(txSubset) && txSubset.length) {
     const queuedIds = new Set(state.syncQueue.map(x => String(x.id)));
     txSubset.forEach(tx => {

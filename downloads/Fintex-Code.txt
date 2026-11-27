@@ -1,4 +1,4 @@
-/** FINTEX v8.1 — Telegram verification + revisioned ledger + Quick Capture + SMS places.
+/** FINTEX v8.2 — Telegram verification + ledger + captures + confirmed purchase places.
  * Replace code in the EXISTING project; keep properties and approved database.
  * Deploy a new version of the EXISTING web app. Never recreate the database.
  */
@@ -162,7 +162,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.1-places',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1,places_protocol:1});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.2-satellite',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1,places_protocol:2});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -239,7 +239,7 @@ function serverInit(db,uid) {
   }
   var logs=db.logs.getDataRange().getValues(),list=[];
   for(var j=logs.length-1;j>=1&&list.length<40;j--)if(String(logs[j][2])===uid){var l=logs[j];list.push({log_id:String(l[0]),timestamp:String(l[1]),uid:uid,source:String(l[3]),status:String(l[4]),bank:String(l[5]),summary:String(l[6]),raw_preview:'',error_code:String(l[8])});}
-  var result={ok:true,ledger_protocol:3,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
+  var result={ok:true,ledger_protocol:3,places_protocol:2,uid:uid,webhook_token:String(u.values[5]||''),user:{user_id:uid,name:String(u.values[1]||''),bank:String(u.values[2]||'Т-Банк'),balance:serverMoney(u.values[3])||0,payday:serverIso(u.values[4])},transactions:txs,logs:list};
   if(serverLedgerActive(db,uid)){var ledger=serverLedgerState(db,uid);result.user.balance=ledger.balance;result.transactions=Object.keys(ledger.records).map(function(id){return ledger.records[id].tx;}).filter(Boolean).slice(-150);}
   if(uid===ADMIN_UID)result.admin={total_users:Math.max(0,db.users.getLastRow()-1),total_tx:Math.max(0,db.txs.getLastRow()-1)};
   return result;
@@ -477,13 +477,19 @@ function qcHandle(body){
 
 
 /** Optional SMS phone positions. POST only; existing ingest key, no read scope. */
-function placesLocation(value){
+function placesLocation(value,forceSms){
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
   var lat=value.latitude,lon=value.longitude,a=value.accuracy,stamp=value.captured_at;
   var ms=typeof stamp==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(stamp)?Date.parse(stamp):NaN;
   if(typeof lat!=='number'||!Number.isFinite(lat)||Math.abs(lat)>90||typeof lon!=='number'||!Number.isFinite(lon)||Math.abs(lon)>180||!Number.isFinite(ms)||ms>Date.now()+300000||ms<946684800000||new Date(ms).toISOString().slice(0,10)!==stamp.slice(0,10))return null;
   if(a!==undefined&&a!==null&&(typeof a!=='number'||!Number.isFinite(a)||a<0||a>100000))return null;
-  return {latitude:lat,longitude:lon,accuracy:a==null?null:a,captured_at:new Date(ms).toISOString(),source:'phone_sms'};
+  var clean={latitude:lat,longitude:lon,accuracy:a==null?null:a,captured_at:new Date(ms).toISOString(),source:'phone_sms'};
+  if(!forceSms&&value.source==='user_confirmed'){
+    var confirmed=Date.parse(value.confirmed_at),label=value.label;
+    if(typeof label!=='string'||!label.trim()||label.length>180||/[\x00-\x1f]/.test(label)||typeof value.confirmed_at!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(value.confirmed_at)||!Number.isFinite(confirmed)||confirmed>Date.now()+300000||confirmed<946684800000||new Date(confirmed).toISOString().slice(0,10)!==value.confirmed_at.slice(0,10))return null;
+    clean.source='user_confirmed';clean.label=label.trim();clean.confirmed_at=new Date(confirmed).toISOString();
+  }
+  return clean;
 }
 function placesKnownSms(db,uid,hash){
   var sheet=db.ss.getSheetByName('LedgerEvents');if(!sheet)return false;
@@ -507,7 +513,7 @@ function placesIngest(body){
   var known=serverKnown(db,uid);
   if(known.hashes[parsed.dedup_hash])return {ok:true,status:'duplicate',message:'Уже принято прежней автоматизацией; геометка не добавлена.'};
   if(placesKnownSms(db,uid,parsed.dedup_hash))return {ok:true,status:'duplicate',message:'Похожая СМС уже принята. Проверьте историю.'};
-  var place=placesLocation(body.location);
+  var place=placesLocation(body.location,true);
   // A stale fix is not a current position; finance still saves without it.
   if(place&&Math.abs(Date.parse(place.captured_at)-Date.now())>900000)place=null;
   parsed.id=id;delete parsed.cardBalance;delete parsed.bank;

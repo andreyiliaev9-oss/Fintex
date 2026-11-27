@@ -3,6 +3,8 @@
   'use strict';
   const M=FintexMath,D=FintexDailyModel;
   let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,returnPoint=null,busy=false,reconcileBalance=null,inputTouched=false,validationField=null;
+  let placeDraft=null,placeEpoch=0;
+  function placeField(){const host=document.getElementById('flow-place');if(!host)return;host.hidden=kind!=='expense';const id=placeEpoch;window.FintexPlacePicker?.field(host,{location:placeDraft,title:'Место покупки · необязательно',onChange:loc=>{if(id!==placeEpoch||!dialog.open)return;placeDraft=loc;placeField();}});}
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid=()=>`tx_${crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2)}`;
@@ -66,11 +68,12 @@
   }
   function nextEntry(){
     const date=$('flow-date').value,category=$('flow-category').value;
+    placeDraft=null;placeEpoch++;placeField();
     FintexEntryDraft.begin();inputTouched=false;clearErrors();$('flow-form').reset();$('flow-date').value=date;$('flow-category').value=category;$('flow-draft-note').hidden=true;$('flow-templates').open=true;
     setKind(kind);say('Записано. Можно добавить следующую операцию.');$('flow-fields').scrollTop=0;$('flow-amount').focus();
   }
   function setKind(value){
-    kind=value;clearErrors();templates();quickChoices();
+    kind=value;placeField();clearErrors();templates();quickChoices();
     dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.flowKind===value)));
     $('flow-category-row').hidden=value!=='expense';$('flow-transfer').hidden=value!=='transfer';
     $('flow-name').placeholder=value==='income'?'Например, зарплата':value==='transfer'?'Например, на свою карту':'Например, кофе';
@@ -111,6 +114,7 @@
     const tx=id?state.transactions.find(tx=>tx.id===id):repeat?state.transactions.find(tx=>tx.id===repeat):null;
     if((id||repeat)&&!tx)return;
     if(tx?.type==='adjustment'){toast('Корректировку можно удалить через историю и выполнить сверку заново.');return;}
+    placeDraft=id&&tx?.location?JSON.parse(JSON.stringify(tx.location)):null;placeEpoch++;
     priorFocus=document.activeElement;returnPoint=window.FintexSheets?.returnPoint()||window.FintexFormViewport?.remember(priorFocus);closeModals();editing=id;signature=id?JSON.stringify(tx):'';busy=false;
     FintexEntryDraft.begin();inputTouched=false;$('flow-form').reset();$('flow-title').textContent=id?'Изменить операцию':repeat?'Повторить операцию':'Добавить операцию';$('flow-save').textContent=id?'Сохранить изменения':'Записать';
     $('flow-date').value=id?tx.date:date;$('flow-date').max=TODAY;$('flow-amount').value=tx?tx.amount:'';$('flow-name').value=tx?.merchant||'';
@@ -135,6 +139,7 @@
     const draft={type:kind,amount:$('flow-amount').value,date:$('flow-date').value,merchant:$('flow-name').value.trim()||(kind==='income'?'Доход':kind==='transfer'?'Между своими счетами':CATS[$('flow-category').value]?.name||'Покупка'),category:$('flow-category').value,from:$('flow-from').value,to:$('flow-to').value,covered:$('flow-covered').checked};
     const result=D.change(state.balance,state.transactions,draft,TODAY,editing,uid());
     if(result.error){showError(result);return;}
+    if(kind==='expense'&&placeDraft){result.tx.location=placeDraft;if(placeDraft.source==='user_confirmed')result.tx.local_only=true;}else delete result.tx.location;
     if(Math.abs(result.balance)>1e12){showError({error:'Итоговый остаток слишком велик. Проверьте сумму.',field:'amount'});return;}
     busy=true;try{saveLocal(result);if(!editing)FintexEntryDraft.clear();if(event.submitter?.id==='flow-save-another'&&!editing){nextEntry();}else{dialog.close();toast(editing?'Изменения сохранены':'Операция записана');}}catch(error){say(error.message);}finally{busy=false;}
   }
@@ -200,6 +205,7 @@
     const dates=document.createElement('div');dates.id='flow-date-shortcuts';dates.className='flow-chip-row';dates.setAttribute('role','group');dates.setAttribute('aria-label','Дата операции');
     for(const [text,date]of [['Сегодня',TODAY],['Вчера',M.shift(TODAY,-1)]]){const b=document.createElement('button');b.type='button';b.textContent=text;b.dataset.flowDate=date;b.addEventListener('click',()=>{if($('flow-date').disabled)return;$('flow-date').value=date;preview();rememberInput({type:'click'});});dates.append(b);}
     const anotherDate=document.createElement('button');anotherDate.type='button';anotherDate.textContent='Другая дата';anotherDate.addEventListener('click',()=>{details.open=true;$('flow-date').focus();});dates.append(anotherDate);details.before(dates);
+    const place=document.createElement('section');place.id='flow-place';$('flow-save').before(place);
     const actions=document.createElement('div');actions.id='flow-save-bar';$('flow-save').before(actions);actions.append($('flow-save'));
     const another=document.createElement('button');another.id='flow-save-another';another.type='submit';another.className='flow-secondary';another.textContent='Записать и ещё одну';actions.append(another);
 
@@ -218,7 +224,7 @@
     window.addEventListener('pagehide',rememberInput);document.addEventListener('visibilitychange',()=>{if(document.hidden)rememberInput();});
     [dialog,reconcile].forEach(el=>{
       el.querySelector('[data-flow-close]').addEventListener('click',()=>el.close());
-      el.addEventListener('close',()=>{if(window.FintexFormViewport)window.FintexFormViewport.restore(returnPoint,editing?$('operations-title'):$('hdr-plus-btn'));else priorFocus?.focus({preventScroll:true});});
+      el.addEventListener('close',()=>{placeEpoch++;if(window.FintexFormViewport)window.FintexFormViewport.restore(returnPoint,editing?$('operations-title'):$('hdr-plus-btn'));else priorFocus?.focus({preventScroll:true});});
     });
     dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.addEventListener('click',()=>setKind(b.dataset.flowKind)));
     $('flow-form').addEventListener('submit',submit);$('flow-form').addEventListener('input',preview);$('flow-form').addEventListener('change',preview);
