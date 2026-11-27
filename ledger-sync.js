@@ -85,6 +85,7 @@
   const bound=binding();
   try{
    const init=await FintexCloud.request('init',{user_id:USER_ID});if(bound!==binding())return;
+   if(init.places_protocol!==2&&(state.transactions.some(t=>t.location?.source==='user_confirmed')||cache.outbox.some(m=>m.tx?.location?.source==='user_confirmed')))throw Error('Подтверждённые места сохранены на устройстве. Обновите Apps Script до places_protocol: 2.');
    if(init.ledger_protocol!==3){cache.active=false;cache.legacy=true;store();await legacySyncWithBackend(notify);render();return;}
    // Flush the legacy add-only queue BEFORE activating revisioned writes.
    if(!cache.active&&state.syncQueue.length)await flushSyncQueue();
