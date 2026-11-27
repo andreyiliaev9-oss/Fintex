@@ -217,75 +217,70 @@ function classifyCategory(title) {
   return 'other';
 }
 
-// ==================== РЕАЛЬНЫЕ ЛОГОТИПЫ КОМПАНИЙ И ИКОНКИ ПРОДУКТОВ/УСЛУГ ====================
+// Legacy parsing aliases only. Real decorative artwork lives in brand-catalog.js.
 const BRAND_REGISTRY = [
   // Банки
-  { re: /т-банк|тинькофф|t-bank|tinkoff/i, bg: '#FFDD2D', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M4 4h16v6l-8 10L4 10V4z" fill="#1A1A1A"/><path d="M8 7h8v2.2h-2.8V15h-2.4V9.2H8V7z" fill="#FFDD2D"/></svg>' },
-  { re: /сбер|sber/i, bg: '#21A038', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#FFF" stroke-width="2.2" stroke-dasharray="40 12"/><path d="M8.5 11.8l2.6 2.5 5.4-5" stroke="#FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
-  { re: /альфа|alfa/i, bg: '#EF3124', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M12 4.5L7 16h2.4l1-2.5h3.2l1 2.5H17L12 4.5zm-0.9 7l0.9-2.4 0.9 2.4h-1.8zM6.5 18h11v2h-11v-2z" fill="#FFF"/></svg>' },
-  { re: /втб|vtb/i, bg: '#002882', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M5 7h15l-1 2.4H4L5 7zm-0.8 3.8h15l-1 2.4h-15l1-2.4zm-0.8 3.8h15l-1 2.4h-15l1-2.4z" fill="#38BDF8"/></svg>' },
-  { re: /ozon\s*банк|озон\s*банк/i, bg: '#005BFF', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6.5" stroke="#FFF" stroke-width="2.8"/></svg>' },
-  { re: /газпромбанк|гпб/i, bg: '#0072CE', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M16 9.5A5 5 0 1 0 16.5 14H12v-2.2h6.5" stroke="#FFF" stroke-width="2.4" stroke-linecap="round"/></svg>' },
-  { re: /яндекс\s*пэй|yandex\s*pay|яндекс\s*банк/i, bg: '#FFCC00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#1A1A1A" font-size="11" font-weight="800">ЯП</text></svg>' },
-  { re: /райффайзен|raiffeisen/i, bg: '#FEE600', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" stroke="#1A1A1A" stroke-width="2.8" stroke-linecap="round"/></svg>' },
-  { re: /совкомбанк|халва|sovcombank/i, bg: '#005AA9', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FF3B30" font-size="11" font-weight="800">Х</text></svg>' },
-  { re: /мтс\s*банк|mts\s*bank/i, bg: '#E30611', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="9.5" font-weight="800">МТС</text></svg>' },
+  { re: /т-банк|тинькофф|t-bank|tinkoff/i },
+  { re: /сбер|sber/i },
+  { re: /альфа|alfa/i },
+  { re: /втб|vtb/i },
+  { re: /ozon\s*банк|озон\s*банк/i },
+  { re: /газпромбанк|гпб/i },
+  { re: /яндекс\s*пэй|yandex\s*pay|яндекс\s*банк/i },
+  { re: /райффайзен|raiffeisen/i },
+  { re: /совкомбанк|халва|sovcombank/i },
+  { re: /мтс\s*банк|mts\s*bank/i },
   // Супермаркеты, аптеки, авто и доставка
-  { re: /пятёроч|пятероч|пятерч|pyaterochka/i, bg: '#E52322', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M13 4c2.5 0 4.5 1.5 5 3.5-2.2.3-4.2-.6-5-3.5z" fill="#4ADE80"/><path d="M8.5 7.5h7v2.3h-4.7v2.3c.6-.3 1.3-.4 2.1-.4 2.5 0 4.3 1.6 4.3 4s-2 4.1-4.8 4.1c-2.2 0-3.9-1-4.5-2.6l2.2-1c.4.9 1.2 1.4 2.2 1.4 1.3 0 2.2-.8 2.2-1.9s-.9-1.9-2.2-1.9c-.9 0-1.6.3-2.1.9l-1.9-.6.7-6.6z" fill="#FFF"/></svg>' },
-  { re: /красное.*белое|\bкб\b/i, bg: '#D91E2A', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="10.5" font-weight="800">К&amp;Б</text></svg>' },
-  { re: /монетк/i, bg: '#E30613', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" fill="#FFDD00"/><text x="12" y="15.5" text-anchor="middle" fill="#E30613" font-size="10.5" font-weight="800">М</text></svg>' },
-  { re: /чижик/i, bg: '#FFCC00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#1A1A1A" font-size="10.5" font-weight="800">Ч</text></svg>' },
-  { re: /аптек|лекарств|таблет|витамин|здравсити|ригла|горздрав/i, bg: '#10B981', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="#FFF" stroke-width="3.2" stroke-linecap="round"/></svg>' },
-  { re: /автозапчаст|запчаст|автосервис|шиномонтаж|exist|autodoc/i, bg: '#334155', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/></svg>' },
-  { re: /магнит|magnit/i, bg: '#E60012', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M5 18V6h3.2l3.8 6.2L15.8 6H19v12h-2.8v-7.2L12 17.2 7.8 10.8V18H5z" fill="#FFF"/></svg>' },
-  { re: /вкусвилл|vkusvill/i, bg: '#1E8E3E', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="11" font-weight="800" font-family="Inter,sans-serif">ВВ</text></svg>' },
-  { re: /перекрёст|перекрест/i, bg: '#007A33', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#A3E635" stroke-width="3.2" stroke-linecap="round"/></svg>' },
-  { re: /лента|lenta/i, bg: '#003C96', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#FFDD00"/><circle cx="12" cy="12" r="2.2" fill="#003C96"/></svg>' },
-  { re: /дикси|dixy/i, bg: '#F37021', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">Д</text></svg>' },
-  { re: /ашан|auchan/i, bg: '#E2001A', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">А</text></svg>' },
-  { re: /самокат|samokat/i, bg: '#FF335F', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" stroke="#FFF" stroke-width="2.6"/></svg>' },
+  { re: /пятёроч|пятероч|пятерч|pyaterochka/i },
+  { re: /красное.*белое|\bкб\b/i },
+  { re: /монетк/i },
+  { re: /чижик/i },
+  { re: /аптек|лекарств|таблет|витамин|здравсити|ригла|горздрав/i },
+  { re: /автозапчаст|запчаст|автосервис|шиномонтаж|exist|autodoc/i },
+  { re: /магнит|magnit/i },
+  { re: /вкусвилл|vkusvill/i },
+  { re: /перекрёст|перекрест/i },
+  { re: /лента|lenta/i },
+  { re: /дикси|dixy/i },
+  { re: /ашан|auchan/i },
+  { re: /самокат|samokat/i },
   // Маркетплейсы и электроника
-  { re: /wildberries|вайлдберриз|\bвб\b|\bwb\b/i, bg: 'linear-gradient(135deg,#CB11AB,#481173)', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="10.5" font-weight="800" font-family="Inter,sans-serif">WB</text></svg>' },
-  { re: /ozon|озон/i, bg: '#005BFF', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6.5" stroke="#FFF" stroke-width="2.8"/></svg>' },
-  { re: /яндекс\s*маркет/i, bg: '#FFCC00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M6 17V7h3.2l2.8 5.2L14.8 7H18v10h-2.5v-5.8L12 16.5l-3.5-5.3V17H6z" fill="#1A1A1A"/></svg>' },
-  { re: /\bdns\b|днс/i, bg: '#FF6B00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="9.5" font-weight="800">DNS</text></svg>' },
-  { re: /м\.?видео|mvideo/i, bg: '#E31E24', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">М</text></svg>' },
-  { re: /золотое\s*яблоко|goldapple/i, bg: '#C5E800', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#111" font-size="10" font-weight="800">GA</text></svg>' },
+  { re: /wildberries|вайлдберриз|\bвб\b|\bwb\b/i },
+  { re: /ozon|озон/i },
+  { re: /яндекс\s*маркет/i },
+  { re: /\bdns\b|днс/i },
+  { re: /м\.?видео|mvideo/i },
+  { re: /золотое\s*яблоко|goldapple/i },
   // Такси, АЗС, транспорт
-  { re: /яндекс\s*go|yandex\s*go|такси/i, bg: '#FFCC00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><rect x="4" y="4" width="8" height="8" fill="#1A1A1A"/><rect x="12" y="12" width="8" height="8" fill="#1A1A1A"/></svg>' },
-  { re: /лукойл|lukoil/i, bg: '#ED1C24', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">Л</text></svg>' },
-  { re: /газпромнефть|газпром/i, bg: '#0079C2', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M12 5c2.8 3.5 4.5 5.8 4.5 8.5a4.5 4.5 0 1 1-9 0C7.5 10.8 9.2 8.5 12 5z" fill="#FFF"/></svg>' },
-  { re: /роснефть|нефть-ресурс|азс/i, bg: '#FFD200', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M12 5c2.8 3.5 4.5 5.8 4.5 8.5a4.5 4.5 0 1 1-9 0C7.5 10.8 9.2 8.5 12 5z" fill="#1A1A1A"/></svg>' },
-  { re: /ржд/i, bg: '#E21A1A', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="9.5" font-weight="800">РЖД</text></svg>' },
+  { re: /яндекс\s*go|yandex\s*go|такси/i },
+  { re: /лукойл|lukoil/i },
+  { re: /газпромнефть|газпром/i },
+  { re: /роснефть|нефть-ресурс|азс/i },
+  { re: /ржд/i },
   // Кафе и рестораны
-  { re: /вкусно.*точка/i, bg: '#00573F', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><circle cx="8" cy="15" r="2.2" fill="#FF6B00"/><path d="M12 7l2.2 10M15.8 7L18 17" stroke="#FF6B00" stroke-width="2.4" stroke-linecap="round"/></svg>' },
-  { re: /rostic|ростикс|kfc/i, bg: '#E4002B', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">R</text></svg>' },
-  { re: /додо|dodo/i, bg: '#FF6900', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="12" font-weight="800">D</text></svg>' },
-  { re: /surf\s*coffee|stars\s*coffee|кофе/i, bg: '#1E1E1E', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M6 9h10v5a4 4 0 0 1-4 4h-2a4 4 0 0 1-4-4V9zm10 1h2a2 2 0 0 1 0 4h-2" stroke="#F2C65D" stroke-width="2"/></svg>' },
+  { re: /вкусно.*точка/i },
+  { re: /rostic|ростикс|kfc/i },
+  { re: /додо|dodo/i },
+  { re: /surf\s*coffee|stars\s*coffee|кофе/i },
   // Подписки и связь
-  { re: /яндекс\s*плюс|yandex\s*plus/i, bg: 'linear-gradient(135deg,#7B2CBF,#FF5400)', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M12 6v12M6 12h12" stroke="#FFF" stroke-width="3" stroke-linecap="round"/></svg>' },
-  { re: /кинопоиск/i, bg: '#FF5500', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="11" font-weight="800">КП</text></svg>' },
-  { re: /мтс|mts/i, bg: '#E30611', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="9.5" font-weight="800">МТС</text></svg>' },
-  { re: /билайн|beeline/i, bg: '#FFCC00', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3" fill="#1A1A1A"/><rect x="4" y="12" width="16" height="3" fill="#1A1A1A"/><rect x="4" y="18" width="16" height="2" fill="#1A1A1A"/></svg>' },
-  { re: /мегафон|megafon/i, bg: '#00B956', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><circle cx="10" cy="12" r="2" fill="#FFF"/><circle cx="15" cy="9" r="1.6" fill="#FFF"/><circle cx="15" cy="15" r="1.6" fill="#FFF"/></svg>' },
-  { re: /tele2|теле2|\bt2\b/i, bg: '#1F2229', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FF3366" font-size="11" font-weight="800">t2</text></svg>' },
-  { re: /telegram|телеграм/i, bg: '#26A5E4', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M18.5 6.5L5.5 11.5l3.5 1.3 1.4 4.2 2.2-2.1 3.7 2.7 2.2-11.1z" fill="#FFF"/></svg>' },
-  { re: /apple|icloud|app\s*store/i, bg: '#1D1D1F', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M15.5 12.6c0-2 1.6-3 1.7-3.1-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.5 2 2.5 2 1 0 1.4-.6 2.6-.6 1.2 0 1.5.6 2.6.6 1.1 0 1.8-1 2.4-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.1-3z" fill="#FFF"/></svg>' },
-  { re: /spotify/i, bg: '#1DB954', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M6.5 9.5c3.5-1 7.5-.8 10.5.8M7.5 12.8c2.8-.8 6-.6 8.5.7M8.5 16c2.2-.6 4.6-.4 6.5.5" stroke="#FFF" stroke-width="2" stroke-linecap="round"/></svg>' },
-  { re: /иви|\bivi\b/i, bg: '#EA003D', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="11" font-weight="800">ivi</text></svg>' },
-  { re: /okko|окко/i, bg: '#5B2EFF', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="15.5" text-anchor="middle" fill="#FFF" font-size="9.5" font-weight="800">okko</text></svg>' },
-  { re: /\bvk\b|вк/i, bg: '#0077FF', svg: '<svg class="w-5 h-5" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" fill="#FFF" font-size="11" font-weight="800">VK</text></svg>' }
+  { re: /яндекс\s*плюс|yandex\s*plus/i },
+  { re: /кинопоиск/i },
+  { re: /мтс|mts/i },
+  { re: /билайн|beeline/i },
+  { re: /мегафон|megafon/i },
+  { re: /tele2|теле2|\bt2\b/i },
+  { re: /telegram|телеграм/i },
+  { re: /apple|icloud|app\s*store/i },
+  { re: /spotify/i },
+  { re: /иви|\bivi\b/i },
+  { re: /okko|окко/i },
+  { re: /\bvk\b|вк/i },
 ];
 
 function merchantBadge(name, catId, type = 'expense') {
+  const realLogo=window.FintexBrands?.badge(name);if(realLogo)return realLogo;
   if (type === 'income') {
     return `<div class="w-9 h-9 rounded-xl bg-[#00D6C3]/15 text-brand flex items-center justify-center shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></div>`;
-  }
-  const raw = (name || '').trim();
-  for (const b of BRAND_REGISTRY) {
-    if (b.re.test(raw)) {
-      return `<div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style="background:${b.bg};">${b.svg}</div>`;
-    }
   }
   const c = CATS[catId] || CATS.other;
   return `<div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:${c.bg}; color:${c.color}"><i data-lucide="${c.icon}" class="w-4 h-4"></i></div>`;
@@ -762,6 +757,7 @@ function renderAll(animateFromZero = false) {
   document.getElementById('sources-explicit-text').textContent = `Банк (${state.bank}) · Чеки OCR · Импорт CSV/TXT`;
   const cardBrandLbl = document.getElementById('hero-card-brand-lbl');
   if (cardBrandLbl) cardBrandLbl.textContent = `FINTEX · ${String(state.bank || 'КАРТА').toUpperCase()}`;
+  const bankIcon=document.querySelector('.balance-account > .balance-account-icon');if(bankIcon)bankIcon.innerHTML=window.FintexBrands?.badge(state.bank,'bank')||'<i data-lucide="wallet" class="w-4 h-4"></i>';
 
   // Визуальные проценты структуры капитала на карточке счёта
   const totalCap = Math.max(1, m.freePool + m.reserved);
@@ -1215,7 +1211,7 @@ function renderHome() {
             <button type="button" class="tx-row-open" data-tx-open="${escapeHtml(t.id)}" ${isSelectMode?`aria-pressed="${isSelected}"`: ''}>
             <span class="tx-row-main flex items-center gap-3.5 min-w-0">
               ${selectCheckHtml}
-              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(dispMerchant, dispCatId, t.type).replace(/<div/g,'<span').replace(/<\/div>/g,'</span>')}<span class="tx-direction">${neutral?'↔':inc?'↙':'↗'}</span></span>
+              <span class="tx-merchant-mark" aria-hidden="true">${merchantBadge(t.merchant, dispCatId, t.type).replace(/<div/g,'<span').replace(/<\/div>/g,'</span>')}<span class="tx-direction">${neutral?'↔':inc?'↙':'↗'}</span></span>
               <span class="tx-merchant-copy min-w-0">
                 <span class="tx-merchant-name">${escapeHtml(dispMerchant)}</span>
                 <span class="tx-merchant-meta">${metaSub}${t.local_only?' · На устройстве':''}</span>
@@ -1776,7 +1772,7 @@ function renderAnalytics() {
 function renderSettings() {
   document.getElementById('st-avatar').textContent = firstGrapheme(state.name, 'F');
   document.getElementById('st-name').textContent = state.name || 'Пользователь';
-  document.getElementById('st-bank').textContent = state.bank;
+  document.getElementById('st-bank').innerHTML = (window.FintexBrands?.badge(state.bank,'bank')||'')+'<span>'+escapeHtml(state.bank)+'</span>';
   document.getElementById('gas-url-field').value = state.gasUrl;
   const adCb = document.getElementById('auto-delta-toggle'); if (adCb) adCb.checked = localStorage.getItem('fp_auto_delta') !== '0';
 
@@ -2555,6 +2551,7 @@ function openTxModal(id) {
   const t = state.transactions.find(x => x.id === id);
   if (!t) return;
   document.getElementById('mtx-name').textContent = t.merchant;
+  const txLogo=document.getElementById('mtx-logo');if(txLogo){txLogo.innerHTML=window.FintexBrands?.badge(t.merchant)||'';txLogo.hidden=!txLogo.innerHTML;}
   document.getElementById('mtx-meta').textContent = `${fmtR(t.amount, t.type === 'income' ? '+' : '−')} · ${formatFeedRowDate(t.date)}${t.time ? `, ${t.time}` : ''} · ${t.source}`;
   const box = document.getElementById('mtx-items-box');
   if (Array.isArray(t.items) && t.items.length) {
