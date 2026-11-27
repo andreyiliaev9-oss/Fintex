@@ -28,6 +28,7 @@
     need(!t.currency||['RUB','₽','РУБ'].includes(String(t.currency).toUpperCase()),'Копия должна содержать рублёвые операции.');
     need(typeof t.merchant==='string'&&t.merchant.length<=1000);
     if(t.type==='adjustment')need(money(t.balance_delta)&&Math.abs(t.balance_delta)===t.amount&&t.balance_delta!==0,'Некорректная разница остатка.');
+    if(t.location!==undefined&&t.location!==null)need(!!(typeof module!=='undefined'&&module.exports?require('./places-model.js'):root.FintexPlacesModel).location(t.location),'Некорректная геометка в копии.');
     if(t.items!==undefined)need(Array.isArray(t.items)&&t.items.length<=10000);
     if(t.goal_withdrawal!==undefined)need(money(t.goal_withdrawal)&&t.goal_withdrawal>=0);
   }

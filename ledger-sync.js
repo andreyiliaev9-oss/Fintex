@@ -4,7 +4,7 @@
  const KEY='fp_ledger_sync_v1',M=FintexMath,clone=x=>JSON.parse(JSON.stringify(x));
  const clean=t=>{if(!t)return null;const c=clone(t);delete c.local_only;delete c.local_edited;return c;};
  const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
- const semantic=t=>t?JSON.stringify([t.date,t.type,t.amount,t.balance_delta||0,t.merchant,t.category||'other']):'null';
+ const semantic=t=>t?JSON.stringify([t.date,t.type,t.amount,t.balance_delta||0,t.merchant,t.category||'other',t.location||null]):'null';
  let cache=null,baseline=null,suppress=false,running=null,error='',timer;
  const owner=()=>String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id||USER_ID);
  const binding=()=>[owner(),FintexCloud.getEndpoint(),localStorage.getItem('fp_backup_last_restore')||''].join('|');
@@ -31,7 +31,7 @@
    const item=document.createElement('div');item.className='ledger-conflict';
    const local=state.transactions.find(t=>t.id===id)||null,remote=conflict.tx;
    const heading=document.createElement('strong');heading.textContent=local?.merchant||remote?.merchant||'Удалённая операция';item.append(heading);
-   const describe=t=>t?`${t.merchant} · ${t.date} · ${M.money(t.amount).toLocaleString('ru-RU')} ₽ · ${t.type==='income'?'Доход':t.type==='expense'?'Расход':t.type==='transfer'?'Перевод':'Корректировка'}`:'Удалено';
+   const describe=t=>t?`${t.merchant} · ${t.date} · ${M.money(t.amount).toLocaleString('ru-RU')} ₽ · ${t.location?'Место: '+Number(t.location.latitude).toFixed(5)+', '+Number(t.location.longitude).toFixed(5):'Без геометки'} · ${t.type==='income'?'Доход':t.type==='expense'?'Расход':t.type==='transfer'?'Перевод':'Корректировка'}`:'Удалено';
    for(const [title,tx]of [['На устройстве',local],['В облаке',remote]]){const p=document.createElement('p');p.textContent=title+': '+describe(tx);p.className='money-val';item.append(p);}
    for(const [choice,title]of [['remote','Принять облачную'],['local','Отправить мою версию']]){const button=document.createElement('button');button.type='button';button.textContent=title;button.addEventListener('click',()=>resolve(id,choice));item.append(button);}box.append(item);
   }
@@ -59,7 +59,7 @@
    if(!prior){
     if(state.localDeletedIds.includes(id)||t&&(t.local_only||semantic(t)!==semantic(r.tx))){cache.conflicts[id]=r;continue;}
    }else if(t&&semantic(t)!==semantic(prior.tx)){cache.conflicts[id]=r;continue;}
-   if(r.tx){const merged={...(t||{}),...r.tx};delete merged.local_only;delete merged.local_edited;local.set(id,merged);}else local.delete(id);
+   if(r.tx){const merged={...(t||{}),...r.tx};if(!r.tx.location)delete merged.location;delete merged.local_only;delete merged.local_edited;local.set(id,merged);}else local.delete(id);
   }
   if(!cache.active)for(const [id,t]of local)if(!records[id])cache.conflicts[id]={id,revision:0,tx:null};
   const txs=[...local.values()];let delta=0;

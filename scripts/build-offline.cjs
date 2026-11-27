@@ -2,7 +2,7 @@
 const fs=require('node:fs'),crypto=require('node:crypto');
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(dir+'/'+e.name):[dir+'/'+e.name]);}
 const roots=fs.readdirSync('.').filter(f=>/\.(?:js|css)$/.test(f)&&!['offline-worker.js','offline-assets.js','analytics_pro 2.js'].includes(f));
-const assets=walk('assets').filter(f=>/\.(?:js|mjs|gz|svg|png|webp|ttf|woff2?)$/.test(f));
+const assets=walk('assets').filter(f=>/\.(?:js|mjs|css|gz|svg|png|webp|ttf|woff2?)$/.test(f));
 const optional=assets.filter(f=>f.startsWith('assets/ocr/')&&!/\/(?:jsQR|tesseract.min)\.js$/.test(f));
 const core=['index.html',...roots,...assets.filter(f=>!optional.includes(f))].sort();
 const hashes=Object.fromEntries([...core,...optional].map(f=>[f,crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')]));

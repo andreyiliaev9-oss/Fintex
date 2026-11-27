@@ -8,6 +8,6 @@ test('rollback removes notification UI, runtime and authenticated reminder endpo
 });
 test('downloaded recovery server is the password-free revisioned v8 and matches its source modules',()=>{
   const txt=fs.readFileSync('downloads/Fintex-Code.txt','utf8');assert.equal(txt,fs.readFileSync('downloads/Fintex-Code.gs','utf8'));
-  for(const file of ['Auth.gs','Code.gs','QuickCapture.gs'])assert.ok(txt.includes(fs.readFileSync('backend/'+file,'utf8')));
+  for(const file of ['Auth.gs','Code.gs','QuickCapture.gs','Places.gs'])assert.ok(txt.includes(fs.readFileSync('backend/'+file,'utf8')));
   assert.ok(txt.includes('FINTEX v8'));assert.ok(!/sendFintexReminders|requestWriteAccess|REMINDER_COLUMNS/.test(txt));
 });

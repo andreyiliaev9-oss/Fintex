@@ -556,6 +556,7 @@
     });
     try { if (window.lucide?.createIcons) window.lucide.createIcons({ attrs: { 'stroke-width': 2 } }); } catch (_) {}
     window.FintexMotion?.refresh();
+    window.FintexPlaces?.mount(container, {days:period.days});
   }
 
   const originalRenderAnalytics = window.renderAnalytics;
