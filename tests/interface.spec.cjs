@@ -45,7 +45,7 @@ test('all tabs fit 320, 390 and 448px in both themes, including late-loaded modu
         return [bg('#hero-balance-card'), bg('#view-settings .card-surface'), bg('#filely-financial-tree'), bg('.ftx-ap-card')];
       });
       expect(new Set(colours.slice(0,3)).size, `Home/settings/tree surfaces diverge in ${theme}: ${colours}`).toBe(1);
-      expect(colours[3], 'Analytics uses an intentionally unboxed report').not.toBe(colours[0]);
+      expect(colours[3], 'Analytics has an intentionally contrasting report hero').not.toBe(colours[0]);
     }
   }
   expect(errors).toEqual([]);
@@ -929,8 +929,8 @@ test('Sapphire figures are neutral per card surface while financial colours and 
     const budget=await page.locator('.daily-budget').evaluate(el=>getComputedStyle(el).backgroundColor);
     const parse=s=>s.match(/\d+/g).slice(0,3).map(Number);
     expect(contrast(parse(await colour('#hero-daily-left')),parse(budget))).toBeGreaterThan(4.5);
-    await expect.poll(()=>colour('.ftx-ap-big')).toBe(mode==='light'?'rgb(35, 43, 53)':'rgb(232, 237, 242)');
-    const reportSurface=mode==='light'?'rgb(245, 246, 247)':'rgb(21, 26, 32)';
+    await expect.poll(()=>colour('.ftx-ap-big')).toBe('rgb(243, 245, 238)');
+    const reportSurface=await page.locator('.ap-expense-hero').evaluate(el=>getComputedStyle(el).backgroundColor);
     expect(contrast(parse(await colour('.ftx-ap-big')),parse(reportSurface))).toBeGreaterThan(4.5);
     expect(await page.evaluate(()=>['--income','--expense','--planned','--danger'].map(t=>getComputedStyle(document.documentElement).getPropertyValue(t)))).toEqual(semantics);
     const income=await colour('.operation-income'),expense=await colour('.operation-expense');
