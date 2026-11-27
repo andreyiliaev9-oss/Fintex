@@ -295,3 +295,32 @@ body #capture-dialog:not([open]) .capture-content *, body [data-capture-stage][h
 @keyframes capture-read-wait { to { transform: translateX(185%); } }
 @media(prefers-reduced-motion:reduce) { body .capture-scan-beam, body .capture-scan-spark, body #capture-progress > span { animation: none !important; } }
 html.no-motion body .capture-scan-beam, html.no-motion body .capture-scan-spark, html.no-motion body #capture-progress > span { animation: none !important; }
+
+/* v85: visible one-tap choices, explicit batch save, and useful tour instructions. */
+body .flow-chip-row { display:flex; gap:6px; overflow-x:auto; overscroll-behavior-inline:contain; padding:4px 2px 8px; margin:0 0 8px; scrollbar-width:thin; }
+body .flow-chip-row button { flex:0 0 auto; min-height:44px; padding:8px 12px; border:1px solid var(--border-subtle); border-radius:12px; background:var(--surface-2); color:var(--text-primary); font-size:12px; font-weight:600; }
+body .flow-chip-row button[aria-pressed=true] { border-color:var(--accent); background:var(--accent-soft); color:var(--text-primary); }
+body .flow-chip-row button:disabled { opacity:.45; }
+body .flow-chip-row button:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+body #flow-save-bar { position:sticky; bottom:-1px; z-index:2; padding:6px 0 2px; background:var(--surface-1); border-top:1px solid var(--border-subtle); }
+body #flow-save-bar .flow-secondary { min-height:44px; border:1px solid var(--border-subtle); border-radius:12px; }
+body #flow-recent .flow-recent-row button { min-height:44px; }
+body #flow-templates[open] > summary { color:var(--text-secondary); }
+body #flow-templates #flow-recent > p { display:none; }
+body #flow-form .flow-types button { min-height:44px; }
+body #fintex-tour .tour-panel { height:390px; }
+body #fintex-tour .tour-progress { gap:2px; }
+body #fintex-tour[data-step="5"]:not([data-map=true]):not([data-peek=true]) .tour-panel { height:300px; }
+body #fintex-tour[data-map=true] .tour-panel { height:460px; }
+body #fintex-tour[data-peek=true] .tour-panel { height:64px; }
+body #tour-instructions { list-style:decimal; padding-left:20px; margin:12px 0 4px; color:var(--text-primary); font-size:13px; line-height:1.6; }
+body #tour-instructions li + li { margin-top:8px; }
+body #fintex-tour .tour-map-note { color:var(--text-secondary); font-size:12px; line-height:1.5; margin:0 0 12px; }
+@media(max-height:600px) {
+  body #fintex-tour .tour-panel { height:300px; }
+  body #fintex-tour[data-peek=true] .tour-panel { height:64px; }
+}
+@media(max-height:420px) { body #fintex-tour .tour-panel { height:208px; } body #fintex-tour[data-peek=true] .tour-panel { height:64px; } }
+/* Leave room to bring even the last real control above the tour card. Removed with the tour root class. */
+html.fintex-tour-open body { padding-bottom:100vh !important; }
+body #daily-flow #flow-amount { font-size:32px; line-height:1.2; min-height:60px; font-weight:750; }

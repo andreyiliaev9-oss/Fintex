@@ -15,7 +15,36 @@
     {id:'goals',tab:'home',compact:'#savings-goals .sg-heading',target:'#savings-goals .sg-card, #savings-goals .sg-heading, #savings-goals',chapter:'Цели',title:'Цели',text:'Создайте цель и откладывайте на неё деньги.'},
     {id:'tree',tab:'home',compact:'#filely-financial-tree h2, .ft-art-wrap',target:'.ft-art-wrap',chapter:'Дерево',title:'Дерево',text:'Дерево меняется от доходов и расходов. Его можно потрясти.'},
     {id:'settings',tab:'settings',compact:'#tour-replay, #tour-settings-title',target:'#settings-guide',chapter:'Настройки',title:'Настройки',text:'Здесь можно сменить тему и снова открыть экскурсию.'},
+    {id:'manual',tab:'home',target:'#hdr-plus-btn',chapter:'Ручной ввод',title:'Доходы и расходы',text:'Один экран для обычных записей, без обязательного названия.',guide:['«Добавить» → выберите расход или доход.','Введите сумму. Шаблон, категория и дата — рядом. «Записать и ещё одну» оставит форму открытой.']},
+    {id:'capture',tab:'home',target:'#capture-fab',chapter:'Чеки и скриншоты',title:'Распознать документ',text:'Фото чека и банковское уведомление можно превратить в запись.',guide:['«Чек / скриншот» → камера или файл.','Проверьте сумму, дату и направление. Неуверенный результат сам не записывается; дубли блокируются.']},
+    {id:'voice',tab:'home',target:'#hdr-plus-btn',chapter:'Голос и текст',title:'Сказать вместо ввода',text:'Можно надиктовать несколько расходов или написать их фразой.',guide:['«Добавить» → «Чек или голос» → голосовой ввод.','Например: «кофе 150, такси 300». Исправьте строки и подтвердите запись. Микрофон доступен не во всех браузерах.']},
+    {id:'search',tab:'home',target:'#journal-search-toggle',chapter:'Поиск и фильтры',title:'Найти нужную запись',text:'Поиск, период, сумма и категория помогают сузить журнал.',guide:['«Поиск» — название или сумма; «Фильтры» — условия.','Измените условия и примените их. Итоги относятся к отобранным записям, не ко всему счёту.']},
+    {id:'edit',tab:'home',target:'.tx-feed-header',chapter:'Правки и отмена',title:'Исправить без дубля',text:'Существующую покупку лучше изменить, а не записывать заново.',guide:['Откройте запись → «Изменить операцию» или «Повторить».','Повтор требует сохранения. После удаления доступна отмена; массовый выбор находится в «Ещё».']},
+    {id:'reconcile',tab:'home',open:['#balance-more'],target:'#balance-check-action',chapter:'Сверка остатка',title:'Если сумма не сходится',text:'Сверка объясняет остаток и предлагает явную корректировку.',guide:['«Расчёт и прогноз» → «Сверить остаток».','Введите фактический общий остаток. Разница записывается только после подтверждения, не как обычный доход.']},
+    {id:'payments',tab:'calendar',open:['#calendar-plan'],target:'#calendar-plan > summary',chapter:'Будущие платежи',title:'Планировать платежи',text:'Будущий платёж — план, а не уже совершённый расход.',guide:['Выберите день: записи дня — сразу под сеткой.','Откройте планирование для платежей и экспорта календаря. Отметка оплаты — отдельное действие.']},
+    {id:'analysis-details',tab:'analytics',target:'.ap-tabs, .ap-expense-hero, #view-analytics h2',chapter:'Категории и ритм',title:'Разобраться в расходах',text:'Период определяет, какие записи входят в графики и сравнения.',guide:['Переключайте обзор, категории и ритм.','Оценки до зарплаты и наблюдения раскрываются отдельно. Разница доходов и расходов — не остаток в банке.']},
+    {id:'tools',tab:'analytics',open:['#analytics-tools'],target:'[data-tool="limits"], #analytics-tools > summary',chapter:'Лимиты и цены',title:'Инструменты расходов',text:'Лимиты, проверка покупки и цены по чекам доступны из аналитики.',guide:['Откройте «Инструменты» → нужный расчёт.','Лимит — ориентир. История цен зависит от сохранённых позиций чека; это не каталог рыночных цен.']},
+    {id:'scenarios',tab:'analytics',open:['#analytics-tools'],target:'[data-act="sim"], #analytics-tools > summary',chapter:'Сценарии и итоги',title:'Посмотреть вперёд',text:'«Дерево будущего» моделирует ваши допущения, а «Итоги периода» собирают отчёт.',guide:['Аналитика → «Инструменты» → сценарий или итоги.','Симуляция не двигает реальные деньги и не обещает доходность.']},
+    {id:'investments',tab:'analytics',open:['#analytics-tools'],target:'[data-invest-open], #analytics-tools > summary',chapter:'Учебные инвестиции',title:'Учиться без сделки',text:'Учебный модуль — упражнения с виртуальными деньгами, не брокер.',guide:['Аналитика → «Инструменты» → обучение инвестициям.','Цены в упражнении вводятся вручную. Настоящая покупка акций и рыночные котировки не выполняются.']},
+    {id:'appearance',tab:'settings',open:['#settings-appearance'],target:'#settings-appearance > summary',chapter:'Темы и приватность',title:'Оформление под себя',text:'Стиль, светлый/тёмный режим и движения настраиваются независимо от денег.',guide:['«Под себя» → «Внешний вид».','Кнопка с глазом на главной скрывает суммы на экране, но не шифрует хранилище и файл копии.']},
+    {id:'backup',tab:'settings',target:'[data-care-export], #data-care',chapter:'Копия и перенос',title:'Не потерять записи',text:'Рабочая копия находится в браузере. Очистка данных сайта может её удалить.',guide:['«Сохранить и перенести» → «Подготовить копию». Проверьте файл в загрузках.','«Проверка и перенос» проверяет файл или восстанавливает его. Проверка не заменяет данные; восстановление требует согласия.']},
+    {id:'sync',tab:'settings',open:['#settings-sync'],target:'#settings-sync > summary',chapter:'Облако и конфликты',title:'Где сохранена операция',text:'Статус «В облаке» требует ответа сервера, одного интернета недостаточно.',guide:['«Сохранение операций» → «Проверить синхронизацию».','Облако доступно через Telegram и синхронизирует операции/остаток. Разные версии нужно сравнить; цели и настройки переносите копией.']},
+    {id:'offline',tab:'settings',open:['#offline-settings'],target:'#offline-settings > summary, #settings-data > summary',chapter:'Работа без сети',title:'Подготовить заранее',text:'Приложение и OCR/PDF можно отдельно подготовить для открытия без сети.',guide:['«Сохранить и перенести» → «Без интернета и обновления».','Загрузите файлы заранее. Офлайн-кэш не является резервной копией; отправка в облако ждёт подключения.']},
+    {id:'receipts-hours',tab:'settings',open:['#settings-work-time'],target:'#settings-work-time > summary',chapter:'Чеки и часы жизни',title:'Дополнительный контекст',text:'Настройки содержат работу с чеками и расчёт стоимости покупки в часах труда.',guide:['«Цена в часах жизни» — свой доход и рабочее время.','Оригиналы ищите в разделе чеков: они не входят в JSON-копию. Все темы доступны через «Темы»; экскурсия не меняет ваши финансы.']},
   ];
+  const overviewGuides=[
+    ['Доступно сегодня — дневной ориентир до зарплаты.','Ниже отдельно показаны общий остаток, отложенное и свободные деньги; объяснение — в «Расчёт и прогноз».'],
+    ['«Добавить» открывает сумму сразу. Выберите «Доход» для поступления.','Название необязательно. Дату и категорию можно выбрать в форме; само открытие ничего не записывает.'],
+    ['Нажмите запись, чтобы проверить детали, исправить или повторить.','Поиск — рядом с заголовком. Фильтры и выбор записей позволяют работать только с нужной частью истории.'],
+    ['Выберите день: ниже появятся его операции.','Предстоящие платежи находятся в планировании; не путайте план с уже записанным расходом.'],
+    ['Сначала выберите период, затем обзор, категории или ритм.','Дополнительные расчёты и инструменты раскрываются отдельно; итоги зависят от ваших записей.'],
+    ['В блоке целей можно создать цель, пополнять и возвращать накопления.','Резерв уменьшает свободные деньги, но не означает банковский перевод. Не записывайте пополнение вторым расходом.'],
+    ['Дерево отражает записи приложения, а не оценку вас как человека.','Нажмите или потрясите его для сезонной реакции. Сменить палитру можно в настройках.'],
+    ['«Под себя», «Сохранить и перенести», «Подключение и помощь» объединяют настройки по задачам.','Далее — подробные сценарии. Через «Темы» можно сразу выбрать нужную функцию или закрыть экскурсию.']
+  ];steps.slice(0,8).forEach((step,i)=>step.guide=overviewGuides[i]);
+  const opened=new Map();
+  function revealDetails(step){for(const selector of step.open||[]){const el=document.querySelector(selector);if(el?.tagName!=='DETAILS')continue;if(!opened.has(selector))opened.set(selector,el.open);el.open=true;}}
+  function restoreDetails(){for(const [selector,open]of opened){const el=document.querySelector(selector);if(el?.tagName==='DETAILS')el.open=open;}opened.clear();}
   let dialog, panel, focusBox, scrim, index = 0, active = false, epoch = 0, mapOpen = false, peeking = false;
   const visited = new Set();
   let origin, overflow, effect, frame, observer, automatic = false;
@@ -155,6 +184,7 @@
     dialog.dataset.step = String(index);
     dialog.querySelector('#tour-title').textContent = step.title;
     dialog.querySelector('#tour-text').textContent = step.text;
+    const instructions=dialog.querySelector('#tour-instructions');instructions.replaceChildren();for(const text of step.guide||[]){const li=document.createElement('li');li.textContent=text;instructions.append(li);}
     dialog.querySelector('.tour-counter').textContent = `${index+1} из ${steps.length}`;
     const progress = dialog.querySelector('.tour-progress');
     progress.setAttribute('aria-valuenow',String(index+1));
@@ -172,6 +202,7 @@
     // Wait for real section/module layout, not a fake loading timer.
     await new Promise(requestAnimationFrame);
     if (!active || ticket !== epoch) return;
+    revealDetails(step);
     observer?.disconnect();
     observer?.observe(panel);
     const dock = document.querySelector('#fintex-navigation > div');
@@ -197,6 +228,7 @@
     dialog.close(); focusBox.hidden = true;
     root.classList.remove('fintex-tour-open');
     document.body.style.overflow = overflow;
+    restoreDetails();
     if (persist) window.dispatchEvent(new CustomEvent('fintex:tour-finished',{detail:{topics}}));
     if (!restore) return;
     const tab = automatic ? 'home' : origin.tab;
@@ -228,8 +260,8 @@
       <nav class="tour-sections" aria-label="Разделы приложения">${[['home','Главная'],['calendar','Календарь'],['analytics','Аналитика'],['settings','Настройки']].map(([tab,name])=>`<button type="button" data-tour-tab="${tab}" aria-label="${name} — показать раздел"></button>`).join('')}</nav>
       <section class="tour-panel"><header class="tour-top"><span class="tour-counter"></span><div class="tour-tools"><button type="button" id="tour-map-toggle" aria-controls="tour-map" aria-expanded="false"><span>Темы</span></button><button type="button" id="tour-peek" aria-label="Свернуть подсказку" aria-expanded="true" aria-controls="tour-body">−</button><button type="button" id="tour-skip" aria-label="Закрыть экскурсию">×</button></div></header>
       <div class="tour-progress" role="progressbar" aria-label="Ход экскурсии" aria-valuemin="1" aria-valuemax="${steps.length}" aria-valuenow="1">${steps.map(()=>'<i aria-hidden="true"></i>').join('')}</div>
-      <nav id="tour-map" aria-labelledby="tour-map-title" hidden><h3 id="tour-map-title">Темы</h3><div class="tour-map-grid">${steps.map((step,i)=>`<button type="button" data-tour-jump="${i}"><span class="tour-map-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><strong>${step.chapter}</strong><small class="tour-map-state" aria-hidden="true"></small></button>`).join('')}</div></nav>
-      <div class="tour-content" id="tour-body"><h2 id="tour-title" tabindex="-1"></h2><p id="tour-text"></p></div>
+      <nav id="tour-map" aria-labelledby="tour-map-title" hidden><h3 id="tour-map-title">Возможности · ${steps.length} темы</h3><p class="tour-map-note">Первые 8 — обзор, дальше — подробные действия. Можно выбрать любую тему.</p><div class="tour-map-grid">${steps.map((step,i)=>`<button type="button" data-tour-jump="${i}"><span class="tour-map-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span><strong>${step.chapter}</strong><small class="tour-map-state" aria-hidden="true"></small></button>`).join('')}</div></nav>
+      <div class="tour-content" id="tour-body"><h2 id="tour-title" tabindex="-1"></h2><p id="tour-text"></p><ol id="tour-instructions" aria-label="Как пользоваться"></ol></div>
       <footer class="tour-actions"><button type="button" id="tour-back">Назад</button><button type="button" id="tour-next">Начать</button></footer></section>`;
     document.body.append(dialog); panel=dialog.querySelector('.tour-panel'); focusBox=dialog.querySelector('.tour-focus'); scrim=dialog.querySelector('.tour-scrim path');
     dialog.querySelector('#tour-peek').addEventListener('click',()=>{if(mapOpen)toggleMap(false,false);setPeek(!peeking);});
