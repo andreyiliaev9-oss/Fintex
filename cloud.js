@@ -37,7 +37,7 @@
       const response=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},signal:controller.signal,body:JSON.stringify({...fields,action,init_data:initData()})});
       if(!response.ok)throw new Error('Облако временно недоступно. Локальные данные сохранены.');
       const data=await response.json();
-      if(!data||data.ok!==true)throw new Error(data?.error||'Не удалось синхронизировать данные.');
+      if(!data||data.ok!==true){const error=new Error(data?.error||'Не удалось синхронизировать данные.');error.code=data?.code||'CLOUD_ERROR';throw error;}
       if(restoreEpoch!==read('fp_backup_last_restore')||read('fp_cloud_paused_restore')==='1')throw new Error('Синхронизация остановлена после восстановления копии.');
       if(data.uid)write('fp_auth_uid',String(data.uid));
       return data;

@@ -1,0 +1,11 @@
+/* Quick Capture setup; uses existing accessible settings surfaces. */
+body .qc-body { display:grid; gap:12px; font-size:12px; line-height:1.6; color:var(--text-primary); }
+body .qc-body .qc-note { color:var(--text-secondary); font-size:11px; line-height:1.6; }
+body #qc-status { padding:12px; border:1px solid var(--border-subtle); border-radius:12px; background:var(--surface-2); overflow-wrap:anywhere; }
+body .qc-body [hidden] { display:none !important; }
+body #qc-secret { padding:12px; border:1px solid var(--border-subtle); border-radius:12px; min-width:0; }
+body #qc-secret label { display:block; margin-bottom:8px; font-weight:650; }
+body #qc-config { display:block; width:100%; min-width:0; min-height:44px; padding:8px; background:var(--surface-1); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:8px; font-size:12px; user-select:text; }
+body .qc-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+body .qc-actions button { min-height:44px; padding:8px 12px; color:var(--text-primary); background:var(--surface-2); border:1px solid var(--border-subtle); border-radius:8px; font-size:11px; }
+body .qc-body .section-action { min-height:44px; overflow-wrap:anywhere; }
