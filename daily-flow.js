@@ -4,7 +4,7 @@
   const M=FintexMath,D=FintexDailyModel;
   let dialog,reconcile,editing=null,signature='',kind='expense',priorFocus=null,returnPoint=null,busy=false,reconcileBalance=null,inputTouched=false,validationField=null;
   let placeDraft=null,placeEpoch=0;
-  function placeField(){const host=document.getElementById('flow-place');if(!host)return;host.hidden=kind!=='expense';const id=placeEpoch;window.FintexPlacePicker?.field(host,{location:placeDraft,title:'Место покупки · необязательно',onChange:loc=>{if(id!==placeEpoch||!dialog.open)return;placeDraft=loc;placeField();}});}
+  function placeField(){const host=document.getElementById('flow-place');if(!host)return;host.hidden=kind!=='expense';const id=placeEpoch;window.FintexPlacePicker?.field(host,{location:placeDraft,title:'Место покупки',suggestedLabel:()=>$('flow-name').value.trim(),onChange:loc=>{if(id!==placeEpoch||!dialog.open)return;placeDraft=loc;placeField();}});}
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const uid=()=>`tx_${crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2)}`;
@@ -110,11 +110,11 @@
     const ok=FintexEntryDraft.save({kind,amount:$('flow-amount').value,merchant:$('flow-name').value,date:$('flow-date').value,category:$('flow-category').value,from:$('flow-from').value,to:$('flow-to').value});
     if(!ok)say('Ввод не удалось сохранить во вкладке. Не перезагружайте страницу до записи операции.');
   }
-  function open({id=null,repeat=null,date=TODAY}={}){
+  function open({id=null,repeat=null,date=TODAY,place=null}={}){
     const tx=id?state.transactions.find(tx=>tx.id===id):repeat?state.transactions.find(tx=>tx.id===repeat):null;
     if((id||repeat)&&!tx)return;
     if(tx?.type==='adjustment'){toast('Корректировку можно удалить через историю и выполнить сверку заново.');return;}
-    placeDraft=id&&tx?.location?JSON.parse(JSON.stringify(tx.location)):null;placeEpoch++;
+    placeDraft=id&&tx?.location?JSON.parse(JSON.stringify(tx.location)):!id&&!repeat&&place?.source==='user_confirmed'?FintexPlacesModel.location(place):null;placeEpoch++;
     priorFocus=document.activeElement;returnPoint=window.FintexSheets?.returnPoint()||window.FintexFormViewport?.remember(priorFocus);closeModals();editing=id;signature=id?JSON.stringify(tx):'';busy=false;
     FintexEntryDraft.begin();inputTouched=false;$('flow-form').reset();$('flow-title').textContent=id?'Изменить операцию':repeat?'Повторить операцию':'Добавить операцию';$('flow-save').textContent=id?'Сохранить изменения':'Записать';
     $('flow-date').value=id?tx.date:date;$('flow-date').max=TODAY;$('flow-amount').value=tx?tx.amount:'';$('flow-name').value=tx?.merchant||'';
