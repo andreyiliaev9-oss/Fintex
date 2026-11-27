@@ -3,8 +3,9 @@
  'use strict';
  function plan(width,height){
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0||width*height>25000000)throw Error('Выберите изображение до 25 Мп.');
-  const scale=Math.min(2,1800/width,Math.sqrt(8000000/(width*height)));
+  const scale=Math.min(Math.max(2,Math.min(6,1200/width)),1800/width,Math.sqrt(8000000/(width*height)));
   const w=Math.max(1,Math.round(width*scale)),h=Math.max(1,Math.floor(height*scale)),regions=[];
+  if(h<=3600)return {width:w,height:h,regions:[{y:0,height:h}]};
   for(let y=0;y<h;y+=1600){regions.push({y,height:Math.min(1800,h-y)});if(y+1800>=h)break;}
   if(regions.length>8)throw Error('Чек слишком длинный. Разделите изображение на части или обрежьте пустые поля.');
   return {width:w,height:h,regions};
@@ -17,19 +18,32 @@
    lines.push(...next.slice(overlap));
   }return lines.join('\n');
  }
+ function isReceipt(text,qr){
+  if(qr?.found)return true;
+  const t=String(text||'').toUpperCase().replace(/[A-Z]/g,c=>({O:'О',T:'Т',C:'С',E:'Е',H:'Н',K:'К',M:'М',P:'Р',X:'Х'})[c]||c);
+  const signals=[/КАССОВ|ФИСКАЛЬН|(?:^|[^А-ЯЁ])ЧЕК(?:А|Е|ОМ)?(?=$|[^А-ЯЁ])/m.test(t),/(?:^|[^А-ЯЁ])(?:ФН|ФД|ИНН|ККТ)(?=$|[^А-ЯЁ])/m.test(t),/ИТОГ|К\s*ОПЛАТЕ/.test(t),/НДС|БЕЗНАЛИЧ|НАЛИЧНЫ|ПРИХОД/.test(t)];
+  return signals.filter(Boolean).length>=2;
+ }
  function total(raw){
   const lines=String(raw||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean),candidates=[];
+  function amount(value){
+   const match=value.match(/^[\s*«»“”=:_~—–]*(\d[\d \u00a0\u202f]*(?:[.,]\s*\d{2})?)(?:\s*(?:₽|р\.?|руб\.?|RUB))?[\s*«»“”_~—–-]*$/i);
+   if(!match)return null;
+   const integer=match[1].split(/[.,]/)[0].trim();if(!/^\d+(?:[ \u00a0\u202f]\d{3})*$/.test(integer))return null;
+   const n=Number(match[1].replace(/[ \u00a0\u202f]/g,'').replace(',','.'));return Number.isFinite(n)&&n>0&&n<=1e10?n:null;
+  }
   for(let i=0;i<lines.length;i++){
    const label=lines[i].toUpperCase().replace(/[IOATCEHKMOPX]/g,c=>({I:'И',O:'О',A:'А',T:'Т',C:'С',E:'Е',H:'Н',K:'К',M:'М',P:'Р',X:'Х'})[c]);
    if(/НДС|НАЛОГ|СКИДК|СДАЧ|ПОЛУЧЕН|ПРЕДВАРИТ|ПОДЫТОГ/.test(label))continue;
-   const heading=label.match(/^(И\s*Т\s*О\s*Г(?:\s*О)?(?:\s+К\s+ОПЛАТЕ)?|К\s*ОПЛАТЕ|ВСЕГО|СУММА(?:\s+ПО\s+ЧЕКУ|\s+РАСЧ[ЕЁ]ТА)?)(?=\s|[:=]|$)/);
+   const heading=label.match(/^(И\s*Т\s*О\s*Г(?:\s*О)?(?:\s+К\s+ОПЛАТЕ)?|К\s*ОПЛАТЕ|ВСЕГО|СУММА(?:\s+ПО\s+ЧЕКУ|\s+РАСЧ[ЕЁ]ТА)?)(?=\s|[.,:=*]|$)/);
    if(!heading)continue;
-   let value=lines[i].slice(heading[0].length).replace(/^[\s:=₽]+/,'');
-   if(!value&&i+1<lines.length)value=lines[i+1];
-   const match=value.match(/^(\d[\d \u00a0\u202f]*(?:[.,]\s*\d{2})?)(?:\s*(?:₽|р\.?|руб\.?|RUB))?\s*$/i);
-   if(!match)continue;
-   const amount=Number(match[1].replace(/[ \u00a0\u202f]/g,'').replace(',','.'));
-   if(Number.isFinite(amount)&&amount>0&&amount<=1e10)candidates.push({amount,rank:/^И|^К/.test(heading[0])?2:1});
+   const rest=lines[i].slice(heading[0].length),numeric=rest.search(/\d/);
+   if(/[-−]\s*\d/.test(rest))continue;
+   let value=numeric>=0?amount(rest.slice(numeric)):null;
+   // A heading may have OCR noise or decoration after it; only a directly
+   // adjacent, otherwise money-only line is accepted. Never guess missing digits.
+   if(value===null&&numeric<0&&i+1<lines.length)value=amount(lines[i+1]);
+   if(value!==null)candidates.push({amount:value,rank:/^И|^К/.test(heading[0])?2:1});
   }
   const rank=Math.max(0,...candidates.map(c=>c.rank)),best=candidates.filter(c=>c.rank===rank),values=[...new Set(best.map(c=>c.amount))];
   return {amount:values.length===1?values[0]:null,ambiguous:values.length>1};
@@ -62,5 +76,5 @@
   canvas.width=canvas.height=1;
   return {slices,originalSlices:raw,qrRaw,width:p.width,height:p.height,enhancedUrl:src};
  }
- const api={plan,join,total,prepare,rotate};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.FintexReceiptVision=api;
+ const api={plan,join,total,isReceipt,prepare,rotate};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.FintexReceiptVision=api;
 })(typeof window==='undefined'?globalThis:window);

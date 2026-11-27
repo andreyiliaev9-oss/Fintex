@@ -57,8 +57,8 @@
       };image.src=url;
     });
   }
-  async function extract(file,id){
-    let dataUrl,text='',confidence=null,nativeText=false,retried=false;
+  async function extract(file,id,mode){
+    let dataUrl,text='',confidence=null,nativeText=false,retried=false,conflictingTotal=false;
     if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){
       const pdfjs=await import('./assets/ocr/pdf.min.mjs');
       pdfjs.GlobalWorkerOptions.workerSrc=new URL('./assets/ocr/pdf.worker.min.mjs',location.href).href;
@@ -89,49 +89,57 @@
           langPath:new URL('lang/',base).href,gzip:true,logger:message=>{if(id===epoch&&dialog.open&&message.status==='recognizing text'&&Number.isFinite(message.progress))processing(1,retried?'Уточняем нечёткие строки':'Читаем чек',Math.min(.99,(sliceIndex+message.progress)/prep.slices.length));}
         }).then(w=>{if(expired||id!==epoch){w.terminate();throw new Error('Распознавание отменено.');}return w;}));
         activeWorker=worker;
-        if(worker.setParameters)await timeout(worker.setParameters({preserve_interword_spaces:'1',user_defined_dpi:'300'}));
+        if(worker.setParameters)await timeout(worker.setParameters({preserve_interword_spaces:'1',user_defined_dpi:'300',tessedit_pageseg_mode:'3'}));
         for(let i=0;i<prep.slices.length;i++){
           if(id!==epoch)return null;
           sliceIndex=i;status(`Читаем часть ${i+1} из ${prep.slices.length}…`);
           let result=await timeout(worker.recognize(prep.slices[i],{rotateAuto:true}));
           if(id!==epoch)return null;
-          if((!result.data?.text?.trim()||Number(result.data?.confidence||0)<65)&&prep.originalSlices?.[i]&&retries<2){
+          if((!result.data?.text?.trim()||Number(result.data?.confidence||0)<65||(mode==='receipt'&&!FintexReceiptVision.total(result.data?.text).amount))&&prep.originalSlices?.[i]&&retries<2){
             retried=true;processing(1,'Уточняем нечёткие строки');status('Пробуем исходное фото и проверяем ориентацию…');
             const sideways=prep.slices.length===1&&prep.width>prep.height*1.2&&Number(result.data?.confidence||0)<65;
-            const attempts=sideways?[90,270]:[0];
-            for(const angle of attempts){
+            const attempts=sideways?[{angle:90,psm:'3'},{angle:270,psm:'3'}]:[{angle:0,psm:'11'},{angle:0,psm:'6',enhanced:true}];
+            const quality=data=>Number(data?.confidence||0)+(FintexReceiptVision.total(data?.text).amount?35:0);
+            const seenTotals=new Set();const initialTotal=FintexReceiptVision.total(result.data?.text).amount;if(initialTotal)seenTotals.add(initialTotal);
+            for(const attempt of attempts){
+              const {angle,psm,enhanced}=attempt;
               if(retries>=2||id!==epoch)break;retries++;
-              const source=angle?await FintexReceiptVision.rotate(prep.originalSlices[i],angle):prep.originalSlices[i];
+              const source=angle?await FintexReceiptVision.rotate(prep.originalSlices[i],angle):enhanced?prep.slices[i]:prep.originalSlices[i];
+              if(worker.setParameters)await timeout(worker.setParameters({tessedit_pageseg_mode:psm}));
               if(id!==epoch)return null;
               const alternate=await timeout(worker.recognize(source,{rotateAuto:true}));
               if(id!==epoch)return null;
-              if(alternate.data?.text?.trim()&&Number(alternate.data.confidence||0)>Number(result.data?.confidence||0))result=alternate;
-              if(Number(result.data?.confidence||0)>=85)break;
+              const nextTotal=FintexReceiptVision.total(alternate.data?.text).amount;if(nextTotal)seenTotals.add(nextTotal);
+              if(alternate.data?.text?.trim()&&quality(alternate.data)>quality(result.data))result=alternate;
+              if(Number(result.data?.confidence||0)>=85&&FintexReceiptVision.total(result.data?.text).amount)break;
             }
+            if(seenTotals.size>1)conflictingTotal=true;
           }
+          if(worker.setParameters)await timeout(worker.setParameters({tessedit_pageseg_mode:'3'}));
           parts.push(result.data?.text||'');confidenceSum+=Number.isFinite(result.data?.confidence)?Math.max(0,Math.min(100,result.data.confidence)):0;
         }
         text=FintexReceiptVision.join(parts);confidence=confidenceSum/prep.slices.length;
       }finally{expired=true;if(worker){await worker.terminate().catch(()=>{});if(activeWorker===worker)activeWorker=null;}}
     }
     processing(2,'Проверяем найденное',1);status('Проверяем итог, дату и повторные загрузки…');
-    return {text,confidence,qr:parseFiscalQrString(prep.qrRaw),dataUrl,nativeText,retried,slices:prep.slices.length};
+    return {text,confidence,qr:parseFiscalQrString(prep.qrRaw),dataUrl,nativeText,retried,conflictingTotal,slices:prep.slices.length};
   }
   function makeCandidate(result,mode,fileHash){
     const {text,qr,confidence}=result;
-    const receiptLike=qr.found||/кассовый\s*чек|фискальн|\bФН\b|\bИНН\b/i.test(text);
-    const kind=mode==='receipt'||(mode!=='operation'&&receiptLike)?'receipt':'bank';
+    const receiptLike=FintexReceiptVision.isReceipt(text,qr);
+    const kind=mode==='receipt'||receiptLike?'receipt':'bank';
     const bank=M.bankFromText(text);
     if(kind==='bank'){
       const op=parseBankSmsOrClipboard(text);
-      if(!op)throw new Error('Не удалось выделить одну операцию. Обрежьте изображение до суммы, даты и назначения либо используйте ручной ввод через «+».');
+      if(!op)return {kind:'bank',raw:text,bank,confidence,fileHash,qr,merchant:'',amount:null,date:TODAY,dateInferred:true,uncertain:true,type:'expense',op_kind:'expense',category:'other',low_confidence_fields:['merchant','total','date'],incomplete:true};
       const explicitDate=/\b\d{1,2}[./]\d{1,2}[./](?:20)?\d{2}\b|сегодня|вчера/i.test(text);
       return {...op,raw:text,bank,kind,confidence,fileHash,dateInferred:!explicitDate,uncertain:!detectSmsOperationKind(text)||/(?:покупк|зачислен|списан|перевод).*(?:\n.*)*(?:покупк|зачислен|списан|перевод)/i.test(text),qr};
     }
     const data=parseRussianReceiptText(text,qr,(confidence||0)/100),params=new URLSearchParams(qr.raw||'');
+    if(result.conflictingTotal){data.total=null;data.low_confidence_fields.push('total_conflict');}
     // Fiscal operation n is seller-facing. Returns and non-sale directions require review.
     const refund=params.get('n')==='2'||/возврат\s+прихода|чек\s+возврата/i.test(text);
-    const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText||result.retried;
+    const uncertain=(data.low_confidence_fields||[]).length>0||(qr.found&&params.get('n')!=='1')||result.slices>1||result.nativeText||result.retried||mode==='operation';
     return {kind,raw:text,bank,confidence,fileHash,qr,merchant:data.merchant,amount:data.total,date:data.date,time:data.time,dateInferred:(data.low_confidence_fields||[]).includes('date'),ocrTotal:data.ocr_total,itemsSum:data.items_sum,items:data.items,low_confidence_fields:data.low_confidence_fields||[],uncertain,type:refund?'income':'expense',op_kind:refund?'refund':'expense',op_label:refund?'Возврат':'Покупка',category:classifyCategory(data.merchant),fiscalKey:M.fiscalKey(qr),dedup_hash:M.fiscalKey(qr)?'capture_fiscal_'+M.fiscalKey(qr):''};
   }
   async function receive(file,mode){
@@ -145,7 +153,7 @@
       const fileHash=await hashFile(file);if(id!==epoch)return;
       const duplicate=M.duplicate({fileHash},state.transactions,archive());
       if(duplicate){stage('done');$('capture-done-title').textContent='Уже учтено';$('capture-done-text').textContent='Это изображение уже записано. Повторная загрузка не изменила баланс.';return;}
-      const result=await extract(file,id);if(id!==epoch||!result)return;
+      const result=await extract(file,id,mode);if(id!==epoch||!result)return;
       const parsed=makeCandidate(result,mode,fileHash);if(id!==epoch)return;
       candidate=parsed;
       if(assess(parsed).autoSave&&autoEnabled())save(true);
@@ -154,9 +162,9 @@
     finally{if(id===epoch)busy=false;}
   }
   function showReview(dataUrl){
-    stage('review');status('Проверьте поля перед записью.');
+    stage('review');status(candidate.incomplete?'Не всё удалось прочитать. Фото доступно в предпросмотре — заполните сумму, дату и название перед записью.':'Проверьте поля перед записью.');
     if(dataUrl){$('capture-preview').src=dataUrl;}
-    $('capture-bank').value=candidate.bank||'';$('capture-merchant').value=candidate.merchant||'';$('capture-amount').value=candidate.amount>0?String(candidate.amount):'';$('capture-date').value=candidate.date||TODAY;$('capture-date').max=TODAY;$('capture-time').value=candidate.time||'';$('capture-kind').value=candidate.op_kind||candidate.type;
+    $('capture-bank').value=candidate.bank||'';$('capture-merchant').value=candidate.merchant||'';$('capture-amount').value=candidate.amount>0?String(candidate.amount):'';$('capture-date').value=candidate.dateInferred?'':candidate.date||'';$('capture-date').max=TODAY;$('capture-time').value=candidate.time||'';$('capture-kind').value=candidate.op_kind||candidate.type;
     $('capture-confidence').textContent=Number.isFinite(candidate.confidence)?`Качество текста OCR: ${Math.round(candidate.confidence)}%. Это не вероятность правильной операции.`:'Текст извлечён из PDF. Процент достоверности не придумываем.';
     candidate.reviewed={};$('capture-category').value=CATS[candidate.category]?candidate.category:classifyCategory(candidate.merchant);
     refreshReview();$('capture-review-title').focus({preventScroll:true});
