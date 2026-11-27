@@ -15,12 +15,12 @@ async function gesture(page,{dx=-150,dy=0,x=220,target,multi=false,cancel=false}
   },{dx,dy,x,target,multi,cancel});
 }
 const active=page=>page.locator('.nav-tab[aria-current="page"]');
-test('swipes traverse the four real sections without wrapping or financial mutations',async({page})=>{
+test('swipes traverse the five real sections without wrapping or financial mutations',async({page})=>{
   await open(page);const before=await page.evaluate(()=>JSON.stringify({transactions:state.transactions,balance:state.balance,goal:state.goal}));
   await gesture(page,{dx:140});await expect(active(page)).toHaveAttribute('data-nav','home');
-  for(const tab of ['calendar','analytics','settings']){await gesture(page);await expect(active(page)).toHaveAttribute('data-nav',tab);await expect(page.locator('#view-'+tab)).toBeVisible();expect(await page.evaluate(()=>scrollY)).toBe(0);}
+  for(const tab of ['calendar','map','analytics','settings']){await gesture(page);await expect(active(page)).toHaveAttribute('data-nav',tab);await expect(page.locator('#view-'+tab)).toBeVisible();expect(await page.evaluate(()=>scrollY)).toBe(0);}
   await gesture(page);await expect(active(page)).toHaveAttribute('data-nav','settings');
-  for(const tab of ['analytics','calendar','home']){await gesture(page,{dx:140,x:90});await expect(active(page)).toHaveAttribute('data-nav',tab);}
+  for(const tab of ['analytics','map','calendar','home']){await gesture(page,{dx:140,x:90});await expect(active(page)).toHaveAttribute('data-nav',tab);}
   expect(await page.evaluate(()=>JSON.stringify({transactions:state.transactions,balance:state.balance,goal:state.goal}))).toBe(before);
 });
 test('vertical, short, diagonal, OS-edge, multi-touch and cancelled gestures do not navigate',async({page})=>{
@@ -47,7 +47,7 @@ test.describe('real touchscreen gestures',()=>{
 test('calendar cells support a tab swipe without selecting a different date; horizontal drag does not refresh',async({page})=>{
   await open(page);await page.evaluate(()=>{window.__swipeSync=0;runAnimatedBankSync=async()=>{window.__swipeSync++;};});
   await gesture(page,{dx:-160,dy:78});await expect(active(page)).toHaveAttribute('data-nav','calendar');expect(await page.evaluate(()=>window.__swipeSync)).toBe(0);
-  const selected=await page.evaluate(()=>state.calSelected);await gesture(page,{target:'#cal-cells .cal-day',dx:-150});await expect(active(page)).toHaveAttribute('data-nav','analytics');expect(await page.evaluate(()=>state.calSelected)).toBe(selected);
+  const selected=await page.evaluate(()=>state.calSelected);await gesture(page,{target:'#cal-cells .cal-day',dx:-150});await expect(active(page)).toHaveAttribute('data-nav','map');expect(await page.evaluate(()=>state.calSelected)).toBe(selected);
 });
 async function motionOn(page){await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>{localStorage.setItem('fp_motion','1');applyMotionPref();});}
 async function startDrag(page,{dx=-100,target='#view-home'}={}){
@@ -86,4 +86,7 @@ test('chart growth is finite and disabling motion cancels all pending interface 
   await expect.poll(()=>page.evaluate(()=>window.__barEffects.filter(a=>a.id==='fintex-interface-motion').length)).toBeGreaterThan(0);
   const timings=await page.evaluate(()=>window.__barEffects.map(a=>a.effect.getTiming()));for(const t of timings){expect(t.iterations).toBe(1);expect(t.duration).toBeLessThanOrEqual(500);}
   await page.evaluate(()=>{localStorage.setItem('fp_motion','0');applyMotionPref();});expect(await page.evaluate(()=>document.getAnimations().filter(a=>a.id==='fintex-interface-motion').length)).toBe(0);
+});
+test('map surface owns gestures even over its non-canvas overlays',async({page})=>{
+ await open(page);await page.evaluate(()=>goTab('map'));await page.evaluate(()=>document.querySelector('#places-map').insertAdjacentHTML('beforeend','<div id="map-overlay-test">Точка</div>'));await gesture(page,{target:'#map-overlay-test'});await expect(active(page)).toHaveAttribute('data-nav','map');
 });

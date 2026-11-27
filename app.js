@@ -3709,7 +3709,7 @@ function goTab(name) {
   const previousTab = document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav;
   const previousScroll = window.scrollY;
   vibro('selection');
-  const tabOrder = ['home', 'calendar', 'analytics', 'settings'];
+  const tabOrder = ['home', 'calendar', 'map', 'analytics', 'settings'];
   const tabIdx = Math.max(0, tabOrder.indexOf(name));
   const pill = document.getElementById('nav-active-pill');
   if (pill) pill.style.transform = `translateX(${tabIdx * 100}%)`;

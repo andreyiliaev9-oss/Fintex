@@ -17,14 +17,14 @@
   <meta name="color-scheme" content="dark light" />
   <script src="./appearance.js?v=62"></script>
   <script src="./cloud.js?v=92"></script>
-  <link rel="stylesheet" href="./styles.css?v=22" />
-  <link rel="stylesheet" href="./design-system.css?v=75" />
+  <link rel="stylesheet" href="./styles.css?v=95" />
+  <link rel="stylesheet" href="./design-system.css?v=95" />
   <link rel="stylesheet" href="./visual-finish.css?v=87" />
   <link rel="stylesheet" href="./motion.css?v=86" />
   <link rel="stylesheet" href="./brand-logos.css?v=88" />
   <link rel="stylesheet" href="./analytics-premium.css?v=91" />
   <link rel="stylesheet" href="./assets/maps/maptiler-sdk.css?v=5.0.0" />
-  <link rel="stylesheet" href="./places.css?v=94" />
+  <link rel="stylesheet" href="./places.css?v=95" />
   <link rel="stylesheet" href="./quick-capture.css?v=92" />
 </head>
 <body class="max-w-md mx-auto min-h-screen relative select-none">
@@ -885,6 +885,10 @@
     </section>
 
     <!-- ВКЛАДКА 4: НАСТРОЙКИ И АРХИВ ОРИГИНАЛОВ -->
+    <section id="view-map" class="space-y-4 pt-2 hidden" aria-label="Карта покупок">
+      <div id="map-page"></div>
+    </section>
+
     <section id="view-settings" class="space-y-4 pt-2 hidden">
       <div>
         <h2 class="text-lg font-bold text-main">Настройки</h2>
@@ -1001,7 +1005,7 @@
   <!-- ==================== НИЖНЯЯ НАВИГАЦИЯ (ЕДИНАЯ КАПСУЛА-ДОК) ==================== -->
   <nav id="fintex-navigation" aria-label="Основная навигация" class="app-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto px-3.5 pt-1.5 z-30 pointer-events-none" style="padding-bottom: calc(10px + env(safe-area-inset-bottom));">
     <div class="pointer-events-auto relative rounded-[22px] border border-[#00D6C3]/25 bg-[#081311]/92 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.10)] p-1.5 flex items-center justify-around">
-      <div id="nav-active-pill" class="nav-pill-slider" style="top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 4); transform: translateX(0%);"></div>
+      <div id="nav-active-pill" class="nav-pill-slider" style="top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); transform: translateX(0%);"></div>
       <button type="button" data-nav="home" aria-current="page" onclick="goTab('home')" class="nav-tab is-active-tab flex-1 flex flex-col items-center tap">
         <span class="nav-icon nav-icon-brand" aria-hidden="true"><img src="./assets/brand/fintex-logo.webp?v=49" width="30" height="30" alt="" /></span>
         <span class="nav-label">Главная</span>
@@ -1009,6 +1013,10 @@
       <button type="button" data-nav="calendar" onclick="goTab('calendar')" class="nav-tab flex-1 flex flex-col items-center tap">
         <span class="nav-icon" aria-hidden="true"><i data-lucide="calendar-days"></i></span>
         <span class="nav-label">Календарь</span>
+      </button>
+      <button type="button" data-nav="map" onclick="goTab('map')" class="nav-tab flex-1 flex flex-col items-center tap">
+        <span class="nav-icon" aria-hidden="true"><i data-lucide="map-pinned"></i></span>
+        <span class="nav-label">Карта</span>
       </button>
       <button type="button" data-nav="analytics" onclick="goTab('analytics')" class="nav-tab flex-1 flex flex-col items-center tap">
         <span class="nav-icon" aria-hidden="true"><i data-lucide="chart-no-axes-combined"></i></span>
@@ -1907,8 +1915,8 @@
   <script src="./brand-catalog.js?v=88"></script>
   <script src="./brand-ui.js?v=88"></script>
   <script src="./quick-capture.js?v=92"></script>
-  <script src="./app.js?v=94"></script>
-  <script src="./navigation.js?v=57"></script>
+  <script src="./app.js?v=95"></script>
+  <script src="./navigation.js?v=95"></script>
   <script src="./interface-motion.js?v=86"></script>
   <script src="./mobile-forms.js?v=87"></script>
   <script src="./modal-accessibility.js?v=76"></script>
@@ -1917,10 +1925,11 @@
   <script src="./investment-market.js?v=27"></script>
   <script src="./investments.js?v=27"></script>
   <script src="./map-config.js?v=94"></script>
-  <script src="./satellite-map.js?v=94"></script>
-  <script src="./place-picker.js?v=94"></script>
-  <script src="./places.js?v=94"></script>
-  <script src="./extensions.js?v=93"></script>
+  <script src="./map-regions.js?v=95"></script>
+  <script src="./satellite-map.js?v=95"></script>
+  <script src="./place-picker.js?v=95"></script>
+  <script src="./places.js?v=95"></script>
+  <script src="./extensions.js?v=95"></script>
   <script src="./journal-view.js?v=80"></script>
   <script src="./quick_add.js?v=72" data-fintex-mod="quick_add.js"></script>
   <script src="./sim_engine.js?v=58" data-fintex-mod="sim_engine.js"></script>

@@ -151,7 +151,7 @@ window.FINTEX_EXT = {
       return;
     }
     const s = document.createElement('script');
-    s.src = `./${src}?v=${src==='analytics_pro.js'?93:src==='cosmic_intro.js'?61:34}`;
+    s.src = `./${src}?v=${src==='analytics_pro.js'?95:src==='cosmic_intro.js'?61:34}`;
     s.dataset.fintexMod = src;
     s.async = false;
     s.onload = () => {

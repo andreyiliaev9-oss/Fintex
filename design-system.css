@@ -1476,6 +1476,7 @@ body.stealth-mode .ap-period-information { visibility: hidden; }
 /* v54 · coloured destinations, a deliberate savings planner, and falling leaves. */
 body #fintex-navigation [data-nav='home'] { --tab-colour: #216343; --tab-soft: #e0efd7; }
 body #fintex-navigation [data-nav='calendar'] { --tab-colour: #905028; --tab-soft: #fae5cd; }
+body #fintex-navigation [data-nav='map'] { --tab-colour: #286571; --tab-soft: #d8eeef; }
 body #fintex-navigation [data-nav='analytics'] { --tab-colour: #315d91; --tab-soft: #dce9f8; }
 body #fintex-navigation [data-nav='settings'] { --tab-colour: #795087; --tab-soft: #eedff3; }
 body #fintex-navigation .nav-tab .nav-icon { background: var(--tab-soft); color: var(--tab-colour); }
