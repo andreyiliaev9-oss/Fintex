@@ -1096,29 +1096,20 @@ function replayOperationHistory() {
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopOperationReveals();else if(document.querySelector('.nav-tab[aria-current="page"]')?.dataset.nav==='home')animateOperationRows(document.getElementById('tx-feed'),'home');});
 window.addEventListener('fintex:tabchange',event=>{if(event.detail.name!=='home')stopOperationReveals();});
 
-function matchesJournalQuery(t,q) {
-  const normalize=value=>String(value??'').toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
-  const query=normalize(q);
-  if([t.merchant,...(Array.isArray(t.items)?t.items.map(item=>item?.name||item?.title):[])].some(value=>normalize(value).includes(query)))return true;
-  const numeric=query.replace(/[ \u00a0\u202f]/g,'').replace(/(?:₽|руб\.?|рублей)$/,'').replace(',','.');
-  return /^\d+(?:\.\d{0,2})?$/.test(numeric)&&String(FM.money(t.amount)).includes(numeric);
-}
+function matchesJournalQuery(t,q) {return FintexJournalModel.matches(t,q);}
 function clearJournalSearch() {const input=document.getElementById('search-input');if(input)input.value='';renderHome();input?.focus({preventScroll:true});}
 function renderHome() {
   state.homeShowAllTx = Boolean(state.homeShowAllTx);
 
   const q = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  const rows = FM.ledgerTransactions(state.transactions).filter(t => {
-    if (state.journalDay && (t.date !== state.journalDay.date || (state.journalDay.type !== 'all' && t.type !== state.journalDay.type))) return false;
-    if (q && !matchesJournalQuery(t,q)) return false;
-    return true;
-  });
+  const journal = FintexJournalModel.project(state.transactions,{view:state.journalView,day:state.journalDay,query:q,today:TODAY});
+  const rows = journal.rows;
 
   const feed = document.getElementById('tx-feed');
   if (!feed) return;
   let searchStatus=document.getElementById('journal-search-status');
-  if(!searchStatus){searchStatus=document.createElement('div');searchStatus.id='journal-search-status';feed.before(searchStatus);}
-  searchStatus.hidden=!q;searchStatus.innerHTML=q?`<span role="status">Найдено: ${rows.length}</span><button type="button" onclick="clearJournalSearch()">Сбросить поиск ×</button>`:'';
+  if(!searchStatus){searchStatus=document.createElement('div');searchStatus.id='journal-search-status';searchStatus.innerHTML='<span></span><button type="button" onclick="clearJournalSearch()">Сбросить поиск ×</button>';feed.before(searchStatus);}
+  searchStatus.hidden=!q;searchStatus.querySelector('span').textContent=q?`Поиск: «${q}»`:'';
   let dayBanner = document.getElementById('journal-day-filter');
   if (!dayBanner) { dayBanner = document.createElement('div'); dayBanner.id = 'journal-day-filter'; feed.before(dayBanner); }
   dayBanner.hidden = !state.journalDay;
@@ -1137,24 +1128,24 @@ function renderHome() {
   }
 
   if (!rows.length) {
+    window.FintexJournalUI?.scopeSelection([]);
+    window.FintexJournalUI?.render(journal,0);
+    window.renderBatchActionDock?.([]);
     feed.innerHTML = `
       <div class="card-surface p-6 text-center space-y-1.5">
-        <div class="text-sm font-semibold text-main">${q?'Совпадений нет':state.journalDay ? 'За выбранный день операций нет' : 'Операций пока нет'}</div>
-        <div class="text-xs text-sub">${q?`По запросу «${escapeHtml(q)}» ничего не найдено. Попробуйте магазин, товар из чека или сумму.`:state.journalDay?'Выберите другую дату или добавьте операцию за этот день.':'Добавьте первую покупку или пополнение'}</div>
-        ${q?'':`<button type="button" class="journal-empty-add" onclick="${state.journalDay?`openAddModalForDate('${state.journalDay.date}')`:'openAddModal()'}">＋ Добавить операцию</button>`}
+        <div class="text-sm font-semibold text-main">${q?'Совпадений нет':state.journalDay ? 'За выбранный день операций нет' : journal.active?'Нет операций с такими фильтрами':'Операций пока нет'}</div>
+        <div class="text-xs text-sub">${q?`По запросу «${escapeHtml(q)}» ничего не найдено. Попробуйте магазин, товар из чека или сумму.`:state.journalDay?'Выберите другую дату или добавьте операцию за этот день.':journal.active?'Измените вид операции, категорию или период. Записи не удалены.':'Добавьте первую покупку или пополнение'}</div>
+        ${q||journal.active&&!state.journalDay?'':`<button type="button" class="journal-empty-add" onclick="${state.journalDay?`openAddModalForDate('${state.journalDay.date}')`:'openAddModal()'}">＋ Добавить операцию</button>`}
       </div>
     `;
     moreWrap.innerHTML = '';
     return;
   }
 
-  const sortedRows = [...rows].sort((a, b) => {
-    const dCmp = String(b.date || '').localeCompare(String(a.date || ''));
-    if (dCmp !== 0) return dCmp;
-    return String(b.time || '').localeCompare(String(a.time || ''));
-  });
-
+  const sortedRows = rows;
   const visibleRows = state.homeShowAllTx ? sortedRows : sortedRows.slice(0, 5);
+  window.FintexJournalUI?.scopeSelection(visibleRows);
+  window.FintexJournalUI?.render(journal,visibleRows.length);
 
   const groupsMap = new Map();
   visibleRows.forEach(t => {
@@ -1623,6 +1614,7 @@ function clearJournalDay() { state.journalDay = null; renderHome(); }
 
 function openCalendarDayInJournal() {
   if (FM.ordinal(state.calSelected) === null) return;
+  state.journalView = FintexJournalModel.defaults();
   state.journalDay = { date: state.calSelected, type: ['income','expense'].includes(state.calFilter) ? state.calFilter : 'all' };
   state.homeShowAllTx = true;
   const search = document.getElementById('search-input');
@@ -2392,7 +2384,7 @@ function exportToIosCalendar() {
   toast('Файл FINTEX_Calendar.ics сформирован');
 }
 function setFilter(id) { vibro('selection'); state.filterCat = id; renderHome(); }
-function toggleSearch() {const wrap=document.getElementById('search-bar-wrap'),input=document.getElementById('search-input');wrap.classList.toggle('hidden');if(!wrap.classList.contains('hidden'))input?.focus({preventScroll:true});else input?.blur();}
+function toggleSearch() {const wrap=document.getElementById('search-bar-wrap'),input=document.getElementById('search-input');wrap.classList.toggle('hidden');document.getElementById('journal-search-toggle')?.setAttribute('aria-expanded',String(!wrap.classList.contains('hidden')));if(!wrap.classList.contains('hidden'))input?.focus({preventScroll:true});else {if(input)input.value='';renderHome();document.getElementById('journal-search-toggle')?.focus({preventScroll:true});}}
 function shiftCalMonth(d) {
   const next = new Date(state.calYear, state.calMonth + d, 1);
   const day = Number((state.calSelected || TODAY).slice(8, 10)) || 1;

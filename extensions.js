@@ -275,6 +275,7 @@ if (document.readyState === 'loading') {
 
   window.toggleTxSelection = function (id) {
     if (!window.state) return;
+    const restoreFocus=document.activeElement?.dataset.txOpen===id;
     if (!Array.isArray(window.state.selectedTxIds)) window.state.selectedTxIds = [];
     const idx = window.state.selectedTxIds.indexOf(id);
     if (idx >= 0) window.state.selectedTxIds.splice(idx, 1);
@@ -282,6 +283,7 @@ if (document.readyState === 'loading') {
     try { if (typeof vibro === 'function') vibro('light'); } catch (e) {}
     if (typeof renderHome === 'function') renderHome();
     else window.renderBatchActionDock();
+    if(restoreFocus)[...document.querySelectorAll('[data-tx-open]')].find(el=>el.dataset.txOpen===id)?.focus({preventScroll:true});
   };
 
   window.selectAllVisibleTxs = function () {
@@ -300,7 +302,10 @@ if (document.readyState === 'loading') {
 
   window.deleteSelectedTxs = function () {
     if (!window.state || !Array.isArray(window.state.selectedTxIds) || !window.state.selectedTxIds.length) return;
-    const toDelete = [...window.state.selectedTxIds];
+    // Never delete hidden selections after a query, period change or collapse.
+    const visible=new Set(visibleRowIdsCache);
+    const toDelete = window.state.selectedTxIds.filter(id=>visible.has(id));
+    if(!toDelete.length)return;
     window.state.txSelectMode = false;
     window.state.selectedTxIds = [];
     if (typeof deleteTxsBatch === 'function') {

@@ -130,7 +130,7 @@
     window.addEventListener('pagehide',rememberInput);document.addEventListener('visibilitychange',()=>{if(document.hidden)rememberInput();});
     [dialog,reconcile].forEach(el=>{
       el.querySelector('[data-flow-close]').addEventListener('click',()=>el.close());
-      el.addEventListener('close',()=>{if(window.FintexFormViewport)window.FintexFormViewport.restore(returnPoint,$('hdr-plus-btn'));else priorFocus?.focus({preventScroll:true});});
+      el.addEventListener('close',()=>{if(window.FintexFormViewport)window.FintexFormViewport.restore(returnPoint,editing?$('operations-title'):$('hdr-plus-btn'));else priorFocus?.focus({preventScroll:true});});
     });
     dialog.querySelectorAll('[data-flow-kind]').forEach(b=>b.addEventListener('click',()=>setKind(b.dataset.flowKind)));
     $('flow-form').addEventListener('submit',submit);$('flow-form').addEventListener('input',preview);
