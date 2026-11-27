@@ -33,7 +33,8 @@
    state.journalView=result.value;state.journalDay=null;state.homeShowAllTx=false;dirty=false;renderHome();panel.open=false;focusSummary();
   });
   $('journal-filter-reset').onclick=reset;$('journal-reset-active').onclick=reset;
-  panel.addEventListener('toggle',()=>{if(panel.open)fill();});
+  // Fill before the native opening action; a delayed toggle event must not erase fast input.
+  panel.querySelector('summary').addEventListener('click',()=>{if(!panel.open)fill();});
   fill();renderHome();
  }
  function scopeSelection(rows){

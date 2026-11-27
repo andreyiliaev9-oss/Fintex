@@ -185,3 +185,14 @@ body #journal-filter-form :is(select,input,button):focus-visible { outline: 2px 
 body #journal-filter-dirty { font-size: 12px; color: var(--text-secondary); }
 body #journal-filter-dirty[hidden] { display: none !important; }
 @media (max-width: 380px) { body #journal-range { grid-template-columns: minmax(0,1fr); } }
+
+/* v80: a read-only backup report, separate from all replacement controls. */
+body #backup-check-dialog { overflow-wrap: anywhere; }
+body #backup-check-dialog [hidden] { display: none !important; }
+body #backup-check-result { margin: 16px 0 8px; font-size: 18px; font-weight: 750; line-height: 1.4; color: var(--text-primary); }
+body #backup-check-sections { display: grid; gap: 8px; margin: 14px 0; padding: 0; list-style: none; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+body #backup-check-sections li { padding-bottom: 7px; border-bottom: 1px solid var(--border-subtle); }
+body #backup-check-report .flow-equation-row { flex-wrap: wrap; gap: 6px 16px; }
+body #backup-check-report .flow-equation-row strong { max-width: 100%; overflow-wrap: anywhere; }
+
+body #backup-check-details > summary { min-height: 44px; padding-block: 12px; font-size: 12px; font-weight: 650; cursor: pointer; }
