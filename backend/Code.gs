@@ -1,4 +1,4 @@
-/** FINTEX Cloud v7. Deploy Code.gs and Auth.gs, or the combined installer.
+/** FINTEX Cloud v8. Deploy Code.gs, Auth.gs and QuickCapture.gs, or the combined installer.
  * Cloud requests verify Telegram initData. No passwords or PINs. Shortcut tokens are ingest-only.
  */
 var ADMIN_UID='8141670312';
@@ -100,7 +100,7 @@ function serverLocked(callback) {
 function doGet(e) {
   var p=(e&&e.parameter)||{};
   if(p.text&&p.uid)return serverLocked(function(){return handleWebhookIngest(String(p.uid),String(p.token||''),p.text);});
-  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'7.0-ledger',cloud_protocol:2,ledger_protocol:3});
+  return jsonResponse({ok:true,service:'FINTEX Cloud Backend',version:'8.0-quick-capture',cloud_protocol:2,ledger_protocol:3,quick_capture_protocol:1});
 }
 function doPost(e) {
   var body,raw=e&&e.postData&&e.postData.contents;
@@ -110,13 +110,15 @@ function doPost(e) {
     // Verify configuration before any access. No legacy UID-only fallback.
     authProperties();
     var action=String(body.action||'');
-    var allowed=['init','push_tx','set_config','ledger_sync'];
+    if(action==='quick_capture_parse'||action==='quick_capture_submit')return qcHandle(body);
+    var allowed=['init','push_tx','set_config','ledger_sync','quick_capture_status','quick_capture_pair','quick_capture_revoke'];
     if(!action && body.text)return handleWebhookIngest(String(body.user_id||body.uid||''),String(body.token||''),body.text);
     if(allowed.indexOf(action)<0)authError('UNKNOWN_ACTION','Неизвестная команда.');
     var uid=authTelegram(body.init_data);
     if(body.user_id&&String(body.user_id)!==uid)authError('TELEGRAM_INVALID','Учётная запись не совпадает.');
     var db=getDb();
-    if((action==='init'||action==='ledger_sync')&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
+    if((action==='init'||action==='ledger_sync'||action.indexOf('quick_capture_')===0)&&!findUserRow(db.users,uid))authRotateWebhook(db,uid);
+    if(action.indexOf('quick_capture_')===0)return qcOwner(action,uid);
     if(action==='set_config') {
       var token=String(body.api_token||'');
       if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token))authError('INVALID_TOKEN','Ключ автоматизации: от 32 до 128 букв, цифр, _ или -.');

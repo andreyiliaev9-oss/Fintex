@@ -24,7 +24,7 @@ function fixture(){
     ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({setMimeType:()=>text})},
     UrlFetchApp:{fetch(url,options){assert.match(url,/^https:\/\/api.telegram.org\/bot/);assert.equal(held,true);messages.push(JSON.parse(options.payload));return {getResponseCode:()=>deliver?200:403,getContentText:()=>JSON.stringify({ok:deliver})};}}
   };
-  vm.createContext(ctx);for(const file of ['backend/Code.gs','backend/Auth.gs'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx,{filename:file});
+  vm.createContext(ctx);for(const file of ['backend/Code.gs','backend/Auth.gs','backend/QuickCapture.gs'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx,{filename:file});
   function initData(uid=UID,more={}){
     const fields={auth_date:String(Math.floor(now/1000)),user:JSON.stringify({id:Number(uid),first_name:'Тест'}),...more};
     const check=Object.keys(fields).sort().map(k=>k+'='+fields[k]).join('\n');
