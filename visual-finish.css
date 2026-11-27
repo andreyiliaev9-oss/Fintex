@@ -260,3 +260,11 @@ body .ap-observations { padding: 0 14px; border: 1px solid var(--border-subtle);
 body .ap-observations > summary { font-size: 13px; }
 body .ap-observations #fintex-behavior { margin-top: 4px; border: 0; padding-inline: 0; }
 body #analytics-tools .inv-entry { width: 100%; box-shadow: none; margin: 0; }
+
+/* v82: field-local feedback uses semantic risk colors in every palette. */
+body #flow-form .flow-field-error { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; color: var(--expense); overflow-wrap: anywhere; }
+body #flow-form .flow-field-error[hidden] { display: none !important; }
+body #flow-form [aria-invalid="true"] { border-color: var(--expense); box-shadow: 0 0 0 1px var(--expense); }
+body #flow-form .flow-field-hint { color: var(--text-secondary); font-size: 11px; font-weight: 500; }
+body #flow-form .flow-check:has(.flow-field-error:not([hidden])) { flex-wrap: wrap; }
+body #flow-form .flow-check .flow-field-error { flex-basis: 100%; }
