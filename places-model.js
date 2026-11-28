@@ -22,9 +22,10 @@
   const points=expenses.flatMap(t=>{const place=location(t.location,now);return place?[{...t,location:place}]:[];}).sort((a,b)=>b.date.localeCompare(a.date)||String(b.time||'').localeCompare(String(a.time||''))||String(a.id).localeCompare(String(b.id)));
   return {points,total:expenses.length,missing:expenses.length-points.length,amount:M.sum(points,t=>t.amount)};
  }
+ function placeKey(tx){const l=tx.location;return [String(tx.merchant||'').toLocaleLowerCase('ru-RU').trim(),l.source==='user_confirmed'?l.label.toLocaleLowerCase('ru-RU'):'',l.latitude.toFixed(4),l.longitude.toFixed(4)].join('|');}
  function places(points){
   const groups=new Map();
-  for(const tx of points){const l=tx.location,key=[tx.merchant.toLocaleLowerCase('ru-RU').trim(),l.source==='user_confirmed'?l.label.toLocaleLowerCase('ru-RU'):'',l.latitude.toFixed(4),l.longitude.toFixed(4)].join('|');let g=groups.get(key);if(!g){g={title:tx.merchant,label:l.label||'Место телефона · не подтверждено',latitude:l.latitude,longitude:l.longitude,count:0,minor:0,transactions:[]};groups.set(key,g);}g.count++;g.minor+=M.minor(tx.amount);g.transactions.push(tx);}
+  for(const tx of points){const l=tx.location,key=placeKey(tx);let g=groups.get(key);if(!g){g={title:tx.merchant,label:l.label||'Позиция телефона · место не подтверждено',latitude:l.latitude,longitude:l.longitude,count:0,minor:0,transactions:[]};groups.set(key,g);}g.count++;g.minor+=M.minor(tx.amount);g.transactions.push(tx);}
   return [...groups.values()].map(g=>({...g,amount:g.minor/100})).sort((a,b)=>b.minor-a.minor||a.title.localeCompare(b.title));
  }
  // Camera destinations only: expenses with a valid point, never current phone GPS.
@@ -38,5 +39,10 @@
   const frequent=groups[0]?.count>1?{tx:groups[0].transactions[0],count:groups[0].count}:null;
   return {selected,recent,frequent,outsidePeriod:!!selected&&(selected.date<start||selected.date>end),outsideCategory:!!selected&&category!=='all'&&selected.category!==category};
  }
- const api={location,project,places,destinations};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.FintexPlacesModel=api;
+ function familiar(transactions,{merchant='',now=Date.now(),limit=5}={}){
+  const name=String(merchant).trim().toLocaleLowerCase('ru-RU');
+  const groups=places(project(transactions,{now}).points.filter(t=>t.location.source==='user_confirmed'));
+  return groups.sort((a,b)=>Number(b.title.trim().toLocaleLowerCase('ru-RU')===name)-Number(a.title.trim().toLocaleLowerCase('ru-RU')===name)||b.count-a.count||b.transactions[0].date.localeCompare(a.transactions[0].date)||String(b.transactions[0].time||'').localeCompare(String(a.transactions[0].time||''))||a.title.localeCompare(b.title)).slice(0,limit);
+ }
+ const api={location,project,places,destinations,placeKey,familiar};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.FintexPlacesModel=api;
 })(typeof window==='undefined'?globalThis:window);

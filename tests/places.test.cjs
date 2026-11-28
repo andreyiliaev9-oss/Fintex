@@ -60,3 +60,13 @@ test('no recent-period points still returns a real historical place, but empty/i
  d=P.destinations(rows,{now,category:'cafe'});assert.equal(d.selected.id,'old');assert.equal(d.outsideCategory,true);
  assert.equal(P.destinations([],{now}).selected,null);assert.equal(P.destinations([{...rows[0],location:null}],{now}).selected,null);
 });
+test('familiar places are confirmed expense shops only, matching merchant first then visit count and recency',()=>{
+ const place={...position,source:'user_confirmed',label:'Лесная 5',confirmed_at:position.captured_at};
+ const tx=(id,merchant,date='2026-11-24',extra={})=>({id,date,type:'expense',merchant,amount:1,category:'food',location:place,...extra});
+ const rows=[tx('a','Мой магазин'),tx('b1','Популярный'),tx('b2','Популярный'),tx('c','Новый','2026-11-23'),tx('income','Доход','2026-11-24',{type:'income'}),tx('gps','GPS','2026-11-24',{location:position}),tx('bad','Bad','2026-11-24',{location:{...place,longitude:500}})];const before=JSON.stringify(rows);
+ const familiar=P.familiar(rows,{now,merchant:'  МОЙ МАГАЗИН '});assert.deepEqual(familiar.map(g=>g.title),['Мой магазин','Популярный','Новый']);assert.equal(familiar[1].count,2);assert.equal(P.familiar(rows,{now,limit:1}).length,1);assert.equal(JSON.stringify(rows),before);
+});
+test('place keys do not combine distant shops, addresses or phone positions into confirmed shop totals',()=>{
+ const confirmed={...position,source:'user_confirmed',label:'Лесная 5',confirmed_at:position.captured_at};const t={merchant:'Кофе',amount:.1,location:confirmed};const rows=[t,{...t,amount:.2},{...t,location:{...confirmed,longitude:38}},{...t,location:position},{...t,location:{...confirmed,label:'Лесная 7'}}];
+ assert.equal(P.places(rows).length,4);assert.equal(P.placeKey(t),P.placeKey({...t,merchant:'  КОФЕ '}));assert.notEqual(P.placeKey(t),P.placeKey(rows[3]));assert.equal(P.places(rows).find(g=>g.count===2).amount,.3);
+});

@@ -13,7 +13,7 @@
  function update(){
   const loc=coordinates();$('place-picker-save').disabled=!loc;$('place-reverse').hidden=!loc;
   $('place-selected-title').textContent=loc?($('place-label').value.trim()||suggestion||'Точка на карте'):'Выберите место';
-  $('place-selected-note').textContent=loc?'Проверьте точку и нажмите «Здесь была покупка».':'Найдите адрес, выберите знакомое место или нажмите «Я здесь».';
+  $('place-selected-note').textContent=loc?(draft?.source==='user_confirmed'?'Место из подтверждённой покупки. Проверьте его для этой операции и нажмите «Здесь была покупка».':'Это выбранная точка или позиция телефона, не подтверждённый адрес покупки. Проверьте её и нажмите «Здесь была покупка».'):'Выберите знакомое место, найдите адрес или нажмите «Я здесь».';
   if(!loc&&marker){marker.remove();marker=null;}
   if(map&&SDK&&loc){if(!marker){marker=new SDK.Marker({color:'#e9c779',draggable:true}).setLngLat([loc.longitude,loc.latitude]).addTo(map);marker.on('dragend',()=>choose({...coordinates(),latitude:marker.getLngLat().lat,longitude:marker.getLngLat().lng,accuracy:null,captured_at:new Date().toISOString()}));}else marker.setLngLat([loc.longitude,loc.latitude]);}
  }
@@ -45,10 +45,10 @@
  function mount(){
   dialog=node('dialog');dialog.id='place-picker';dialog.className='place-picker';dialog.setAttribute('aria-labelledby','place-picker-title');
   dialog.innerHTML=`<header><div><span class="places-eyebrow">Место покупки</span><h2 id="place-picker-title">Где это было?</h2></div><button type="button" id="place-picker-close" aria-label="Закрыть выбор места">×</button></header>
-   <div class="place-picker-body"><form id="place-search-form" class="place-search"><label class="sr-only" for="place-search-query">Адрес или место</label><input id="place-search-query" maxlength="180" placeholder="Улица, дом или место" autocomplete="off"><button type="submit" aria-label="Найти адрес">Найти</button></form><div id="place-search-results" class="place-search-results"></div>
-   <p class="place-search-privacy">Поиск отправляет запрос или точку сервису карт — без покупок и сумм.</p><button type="button" id="place-locate">Я здесь</button><div id="place-recent" class="place-recent"></div>
+   <div class="place-picker-body"><section id="place-recent-section"><h3>Знакомые места</h3><p class="places-note">Выберите магазин из своих подтверждённых покупок.</p><div id="place-recent" class="place-recent"></div></section><details id="place-other-methods"><summary>Найти другое место</summary><form id="place-search-form" class="place-search"><label class="sr-only" for="place-search-query">Адрес или место</label><input id="place-search-query" maxlength="180" placeholder="Улица, дом или место" autocomplete="off"><button type="submit" aria-label="Найти адрес">Найти</button></form><div id="place-search-results" class="place-search-results"></div>
+   <p class="place-search-privacy">Поиск отправляет запрос или точку сервису карт — без покупок и сумм.</p><button type="button" id="place-locate">Я здесь</button>
    <div id="place-picker-consent"><button type="button" id="place-picker-load">Выбрать на карте</button><p class="places-note">Снимки загрузятся из интернета. Сервис увидит IP и область просмотра.</p></div><div id="place-picker-map" class="places-map" aria-label="Выберите место покупки на карте" hidden></div>
-   <div class="place-selected"><strong id="place-selected-title"></strong><p id="place-selected-note"></p><button type="button" id="place-reverse" hidden>Уточнить адрес точки</button></div><p id="place-picker-status" class="places-note" role="status" aria-live="polite"></p>
+   </details><div class="place-selected"><strong id="place-selected-title"></strong><p id="place-selected-note"></p><button type="button" id="place-reverse" hidden>Уточнить адрес точки</button></div><p id="place-picker-status" class="places-note" role="status" aria-live="polite"></p>
    <label class="place-name-label">Название · можно не менять<input id="place-label" maxlength="180" autocomplete="off" placeholder="Точка на карте"></label>
    <details id="place-coordinate-fields"><summary>Координаты и подробности</summary><div class="places-filters"><label>Широта<input id="place-lat" inputmode="decimal" autocomplete="off"></label><label>Долгота<input id="place-lon" inputmode="decimal" autocomplete="off"></label></div><p class="places-note">Место сохраняется только по кнопке ниже. Оно войдёт в историю и резервные копии; при настроенной синхронизации — в облако. Старые ревизии могут содержать удалённые метки.</p></details><small class="place-search-credit">Поиск: MapTiler · © OpenStreetMap contributors</small></div>
    <footer><button type="button" id="place-picker-save" disabled>Здесь была покупка</button><button type="button" id="place-picker-cancel">Отмена</button></footer>`;
@@ -71,8 +71,13 @@
   if(!dialog)mount();if(dialog.open)close();epoch++;prior=document.activeElement;commit=onConfirm;expectedBinding=binding();suggestion=String(suggestedLabel||'').slice(0,180);
   const recent=window.FintexPlaces?.position?.(),loc=M.location(initial)||recent;draft=loc;dialog.querySelector('h2').textContent=title;
   $('place-label').value=loc?.source==='user_confirmed'?loc.label:suggestion||'Точка на карте';$('place-lat').value=loc?.latitude??'';$('place-lon').value=loc?.longitude??'';$('place-locate').disabled=false;$('place-picker-map').hidden=true;$('place-coordinate-fields').open=false;$('place-picker-consent').hidden=FintexSatellite.allowed();$('place-search-query').value='';$('place-search-results').replaceChildren();say(recent&&!initial?'Ваша недавняя позиция уже выбрана. Подтвердите, если покупка была здесь.':'');
-  const saved=$('place-recent');saved.replaceChildren();const seen=new Set();for(const tx of (typeof state==='undefined'?[]:state.transactions)){const p=M.location(tx.location);if(p?.source!=='user_confirmed')continue;const key=p.label+'|'+p.latitude.toFixed(4)+'|'+p.longitude.toFixed(4);if(seen.has(key))continue;seen.add(key);if(seen.size>5)break;saved.append(button(p.label,()=>{choose(p,p.label);fly();say('Знакомое место выбрано. Осталось подтвердить покупку.');}));}saved.hidden=!saved.childElementCount;
-  update();dialog.showModal();$('place-locate').focus();if(FintexSatellite.allowed())showMap();
+  const saved=$('place-recent');saved.replaceChildren();const familiar=M.familiar(typeof state==='undefined'?[]:state.transactions,{merchant:suggestion});
+  for(const group of familiar){const p=group.transactions[0].location,b=button('',()=>{choose(p,p.label);fly();say('Знакомое место выбрано. Проверьте, что эта покупка была здесь. Сохранение — только кнопкой ниже.');});b.className='place-familiar-choice';b.append(node('strong',group.title),node('span',group.label),node('small','Покупок: '+group.count+' · подтверждено вами'));saved.append(b);}
+  $('place-recent-section').hidden=!familiar.length;$('place-other-methods').open=!familiar.length;const other=$('place-other-methods');other.ontoggle=()=>{if(other.open&&dialog.open&&FintexSatellite.allowed())showMap();};
+  // Familiar shops come first. No new GPS/network request just to choose a known place.
+  $('place-picker-consent').hidden=FintexSatellite.allowed()&&!familiar.length;
+  update();dialog.showModal();if(familiar.length)saved.querySelector('button').focus();else $('place-search-query').focus();if(FintexSatellite.allowed()&&!familiar.length)showMap();
+
  }
  function field(host,{location:loc=null,title='Место покупки',suggestedLabel='',onChange}){
   host.replaceChildren();host.classList.add('place-field');host.append(node('strong',title),node('p',loc?.source==='user_confirmed'?loc.label:loc?'Точка есть · осталось подтвердить':'Без места'));

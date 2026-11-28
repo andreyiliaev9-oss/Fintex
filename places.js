@@ -2,6 +2,7 @@
 (() => {
  'use strict';
  const Model=FintexPlacesModel;
+ let moreOpen=false,operationsOpen=false,operationLimit=10;
  let home=null,homeMarker=null,preferredMemory=null,cameraIntent='purchase';
  let focused=null,focusMarker=null,searchController=null,searchEpoch=0;
  let regionId=FintexMapRegions.defaultId,days=30,currentPosition=null,positionMarker=null,gpsBusy=false,gpsEpoch=0,gpsMessage='',mapMessage='';
@@ -28,12 +29,12 @@
  function remember(tx){if(!tx||tx.type!=='expense'||!Model.location(tx.location))return;preferredMemory={version:1,owner:owner(),txId:String(tx.id)};try{localStorage.setItem(preferenceKey,JSON.stringify(preferredMemory));}catch(_){} }
  function showPurchase(tx,{animate=false}={}){
   if(!viewer||!tx)return;const loc=Model.location(tx.location);if(!loc)return;const {map,S}=viewer;FintexMapRegions.cancel(map);homeMarker?.remove();
-  const pin=node('button',undefined,'places-home-pin');pin.type='button';pin.setAttribute('aria-label',tx.merchant+' · '+money(tx.amount));if(loc.source!=='user_confirmed')pin.classList.add('is-unconfirmed');
-  homeMarker=new S.Marker({element:pin}).setLngLat([loc.longitude,loc.latitude]).setPopup(new S.Popup({maxWidth:'260px'}).setDOMContent(popup(tx))).addTo(map);
-  pin.addEventListener('click',()=>remember(tx));const camera={center:[loc.longitude,loc.latitude],zoom:16,pitch:20,bearing:0};
-  if(animate&&FintexMapRegions.motion())map.easeTo({...camera,duration:1400});else map.jumpTo(camera);
+  const pin=node('button',undefined,'places-home-pin');pin.type='button';pin.setAttribute('aria-label',tx.merchant+' · '+money(tx.amount)+(loc.source==='user_confirmed'?' · место подтверждено':' · позиция телефона, место не подтверждено'));pin.textContent=loc.source==='user_confirmed'?'✓':'≈';if(loc.source!=='user_confirmed')pin.classList.add('is-unconfirmed');
+  homeMarker=new S.Marker({element:pin}).setLngLat([loc.longitude,loc.latitude]).addTo(map);
+  pin.addEventListener('click',event=>{event.stopPropagation();visitPurchase(state.transactions.find(t=>t.id===tx.id));document.getElementById('places-return')?.scrollIntoView({behavior:FintexMapRegions.motion()?'smooth':'instant',block:'nearest'});});const camera={center:[loc.longitude,loc.latitude],zoom:16,pitch:20,bearing:0};
+  if(animate&&FintexMapRegions.motion())map.easeTo({...camera,duration:1400});else map.jumpTo(camera);markerVisibility();
  }
- function visitPurchase(tx){if(!tx)return;gpsEpoch++;gpsBusy=false;gpsMessage='';focused=null;currentPosition=null;positionMarker?.remove();positionMarker=null;focusMarker?.remove();focusMarker=null;cameraIntent='purchase';remember(tx);home={...home,selected:tx};showPurchase(tx,{animate:true});refresh();document.getElementById('places-map')?.scrollIntoView({behavior:FintexMapRegions.motion()?'smooth':'instant',block:'center'});}
+ function visitPurchase(tx){if(!tx)return;operationsOpen=false;operationLimit=10;gpsEpoch++;gpsBusy=false;gpsMessage='';focused=null;currentPosition=null;positionMarker?.remove();positionMarker=null;focusMarker?.remove();focusMarker=null;cameraIntent='purchase';remember(tx);home={...home,selected:tx};showPurchase(tx,{animate:true});refresh();document.getElementById('places-map')?.scrollIntoView({behavior:FintexMapRegions.motion()?'smooth':'instant',block:'center'});}
  function stop(){generation++;if(viewer){try{viewer.map.remove();}catch(_){}viewer=null;}opening=false;host=null;homeMarker=null;cameraIntent='purchase';positionMarker=null;focusMarker=null;lastFit='';mapMessage='';}
  function savePlace(id,snapshot,loc){
   const old=state.transactions.find(t=>t.id===id);if(!old||JSON.stringify(old)!==snapshot)throw Error('Операция изменилась. Откройте выбор места заново.');
@@ -44,22 +45,41 @@
   window.dispatchEvent(new Event('filely:financial-data-updated'));renderAll(false);if(window.FintexSync?.active())FintexSync.sync();
  }
  function edit(tx){const snapshot=JSON.stringify(tx);FintexPlacePicker.open({location:tx.location,title:'Где была покупка?',suggestedLabel:tx.merchant,onConfirm:loc=>savePlace(tx.id,snapshot,loc)});}
- function popup(tx){const p=node('div',undefined,'places-popup');p.append(node('strong',tx.merchant),node('p',money(tx.amount)+' · '+tx.date),node('p',tx.location.source==='user_confirmed'?tx.location.label:'Позиция телефона · место покупки не подтверждено'),button('Проверить место покупки',()=>edit(state.transactions.find(t=>t.id===tx.id)||tx)));return p;}
+ function placeStatus(loc){const confirmed=loc.source==='user_confirmed',badge=node('span',confirmed?'✓ Место подтверждено':'≈ Позиция телефона','places-place-status '+(confirmed?'is-confirmed':'is-approximate'));return badge;}
+ function placeCard(tx){
+  const visible=points.some(t=>t.id===tx.id),pool=visible?points:Model.project(state.transactions).points;
+  const group=Model.places(pool).find(g=>g.transactions.some(t=>t.id===tx.id));if(!group)return null;
+  const saved=node('section',undefined,'places-return');saved.id='places-return';saved.setAttribute('aria-label','Место покупки');
+  const title=node('div',undefined,'places-place-heading');title.append(node('span',String(tx.id)===preferred()?'Ваше место':'Последняя покупка','places-eyebrow'),placeStatus(tx.location));saved.append(title,node('strong',group.title),node('p',group.label));
+  if(tx.location.source!=='user_confirmed')saved.append(node('p','Это положение телефона в момент записи, не проверенный адрес магазина.','places-accuracy-note'));
+  const stats=node('div',undefined,'places-place-stats');stats.append(node('strong',money(group.amount)),node('span',purchases(group.count)));saved.append(stats,node('small',(visible?'По выбранным фильтрам':'Из истории · вне выбранного периода/категории')+' · последняя '+shortDate(group.transactions[0].date)));
+  const actions=node('div',undefined,'places-place-actions'),toggle=button(operationsOpen?'Скрыть покупки':'Покупки в этом месте',()=>{operationsOpen=!operationsOpen;operationLimit=10;refresh();document.getElementById('places-place-toggle')?.focus({preventScroll:true});});toggle.id='places-place-toggle';toggle.setAttribute('aria-expanded',String(operationsOpen));toggle.setAttribute('aria-controls','places-place-operations');actions.append(toggle,button(tx.location.source==='user_confirmed'?'Изменить место':'Подтвердить место',()=>{const actual=state.transactions.find(t=>t.id===tx.id);if(actual)edit(actual);}));saved.append(actions);
+  const list=node('ul',undefined,'places-place-operations');list.id='places-place-operations';list.hidden=!operationsOpen;
+  if(operationsOpen){for(const row of group.transactions.slice(0,operationLimit)){const item=node('li'),open=button(shortDate(row.date)+(row.time?' · '+row.time:'')+' · '+money(row.amount),()=>{if(state.transactions.some(t=>t.id===row.id))openTxModal(row.id);});open.setAttribute('aria-label','Открыть покупку: '+row.merchant+' · '+row.date+' · '+money(row.amount));item.append(open);list.append(item);}if(group.count>operationLimit){const item=node('li');item.append(button('Ещё покупки',()=>{operationLimit+=10;refresh();}));list.append(item);}}saved.append(list);return saved;
+ }
+ function markerVisibility(){
+  if(!viewer||!homeMarker)return;const m=viewer.map;let hide=mode!=='points'||m.getZoom()<14;
+  // A selected pin must not cover the count of co-located/nearby purchases.
+  if(!hide&&m.getLayer('fintex-clusters')){const p=m.project(homeMarker.getLngLat());hide=m.queryRenderedFeatures([[p.x-20,p.y-20],[p.x+20,p.y+20]],{layers:['fintex-clusters']}).length>0;}
+  homeMarker.getElement().hidden=hide;
+ }
+
+
  function geojson(){return {type:'FeatureCollection',features:points.slice(0,2000).map(t=>({type:'Feature',geometry:{type:'Point',coordinates:[t.location.longitude,t.location.latitude]},properties:{id:t.id,minor:FintexMath.minor(t.amount),confirmed:t.location.source==='user_confirmed'?1:0}}))};}
  function fit(){if(!viewer||!points.length)return;const visible=points.slice(0,2000),key=visible.map(t=>[t.id,t.location.latitude,t.location.longitude].join(':')).join('|');if(lastFit===key)return;lastFit=key;cameraIntent='all';FintexMapRegions.cancel(viewer.map);const bounds=new viewer.S.LngLatBounds();for(const t of visible)bounds.extend([t.location.longitude,t.location.latitude]);viewer.map.fitBounds(bounds,{padding:54,maxZoom:16,duration:0});}
  function renderLayers(){
   if(!viewer||(!viewer.map.isStyleLoaded()&&!viewer.map.getSource('fintex-purchases')))return;
   const m=viewer.map,data=geojson();
   if(!m.getSource('fintex-purchases')){
-   m.addSource('fintex-purchases',{type:'geojson',data,cluster:true,clusterRadius:48,clusterProperties:{total_minor:['+',['get','minor']]}});
+   m.addSource('fintex-purchases',{type:'geojson',data,cluster:true,clusterRadius:48,clusterMaxZoom:19,clusterProperties:{total_minor:['+',['get','minor']]}});
    m.addSource('fintex-heat',{type:'geojson',data});
    m.addLayer({id:'fintex-heat',type:'heatmap',source:'fintex-heat',paint:{'heatmap-weight':1,'heatmap-intensity':1.4,'heatmap-radius':36,'heatmap-opacity':.8,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(47,177,151,0)',.25,'#46a8c9',.5,'#40bb96',.75,'#f1c65d',1,'#ed7054']}});
    m.addLayer({id:'fintex-clusters',type:'circle',source:'fintex-purchases',filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],24,10,30,50,36],'circle-color':'#e9c779','circle-stroke-color':'#15372e','circle-stroke-width':3}});
-   m.addLayer({id:'fintex-cluster-label',type:'symbol',source:'fintex-purchases',filter:['has','point_count'],layout:{'text-field':['concat',['number-format',['/',['get','total_minor'],100],{'max-fraction-digits':0}],' ₽'],'text-size':12,'text-font':['Noto Sans Regular']},paint:{'text-color':'#112b23'}});
-   m.addLayer({id:'fintex-points',type:'circle',source:'fintex-purchases',filter:['!',['has','point_count']],paint:{'circle-radius':9,'circle-color':['case',['==',['get','confirmed'],1],'#e9c779','#67d4b8'],'circle-stroke-width':3,'circle-stroke-color':'#15372e'}});
+   m.addLayer({id:'fintex-cluster-label',type:'symbol',source:'fintex-purchases',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-size':12,'text-font':['Noto Sans Regular']},paint:{'text-color':'#112b23'}});
+   m.addLayer({id:'fintex-points',type:'circle',source:'fintex-purchases',filter:['!',['has','point_count']],paint:{'circle-radius':9,'circle-color':['case',['==',['get','confirmed'],1],'#e9c779','#67d4b8'],'circle-stroke-width':['case',['==',['get','confirmed'],1],3,2],'circle-stroke-color':['case',['==',['get','confirmed'],1],'#15372e','#ffffff'],'circle-opacity':['case',['==',['get','confirmed'],1],1,.7]}});
    m.addLayer({id:'fintex-point-label',type:'symbol',source:'fintex-purchases',filter:['!',['has','point_count']],layout:{'text-field':['concat',['number-format',['/',['get','minor'],100],{'max-fraction-digits':2}],' ₽'],'text-size':12,'text-font':['Noto Sans Regular'],'text-offset':[0,1.8],'text-anchor':'top'},paint:{'text-color':'#ffffff','text-halo-color':'#102b23','text-halo-width':2}});
   }else{m.getSource('fintex-purchases').setData(data);m.getSource('fintex-heat').setData(data);}
-  m.setPaintProperty('fintex-heat','heatmap-weight',mode==='count'?1:['/', ['get','minor'],Math.max(1,...points.slice(0,2000).map(t=>FintexMath.minor(t.amount)))]);
+  markerVisibility();m.setPaintProperty('fintex-heat','heatmap-weight',mode==='count'?1:['/', ['get','minor'],Math.max(1,...points.slice(0,2000).map(t=>FintexMath.minor(t.amount)))]);
   m.setLayoutProperty('fintex-heat','visibility',mode==='points'?'none':'visible');for(const id of ['fintex-clusters','fintex-cluster-label','fintex-points','fintex-point-label'])m.setLayoutProperty(id,'visibility',mode==='points'?'visible':'none');
  }
  async function draw(){
@@ -68,10 +88,10 @@
   opening=true;const id=generation,initial=(!focused&&!currentPosition&&cameraIntent==='purchase')?home?.selected:null,initialLoc=initial?.location;
   try{const result=await FintexSatellite.create(host,{globe:true,center:initialLoc?[initialLoc.longitude,initialLoc.latitude]:FintexMapRegions.motion()?[75,58]:region().center,zoom:initialLoc?16:FintexMapRegions.motion()?0.3:region().zoom,isCurrent:()=>id===generation&&allowed&&opened,onStatus:text=>{if(id===generation){mapMessage=text;if(status){status.textContent=text;status.hidden=!text;}}},onClick:async(e,m,S)=>{
    if(mode!=='points'||!m.getLayer('fintex-points'))return;const features=m.queryRenderedFeatures(e.point,{layers:['fintex-points','fintex-clusters']});if(!features.length){selectPlace({latitude:e.lngLat.lat,longitude:e.lngLat.lng,captured_at:new Date().toISOString(),label:'Точка на карте'},false);return;}
-   const f=features[0];if(f.properties.cluster){try{const z=await m.getSource('fintex-purchases').getClusterExpansionZoom(f.properties.cluster_id);FintexMapRegions.cancel(m);m.easeTo({center:f.geometry.coordinates,zoom:z,duration:350});}catch(_){}return;}
-   const tx=points.find(t=>t.id===f.properties.id);if(tx){cameraIntent='purchase';remember(tx);refresh();}if(tx)new S.Popup({maxWidth:'260px'}).setLngLat(f.geometry.coordinates).setDOMContent(popup(tx)).addTo(m);
+   const f=features[0];if(f.properties.cluster){try{const z=await m.getSource('fintex-purchases').getClusterExpansionZoom(f.properties.cluster_id);if(id!==generation||viewer?.map!==m)return;cameraIntent='all';FintexMapRegions.cancel(m);m.easeTo({center:f.geometry.coordinates,zoom:Math.min(z,m.getMaxZoom()),duration:FintexMapRegions.motion()?700:0});}catch(_){}return;}
+   const tx=points.find(t=>t.id===f.properties.id);if(tx)visitPurchase(tx);
   }});
-   if(id!==generation||!allowed){result.map.remove();return;}viewer=result;result.map.on('dragstart',()=>{cameraIntent='manual';});
+   if(id!==generation||!allowed){result.map.remove();return;}viewer=result;result.map.on('render',markerVisibility);for(const layer of ['fintex-points','fintex-clusters']){result.map.on('mouseenter',layer,()=>{result.map.getCanvas().style.cursor='pointer';});result.map.on('mouseleave',layer,()=>{result.map.getCanvas().style.cursor='';});}result.map.on('dragstart',()=>{cameraIntent='manual';});
    const loaded=()=>{if(id!==generation)return;renderLayers();if(['region','all','manual'].includes(cameraIntent))return;if(focused)showFocus(true);else if(currentPosition)showPosition(true);else if(home?.selected)showPurchase(home.selected);else FintexMapRegions.visit(result.map,region(),{intro:true});};
    let initialized=false;const initialize=()=>{if(initialized)return;initialized=true;loaded();};result.map.once('load',initialize);if(result.map.isStyleLoaded())initialize();
   }catch(error){if(id===generation){mapMessage=error.message;if(status){status.textContent=error.message;status.hidden=false;}}}finally{if(id===generation)opening=false;}
@@ -91,9 +111,13 @@
   const locate=button(gpsBusy?'Ищем вас…':'Моё местоположение',locateMe);locate.id='places-locate';locate.className='places-locate';locate.disabled=gpsBusy;hero.append(locate);
   const gps=node('p',gpsMessage,'places-gps-status');gps.id='places-gps-status';gps.setAttribute('role','status');gps.hidden=!gpsMessage;hero.append(gps);
   const search=node('form',undefined,'place-search');search.id='places-search';const input=node('input');input.id='places-search-query';input.placeholder='Адрес или место';input.maxLength=180;input.setAttribute('aria-label','Адрес или место');const submit=node('button','Найти');submit.type='submit';search.append(input,submit);search.onsubmit=findAddress;input.oninput=()=>{searchEpoch++;searchController?.abort();document.getElementById('places-search-results')?.replaceChildren();};const privacy=node('small','Поиск передаёт сервису карт только введённый запрос.','place-search-privacy');body.insertBefore(search,hero);body.insertBefore(privacy,hero);const results=node('div',undefined,'place-search-results');results.id='places-search-results';body.insertBefore(results,hero);
-  if(home.selected&&cameraIntent==='purchase'&&!focused&&!currentPosition){const saved=node('div',undefined,'places-return');saved.id='places-return';const tx=home.selected;saved.append(node('span',String(tx.id)===preferred()?'Ваше место':'Последняя покупка','places-eyebrow'),node('strong',tx.merchant),node('p',tx.location.source==='user_confirmed'?tx.location.label:'Позиция телефона · место не подтверждено'),node('small',shortDate(tx.date)+(home.outsidePeriod?' · вне выбранного периода':home.outsideCategory?' · вне выбранной категории':'')+' · '+money(tx.amount)));body.append(saved);}
+  if(home.selected&&cameraIntent==='purchase'&&!focused&&!currentPosition){const saved=placeCard(home.selected);if(saved)body.append(saved);}
   const selected=node('div',undefined,'places-selected');selected.id='places-selected';const chosen=focused||currentPosition;selected.hidden=!chosen;if(chosen){selected.append(node('span',focused?'Выбрано на карте':'Вы сейчас здесь','places-eyebrow'),node('strong',focused?.label||'Моё местоположение'),button('Добавить покупку здесь',addHere));}body.append(selected);
-  const tools=node('div',undefined,'places-map-tools');if(allowed){if(home.recent)tools.append(button('Последняя покупка',()=>visitPurchase(home.recent)));if(home.frequent)tools.append(button('Частое место',()=>visitPurchase(home.frequent.tx)));tools.append(button('Вся область',()=>{cameraIntent='region';if(viewer)FintexMapRegions.visit(viewer.map,region());}),button('Мои покупки',()=>{lastFit='';fit();}),button('Обновить карту',()=>{stop();refresh();}));body.append(tools);}
+  const tools=node('div',undefined,'places-map-tools');if(allowed){if(home.recent)tools.append(button('Последняя покупка',()=>visitPurchase(home.recent)));if(home.frequent)tools.append(button('Частое место',()=>visitPurchase(home.frequent.tx)));
+   const more=node('details',undefined,'places-more');more.id='places-more';more.open=moreOpen;more.append(node('summary','Ещё'));const extras=node('div',undefined,'places-extra-tools');extras.append(button('Мои покупки',()=>{lastFit='';fit();}),button('Вся область',()=>{cameraIntent='region';if(viewer)FintexMapRegions.visit(viewer.map,region());}),button('Обновить карту',()=>{stop();refresh();}));more.append(extras);more.addEventListener('toggle',()=>{if(more.isConnected)moreOpen=more.open;});tools.append(more);body.append(tools);
+   const legend=node('div',undefined,'places-legend');legend.setAttribute('aria-label','Условные обозначения');legend.append(placeStatus({source:'user_confirmed'}),placeStatus({source:'phone_sms'}),node('small','Число в кружке — покупки рядом. Нажмите, чтобы приблизить.'));body.insertBefore(legend,hero.nextSibling);
+  }
+
   status=node('p',mapMessage,'places-note');status.id='places-status';status.setAttribute('role','status');status.hidden=!mapMessage;body.append(status);
   const capture=button('Добавить из скриншота',()=>FintexCapture.open());capture.className='places-capture';body.append(capture);
   const overview=node('div',undefined,'places-overview');overview.append(node('h2','Покупки'));const periodLabel=node('label',undefined,'places-period');periodLabel.append(node('span','Период','sr-only'));const period=node('select');period.id='places-period';for(const [value,title]of [[30,'30 дней'],[90,'90 дней'],[365,'Год']])period.append(new Option(title,String(value)));period.value=String(days);period.onchange=()=>{days=Number(period.value);limit=25;refresh();};periodLabel.append(period);overview.append(periodLabel);body.append(overview);
@@ -109,7 +133,7 @@
   if(groups.length){const ranking=node('div',undefined,'places-ranking');ranking.append(node('h3','Частые места'));for(const g of groups.slice(0,3)){const row=node('div');row.append(button(g.title,()=>visitPurchase(g.transactions[0])),node('span',money(g.amount),'money-val'),node('small',purchases(g.count)+' · '+g.label));ranking.append(row);}body.append(ranking);}
   const list=node('ul',undefined,'places-list');list.id='places-list';
   for(const tx of data.points.slice(0,limit)){
-   const item=node('li'),loc=tx.location;const heading=node('div',undefined,'places-operation-heading');heading.append(button(tx.merchant,()=>visitPurchase(state.transactions.find(t=>t.id===tx.id))),node('span',money(tx.amount),'money-val'));const address=node('p',loc.source==='user_confirmed'?loc.label:'Место не подтверждено','places-operation-address'),date=node('time',shortDate(tx.date),'places-operation-date');date.dateTime=tx.date;item.append(heading,address,date);const actions=node('div',undefined,'places-operation-actions');
+   const item=node('li'),loc=tx.location;const heading=node('div',undefined,'places-operation-heading');heading.append(button(tx.merchant,()=>visitPurchase(state.transactions.find(t=>t.id===tx.id))),node('span',money(tx.amount),'money-val'));const address=node('p',loc.source==='user_confirmed'?loc.label:'Место не подтверждено','places-operation-address'),date=node('time',shortDate(tx.date),'places-operation-date');date.dateTime=tx.date;item.append(heading,placeStatus(loc),address,date);const actions=node('div',undefined,'places-operation-actions');
    actions.append(button(loc.source==='user_confirmed'?'Изменить место':'Подтвердить место',()=>edit(state.transactions.find(t=>t.id===tx.id)||tx)));
    const remove=button('Убрать геометку',()=>{if(!confirm('Убрать место из текущей версии? Деньги не изменятся. Старые серверные ревизии и копии могут содержать координаты.'))return;try{const old=state.transactions.find(t=>t.id===tx.id);savePlace(tx.id,JSON.stringify(old),null);toast('Метка убрана. Отправка — в настройках синхронизации.');}catch(error){toast(error.message);}});remove.setAttribute('aria-label','Убрать геометку: '+tx.merchant);remove.title='Убрать место';remove.className='places-remove';remove.textContent='';remove.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>';actions.append(remove);item.append(actions);list.append(item);
   }
