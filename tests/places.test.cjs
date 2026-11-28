@@ -43,3 +43,20 @@ test('confirmed place metadata is allowlisted, validated identically, and surviv
 });
 test('SMS ingest cannot claim user-confirmed addresses; only verified owner edits may persist them',()=>{const {f,send}=setup();assert.equal(send({location:{...position,source:'user_confirmed',label:'UNTRUSTED',confirmed_at:position.captured_at}}).status,'saved');const loc=f.auth('init').transactions[0].location;assert.equal(loc.source,'phone_sms');assert.equal(loc.label,undefined);});
 test('place summaries add kopecks and counts, do not merge same brand across distant shops, and preserve source rows',()=>{const place={...position,source:'user_confirmed',label:'Лесная 5',confirmed_at:position.captured_at};const a={id:'a',merchant:'Кофе',amount:.1,location:place},b={...a,id:'b',amount:.2},c={...a,id:'c',location:{...place,longitude:38}},rows=[a,b,c],before=JSON.stringify(rows),groups=P.places(rows);assert.equal(groups.length,2);assert.equal(groups[0].amount,.3);assert.equal(groups[0].count,2);assert.equal(JSON.stringify(rows),before);});
+test('map destinations select latest by date/time, remember only valid expense IDs, and never mutate transactions',()=>{
+ const t=(id,date,time,extra={})=>({id,date,time,type:'expense',merchant:'Место '+id,category:'food',amount:1,location:position,...extra});
+ const rows=[t('older','2026-11-23','23:59'),t('new','2026-11-24','12:01'),t('early','2026-11-24','09:01'),t('income','2026-11-24','13:00',{type:'income'}),t('missing','2026-11-24','14:00',{location:null}),t('invalid','2026-11-24','15:00',{location:{...position,latitude:91}})],before=JSON.stringify(rows);
+ assert.equal(P.destinations(rows,{now}).selected.id,'new');assert.equal(P.destinations(rows,{now,preferredId:'older'}).selected.id,'older');assert.equal(P.destinations(rows,{now,preferredId:'deleted'}).selected.id,'new');assert.equal(P.destinations(rows,{now,preferredId:'income'}).selected.id,'new');assert.equal(JSON.stringify(rows),before);
+});
+test('frequent destination counts visits, not money or a chain across distant shops; recency breaks ties',()=>{
+ const t=(id,date,longitude,amount=1)=>({id,date,type:'expense',merchant:'Кофе',category:'cafe',amount,location:{...position,longitude}});
+ const rows=[t('costly','2026-11-24',40,10000),t('a1','2026-11-22',37),t('a2','2026-11-23',37),t('a3','2026-11-24',37),t('b1','2026-11-21',38),t('b2','2026-11-22',38)];
+ const result=P.destinations(rows,{now});assert.equal(result.frequent.count,3);assert.equal(result.frequent.tx.location.longitude,37);assert.equal(result.frequent.tx.id,'a3');assert.equal(P.destinations([t('one','2026-11-24',37)],{now}).frequent,null);
+ const tied=P.destinations([t('a1','2026-11-20',37),t('a2','2026-11-21',37),t('b1','2026-11-22',38),t('b2','2026-11-23',38)],{now});assert.equal(tied.frequent.tx.id,'b2');
+});
+test('no recent-period points still returns a real historical place, but empty/invalid histories never invent one',()=>{
+ const rows=[{id:'old',date:'2026-01-01',type:'expense',category:'food',merchant:'Место',amount:1,location:position}];
+ let d=P.destinations(rows,{now,start:'2026-11-01',end:'2026-11-24'});assert.equal(d.selected.id,'old');assert.equal(d.outsidePeriod,true);
+ d=P.destinations(rows,{now,category:'cafe'});assert.equal(d.selected.id,'old');assert.equal(d.outsideCategory,true);
+ assert.equal(P.destinations([],{now}).selected,null);assert.equal(P.destinations([{...rows[0],location:null}],{now}).selected,null);
+});
